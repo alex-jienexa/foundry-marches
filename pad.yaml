@@ -2,8 +2,8 @@
 version: "1.0"
 project:
   name: "FoundryMarches"
-  description: "Russuan app for West Marches campaign in PF2e with FoundryVTT, Obsidian & Discord Bot integration."
-  repository: ""
+  description: "Russian app for West Marches campaign in PF2e with FoundryVTT, Obsidian & Discord Bot integration."
+  repository: "https://github.com/alex-jienexa/foundry-marches"
   default_branch: "main"
   primary_language: "Not specified"
   created_at: "2026-11-16"
