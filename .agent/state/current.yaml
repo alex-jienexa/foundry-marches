@@ -10,10 +10,10 @@ last_verified_commit: 3032d2da61c090bde83887f564f9487d1e99e27e
 open_blockers:
 - Для полного сопоставления нужен отсутствующий текст ТЗ v1.0/дополнений
 - Нет отдельного тестового мира; записи в основной игровой Actor не согласованы по конкретным операциям/откату
-- Нужны безопасные тестовые credentials/config для self-hosted relay, отдельная WebDAV directory и образцы Codex
+- Нужны read-only сведения о Docker networks/mounts и текущем module manifest; отдельная WebDAV directory и образцы Codex
 next_actions:
-- Получить подтверждение безопасного тестового Actor и границ разрешённых записей
-- Развернуть self-hosted relay рядом с Foundry и подтвердить сетевой маршрут
+- Снять read-only сведения о Foundry container networks/mounts и текущем module manifest
+- Изучить и pin-нуть relay release; подготовить loopback-only compose deployment plan для согласования
 - Подготовить отдельный тестовый каталог WebDAV и выгрузки Campaign Codex
 - Выполнить проверки TASK-002 и зафиксировать фактические результаты
 - 'TASK-003: создать основу, миграции и команды запуска/сборки' (независимая задача)
