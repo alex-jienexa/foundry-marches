@@ -6,18 +6,21 @@ TASK-002 начата в ветке `feat/task-002-integration-spike`, созд�
 
 ## Подтверждено владельцем
 
-- Foundry VTT 14, build 367.
-- PF2e 8.7.0.
-- Есть основной игровой мир и права GM; отдельного тестового мира нет.
-- Установлен модуль Foundry REST API; self-hosted relay ещё требуется отдельно проверить/развернуть.
-- Foundry размещён на удалённом сервере; потенциально relay можно разместить рядом.
-- Есть рабочий WebDAV, но тесты обязаны использовать отдельную директорию вне заметок кампании Obsidian.
-- Владелец просит подробные инструкции по организации тестов.
+- Foundry VTT 14, build 367; PF2e 8.7.0.
+- Тестовый Actor `АНДРЕЙ`, UUID `Actor.mxgc0DRWC8bA9ruI`; владелец разрешил выполнять тестовую работу над ним.
+- Хост Arch Linux; Docker и Docker Compose установлены.
+- `foundryvtt-container` публикует порт 30000.
+- `catalog-container` публикует 127.0.0.1:8080 и категорически вне scope; не трогать.
+- Установлен, но не настроен модуль ThreeHats `foundryvtt-rest-api`; владелец разрешил перенастроить/переустановить.
+- WebDAV доступен; тестировать только в отдельной директории вне Obsidian notes.
+- Владелец просит подробные инструкции.
 
 ## Выполнено в этой ветке
 
 - TASK-002 переведена в `in_progress`.
 - Обновлён `state/current.yaml`.
+- Создан `docs/architecture/decisions/spike-0-results.md` с первичными выводами и планом.
+- Подтверждено, что module repo и relay repo — два отдельных компонента.
 - Никаких live-запросов, изменений Foundry Actor, WebDAV или Codex не выполнялось.
 - Результаты интеграций пока не подтверждены.
 
@@ -31,7 +34,7 @@ TASK-002 начата в ветке `feat/task-002-integration-spike`, созд�
 
 ## Следующие действия
 
-1. Получить от владельца безопасную границу тестов Actor (лучше создать отдельный тестовый Actor в существующем мире).
+1. Получить read-only Docker networks/mounts и текущий manifest/version Foundry module.
 2. Определить точный relay product/repository/version и deployment method; проверить его API/schema/config.
 3. Подготовить WebDAV test directory и получить read/write ETag/If-Match tests.
 4. Получить Codex JSON exports и исследовать формат без записи обратно.
