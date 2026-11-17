@@ -52,3 +52,7 @@ relay у вас на хосте; чтение листа PF2e; монеты ка
 ## Progress log
 
 - 2026-11-17 — Начата работа в ветке `feat/task-002-integration-spike` от `1f70419`. Подтверждены версии Foundry VTT 14 build 367 и PF2e 8.7.0. Тестовый Actor `АНДРЕЙ` (`Actor.mxgc0DRWC8bA9ruI`) предоставлен владельцем для всех тестов записи; отдельного тестового мира нет. Сервер Arch Linux, Docker/Compose установлены; `catalog-container` вне scope и неприкосновенен. Установленный модуль ThreeHats REST API не настроен; владелец разрешил его перенастройку/переустановку. Внешние серверные команды и live-проверки пока не выполнялись.
+
+- 2026-11-17 — Развёрнут self-hosted ThreeHats Relay 3.4.1 на Arch Linux; image зафиксирован digest `sha256:60df34aca78968f072a77e7d19358073aa514175e0ecec43406cb1a1ed64948e`, SQLite data persistent, host port привязан к loopback `127.0.0.1:3010`. Caddy проксирует `relay.jiene.ru` по HTTPS; Foundry доступен через `foundry.jiene.ru`. Секреты не внесены в репозиторий.
+- 2026-11-17 — Foundry VTT 14 build 367 / PF2e 8.7.0; модуль ThreeHats REST API 3.4.1 переведён с публичного Relay на `wss://relay.jiene.ru/relay`. Владелец подтвердил вход в admin UI и успешный Pairing.
+- 2026-11-17 — Read-only REST smoke test PASS: запрос `GET https://relay.jiene.ru/get?uuid=Actor.mxgc0DRWC8bA9ruI&clientId=fvtt_cca540151c686a43` с API key вернул `entity-result` для Actor `АНДРЕЙ`; PF2e 8.7.0, Foundry 14.367, level 1, XP 0, HP 0, items 0. Actor не изменялся; временный JSON удалён, shell variable с ключом очищена. Подробности в `docs/architecture/decisions/spike-0-results.md`.
