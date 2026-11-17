@@ -1,23 +1,72 @@
 name: Project checks
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
 permissions:
   contents: read
-
 jobs:
-  placeholder-check:
+  documentation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify PAD structure
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install documentation parser dependencies
+        run: python3 -m pip install -r requirements-docs.txt
+      - name: Verify PAD structure and original artifact integrity
         run: |
           test -f AGENTS.md
           test -f pad.yaml
           test -f .agent/state/current.yaml
           test -f .agent/state/HANDOFF.md
           test -f .agent/protocols/RECOVERY.md
+          python3 scripts/validate_artifacts.py
+          python3 scripts/generate_database_docs.py --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/docs/package-lock.json
+      - name: Parse DBML and all Mermaid diagrams
+        run: |
+          npm ci --prefix tools/docs --no-audit --no-fund
+          npm run check --prefix tools/docs
+  database:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ['15', '16']
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-ephemeral-only
+          POSTGRES_DB: foundry_marches_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci-ephemeral-only
+      PGDATABASE: foundry_marches_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Apply baseline on empty database
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/schema.sql
+      - name: Run 166 schema checks
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/database/schema_tests.sql
+      - name: Run 9 concurrency checks
+        run: bash tests/database/schema_race_tests.sh
