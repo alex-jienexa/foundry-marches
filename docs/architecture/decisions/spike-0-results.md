@@ -62,8 +62,8 @@ Relay API не следует публиковать в интернет без 
 
 | Проверка | Статус | Результат |
 |---|---|---|
-| Foundry relay connectivity | pending | Live-проверка не выполнялась |
-| Actor snapshot | pending | Live-проверка не выполнялась |
+| Foundry relay connectivity | **PASS** | Self-hosted Relay 3.4.1 запущен; HTTPS и GM Pairing подтверждены владельцем 2026-11-17 |
+| Actor snapshot | **PASS (read-only)** | `GET /get?uuid=Actor.mxgc0DRWC8bA9ruI&clientId=fvtt_cca540151c686a43` вернул `entity-result`; `data.name=АНДРЕЙ`, `data.type=character`, PF2e 8.7.0, Foundry 14.367, level 1, XP 0, HP 0, `items=[]` |
 | PF2e coins as items | pending | Live-проверка не выполнялась |
 | XP write + operation flag | pending | Live-проверка не выполнялась |
 | XP idempotency | pending | Live-проверка не выполнялась |
@@ -91,3 +91,89 @@ Relay API не следует публиковать в интернет без 
 - Какой путь и сервер WebDAV; отдельный тестовый каталог и credentials.
 - Обезличенные JSON exports Campaign Codex.
 - Требуемая политика level-up: автоматическая или GM-confirmed (решение владельца ещё требуется).
+
+
+## 9. Live deployment и проверка подключения (2026-11-17)
+
+### 9.1. Фактическая серверная конфигурация
+
+Владелец выполнил конфигурацию на Arch Linux host; ниже записаны только несекретные параметры.
+
+- Foundry: `foundryvtt-container`, image `foundryvtt:v14`; Foundry VTT 14 build 367, Node.js 26.7.0.
+- Foundry data на host: `/opt/foundry/foundrydata`; в контейнере: `/home/node/foundrydata`.
+- Foundry REST API module: ThreeHats, версия 3.4.1.
+- Relay: `foundry-marches-relay`, image `threehats/foundryvtt-rest-api-relay:3.4.1@sha256:60df34aca78968f072a77e7d19358073aa514175e0ecec43406cb1a1ed64948e` (linux/amd64).
+- Relay Compose project: `/opt/foundry-marches-relay`; SQLite, data dir `./data:/app/data`, host bind только `127.0.0.1:3010:3010`, Redis отключён, `ALLOW_HEADLESS=true`, `DISABLE_REGISTRATION=true`, `MONTHLY_REQUEST_LIMIT=0`, `ADMIN_SECURE_COOKIES=true`.
+- Relay secrets (admin password, generated encryption key, JWT secret) хранятся вне репозитория: env file и Relay data volume. Их значения намеренно не записываются в этот отчёт.
+- Caddy v2.11.4 используется как существующий reverse proxy. Не создавался второй proxy.
+- `foundry.jiene.ru` проксируется на `127.0.0.1:30000`; `relay.jiene.ru` — на `127.0.0.1:3010`.
+- Foundry options: `hostname=foundry.jiene.ru`, `proxyPort=443`, `proxySSL=true`; внутренний Foundry port остаётся 30000.
+- Relay URL в настройках Foundry module изменён с публичного `wss://foundryrestapi.com/relay` на `wss://relay.jiene.ru/relay`.
+- Владелец подтвердил успешную авторизацию в Relay admin UI и успешный Pairing Foundry с self-hosted Relay.
+- HTTPS для обоих доменов проверен владельцем через curl/browser; Caddy получил Let's Encrypt сертификаты. Для Relay HTTP перенаправляется на HTTPS.
+- Существующий `catalog-container` и сайт `rosochkinsad.ru` не затрагивались.
+
+### 9.2. Проверка REST API и Actor
+
+Владелец выполнил на сервере запрос (API key передавался через shell variable и не раскрывался в чате):
+
+```bash
+curl -fsS --get 'https://relay.jiene.ru/get' \
+  --data-urlencode 'uuid=Actor.mxgc0DRWC8bA9ruI' \
+  --data-urlencode 'clientId=fvtt_cca540151c686a43' \
+  -H "x-api-key: $FOUNDRY_API_KEY" \
+  -o /tmp/foundry-actor-read.json
+```
+
+Команда завершилась с кодом 0. JSON содержал:
+- `type: "entity-result"`;
+- `uuid: "Actor.mxgc0DRWC8bA9ruI"`;
+- `data.name: "АНДРЕЙ"`, `data.type: "character"`;
+- `data._id: "mxgc0DRWC8bA9ruI"`;
+- `data.system.details.level.value: 1`;
+- `data.system.details.xp.value: 0`;
+- `data.system.attributes.hp.value: 0`;
+- `data.items: []`;
+- `data._stats.coreVersion: "14.367"`, `systemId: "pf2e"`, `systemVersion: "8.7.0"`.
+
+В ответе сущность обёрнута в `data`; поля Actor находятся по путям `.data.name`, `.data.system...`, а не в корне JSON. `jq` на сервере не установлен, поэтому попытка форматированного вывода завершилась сообщением `jq: command not found`; это не повлияло на REST-запрос и получение JSON. Временный файл `/tmp/foundry-actor-read.json` удалён, переменная `FOUNDRY_API_KEY` очищена командой `unset`.
+
+**Вывод:** сетевой путь, TLS, Pairing, аутентификация API key, маршрутизация Relay → GM Foundry client и чтение конкретного PF2e Actor подтверждены end-to-end. Проверка была read-only; Actor не изменялся.
+
+### 9.3. Обновлённая матрица результатов
+
+| Проверка | Статус | Комментарий |
+|---|---|---|
+| Self-hosted Relay deployment | **PASS** | Relay 3.4.1 запущен на host loopback; persistent SQLite data |
+| Relay admin UI / login | **PASS** | Владелец подтвердил вход через HTTPS |
+| Caddy / TLS для Relay | **PASS** | `https://relay.jiene.ru/` возвращает HTTP 200; HTTP → HTTPS redirect |
+| Foundry module Pairing | **PASS** | Владелец подтвердил успешный Pairing с `wss://relay.jiene.ru/relay` |
+| REST API authentication и routing | **PASS** | API key + clientId; `GET /get` вернул ответ от Foundry |
+| PF2e Actor read | **PASS (read-only)** | Получен Actor `АНДРЕЙ`, UUID указан выше |
+| PF2e coins as items | pending | Инвентарь тестового Actor пуст; модель валюты ещё не проверена |
+| XP write + operation flag | pending | Запись не выполнялась |
+| XP idempotency | pending | Повторная операция не проверялась |
+| Level-up behavior | pending / owner decision | Требуется решение владельца о GM confirmation vs auto; запись не выполнялась |
+| Grant item by UUID | pending | Не проверялось |
+| SSE hooks | pending | Не проверялось |
+| Headless GM session | pending | Настройка разрешена в Relay, фактическая работа без браузера GM не проверена |
+| Self-hosted relay quota | pending | `MONTHLY_REQUEST_LIMIT=0` задан; фактическое поведение счётчиков/лимитов ещё не проверено |
+| WebDAV ETag / If-Match | pending | Нужны отдельный тестовый каталог и тесты |
+| Campaign Codex export | pending | Нужны обезличенные образцы |
+
+### 9.4. Безопасность и оставшиеся ограничения
+
+- Не сохранять API keys, admin password, `.env`, `.secrets.env`, JWT/encryption secrets, cookies или pairing credentials в Git.
+- Relay admin UI доступен публично через HTTPS; регистрация отключена, secure cookies включены. IP allowlist изначально оставлен выключенным по решению владельца. Рекомендуется отдельно пересмотреть ограничение доступа к admin UI.
+- `MONTHLY_REQUEST_LIMIT=0` означает отсутствие глобального месячного лимита в конфигурации Relay; это не заменяет проверку индивидуальных API key limits и фактического usage accounting.
+- `ALLOW_HEADLESS=true` только разрешает headless workflow; это ещё не доказывает, что запрос успешно выполняется при закрытом GM browser.
+- Тест чтения подтвердил структуру ответа Actor, но не наличие AC/speed: в фактическом ответе эти поля отсутствовали. Не считать критерий полного набора полей листа полностью закрытым.
+- Значения HP=0 и пустой инвентарь зафиксированы как текущее состояние тестового Actor на момент чтения; не трактовать их как ошибку интеграции.
+
+### 9.5. Следующие проверки
+
+1. Read-only исследование инвентаря/денежных предметов PF2e на тестовом Actor; сейчас `items=[]`, поэтому для проверки representation coins потребуется отдельный согласованный тестовый setup или тестовые данные.
+2. Проверить точную структуру GET response и поля PF2e, доступные для Actor этого типа.
+3. Перед любыми write tests — зафиксировать исходный экспорт Actor, проверить backup/restore и подготовить отдельную операцию на том же тестовом Actor.
+4. После отдельного подтверждения выполнить XP write/idempotency и item grant tests.
+5. Отдельно проверить SSE, headless GM, relay usage/quota, WebDAV и Codex.
