@@ -1,0 +1,15 @@
+flowchart TB
+  Browser["Браузер"] -->|HTTPS| Caddy
+  Discord["Discord"] <--> Bot
+  subgraph VPS["Целевой VPS / Docker Compose — ещё не реализован"]
+    Caddy["caddy: TLS + static frontend"] --> API["api: Go binary, API/SSE"]
+    Bot["bot: отдельный процесс"] --> API
+    API --> PG[("postgres 15+")]
+    Worker["worker: тот же Go binary"] <--> PG
+    Worker <--> Relay["relay: готовый контейнер"]
+    Relay --> SQLite[("relay SQLite")]
+    Backup["pg_dump + restic, будущая реализация"] -.-> PG
+  end
+  Relay <-->|"WS, GM / headless"| Foundry["Удалённый сервер Foundry"]
+  Worker <-->|"HTTPS WebDAV"| DAV["Уже существующий сервер WebDAV"]
+  Backup -.-> Store["Отдельное хранилище резервных копий"]

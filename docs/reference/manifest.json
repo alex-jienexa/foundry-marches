@@ -1,0 +1,25 @@
+{
+  "source_archive": "files.zip",
+  "files": [
+    {
+      "path": "originals/West Marches PF2e — архитектурный план, схема БД и этапы разработки(2).md",
+      "bytes": 86972,
+      "sha256": "fffd02c37361f42dcc9e6fdd36cb5dfd3d5516008b68f5fef1d1045d2e9a5001"
+    },
+    {
+      "path": "originals/schema.sql",
+      "bytes": 124958,
+      "sha256": "683f73b943419917c4abc54d833de84f213e4f3d93b0e69ca2ee7b1d624a14f6"
+    },
+    {
+      "path": "originals/schema_race_tests.sh",
+      "bytes": 5252,
+      "sha256": "655174b1ced743ce79dff5724d7fc4c84b8eccaf4d64c53fa9493ac7b5f30de5"
+    },
+    {
+      "path": "originals/schema_tests.sql",
+      "bytes": 49103,
+      "sha256": "d2532e730b09ac4bbf1038cb57d7c8d8b02d20f4dd8d3f552d181e9ec3b033ed"
+    }
+  ]
+}

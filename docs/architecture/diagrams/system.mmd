@@ -1,0 +1,15 @@
+flowchart LR
+  Player["Игрок / мастер"] --> Web["SolidJS + TypeScript"]
+  Web --> Caddy["Caddy HTTPS"]
+  Caddy --> API["Go API + SSE"]
+  Discord["Discord"] <--> Bot["discordgo bot"]
+  Bot -->|"service token + субъект"| API
+  API --> DB[("PostgreSQL 15+")]
+  Worker["Go worker"] <--> DB
+  Worker <--> Relay["Self-hosted REST relay"]
+  Relay <-->|"WebSocket GM / headless"| Foundry["Удалённый Foundry VTT + PF2e + Codex"]
+  Worker <-->|"PROPFIND / GET / PUT + If-Match"| DAV["Существующий WebDAV"]
+  Obsidian["Obsidian"] <--> DAV
+  Relay --> RelayDB[("Служебная SQLite relay")]
+  DB -.->|"event_outbox + NOTIFY"| API
+  DB -.->|"integration_jobs, River"| Worker

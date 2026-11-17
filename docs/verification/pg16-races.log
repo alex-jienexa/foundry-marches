@@ -1,0 +1,11 @@
+PASS approvals: exactly two characters hold slots
+PASS approvals: the loser got the slot-limit error
+PASS purchases: stock is exactly zero, never negative
+PASS purchases: exactly one purchase exists
+PASS purchases: the loser got 'not enough stock'
+PASS purchases: the loser's money is untouched
+PASS purchases: balances match the ledger
+PASS seats: exactly one confirmed signup
+PASS seats: the loser got 'no free seats'
+----
+all race checks passed

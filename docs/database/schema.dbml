@@ -1,0 +1,1856 @@
+// GENERATED from docs/database/schema.sql. DO NOT EDIT.
+// Lossy visualization; never use DBML as a migration or round-trip SQL source.
+Project FoundryMarches {
+  database_type: 'PostgreSQL'
+  Note: 'Canonical SQL contains CHECK, EXCLUDE, partial/expression/NULLS NOT DISTINCT indexes, functions, triggers and seed data not executable here. See objects.md and tables.md.'
+}
+
+Table users {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  display_name "text" [not null]
+  avatar_url "text"
+  status "text" [not null, default: `'active'`, note: "CHECK status IN ('active', 'disabled', 'left_guild')"]
+  timezone "text" [not null, default: `'UTC'`]
+  preferred_schedule "text"
+  registered_at "timestamptz" [not null, default: `now()`]
+  last_seen_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#users; full functions and dynamic triggers: objects.md"
+}
+
+Table discord_accounts {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  user_id "uuid" [not null, unique]
+  discord_id "text" [not null, unique]
+  username "text" [not null]
+  avatar_hash "text"
+  in_guild "boolean" [not null, default: `TRUE`]
+  oauth_refresh_token_enc "bytea"
+  linked_at "timestamptz" [not null, default: `now()`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#discord_accounts; full functions and dynamic triggers: objects.md"
+}
+
+Table roles {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  key "text" [not null, unique]
+  name "text" [not null]
+  is_system "boolean" [not null, default: `FALSE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#roles; full functions and dynamic triggers: objects.md"
+}
+
+Table permissions {
+  key "text" [pk, not null]
+  description "text" [not null]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#permissions; full functions and dynamic triggers: objects.md"
+}
+
+Table role_permissions {
+  role_id "uuid" [not null]
+  permission_key "text" [not null]
+  indexes {
+    (role_id, permission_key) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#role_permissions; full functions and dynamic triggers: objects.md"
+}
+
+Table user_roles {
+  user_id "uuid" [not null]
+  role_id "uuid" [not null]
+  granted_by "uuid"
+  granted_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (user_id, role_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#user_roles; full functions and dynamic triggers: objects.md"
+}
+
+Table discord_role_map {
+  guild_id "text" [not null]
+  discord_role_id "text" [not null]
+  role_id "uuid" [not null]
+  indexes {
+    (guild_id, discord_role_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#discord_role_map; full functions and dynamic triggers: objects.md"
+}
+
+Table sessions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  user_id "uuid" [not null]
+  token_hash "bytea" [not null, unique]
+  expires_at "timestamptz" [not null]
+  ip "inet"
+  user_agent "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#sessions; full functions and dynamic triggers: objects.md"
+}
+
+Table service_tokens {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null, unique]
+  token_hash "bytea" [not null, unique]
+  scopes "text[]" [not null, default: `'{}'`]
+  revoked_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#service_tokens; full functions and dynamic triggers: objects.md"
+}
+
+Table player_gm_notes {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  user_id "uuid" [not null]
+  author_id "uuid" [not null]
+  body "text" [not null]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#player_gm_notes; full functions and dynamic triggers: objects.md"
+}
+
+Table notification_prefs {
+  user_id "uuid" [not null]
+  kind "text" [not null]
+  enabled "boolean" [not null, default: `TRUE`]
+  indexes {
+    (user_id, kind) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#notification_prefs; full functions and dynamic triggers: objects.md"
+}
+
+Table login_log {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  user_id "uuid"
+  ok "boolean" [not null]
+  ip "inet"
+  detail "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#login_log; full functions and dynamic triggers: objects.md"
+}
+
+Table campaign_settings {
+  key "text" [pk, not null]
+  value "jsonb" [not null]
+  updated_by "uuid"
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#campaign_settings; full functions and dynamic triggers: objects.md"
+}
+
+Table campaign_settings_history {
+  id "bigint" [pk, not null]
+  key "text" [not null]
+  old_value "jsonb"
+  new_value "jsonb"
+  changed_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#campaign_settings_history; full functions and dynamic triggers: objects.md"
+}
+
+Table audit_log {
+  id "bigint" [pk, not null]
+  created_at "timestamptz" [not null, default: `now()`]
+  actor_user_id "uuid"
+  actor_kind "text" [not null, note: "CHECK actor_kind IN ('user', 'bot', 'system', 'foundry', 'obsidian')"]
+  action "text" [not null]
+  entity_type "text" [not null]
+  entity_id "text"
+  old_value "jsonb"
+  new_value "jsonb"
+  result "text" [not null, default: `'ok'`]
+  request_id "text"
+  ip "inet"
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#audit_log; full functions and dynamic triggers: objects.md"
+}
+
+Table backups {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  kind "text" [not null, note: "CHECK kind IN ('database', 'files', 'maps', 'settings', 'full')"]
+  path "text" [not null]
+  size_bytes "bigint"
+  sha256 "text"
+  verified_at "timestamptz"
+  verify_result "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#backups; full functions and dynamic triggers: objects.md"
+}
+
+Table calendars {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  year_name "text"
+  epoch_name "text"
+  is_active "boolean" [not null, default: `FALSE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendars; full functions and dynamic triggers: objects.md"
+}
+
+Table calendar_versions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  calendar_id "uuid" [not null]
+  version "integer" [not null, note: "CHECK version > 0"]
+  effective_from_day "bigint" [not null]
+  anchor_year "integer" [not null]
+  anchor_month_ord "smallint" [not null, default: `1`]
+  anchor_day "smallint" [not null, default: `1`]
+  anchor_weekday_ord "smallint" [not null, default: `1`]
+  sealed_at "timestamptz"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (calendar_id, version) [unique]
+    (calendar_id, effective_from_day) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendar_versions; full functions and dynamic triggers: objects.md"
+}
+
+Table calendar_months {
+  version_id "uuid" [not null]
+  ord "smallint" [not null, note: "CHECK ord > 0"]
+  name "text" [not null]
+  days "smallint" [not null, note: "CHECK days > 0"]
+  is_intercalary "boolean" [not null, default: `FALSE`]
+  indexes {
+    (version_id, ord) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendar_months; full functions and dynamic triggers: objects.md"
+}
+
+Table calendar_weekdays {
+  version_id "uuid" [not null]
+  ord "smallint" [not null, note: "CHECK ord > 0"]
+  name "text" [not null]
+  indexes {
+    (version_id, ord) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendar_weekdays; full functions and dynamic triggers: objects.md"
+}
+
+Table calendar_leap_rules {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  version_id "uuid" [not null]
+  every_n_years "integer" [not null, note: "CHECK every_n_years > 0"]
+  offset_years "integer" [not null, default: `0`]
+  month_ord "smallint" [not null]
+  extra_days "smallint" [not null, default: `1`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendar_leap_rules; full functions and dynamic triggers: objects.md"
+}
+
+Table game_clock {
+  id "smallint" [pk, not null, default: `1`, note: "CHECK id = 1"]
+  calendar_id "uuid" [not null]
+  current_day "bigint" [not null]
+  mode "text" [not null, default: `'manual'`, note: "CHECK mode IN ('manual', 'auto')"]
+  time_ratio "numeric(10, 3)" [not null, default: `0`, note: "CHECK time_ratio >= 0"]
+  last_auto_tick "timestamptz"
+  updated_by "uuid"
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#game_clock; full functions and dynamic triggers: objects.md"
+}
+
+Table game_clock_history {
+  id "bigint" [pk, not null]
+  from_day "bigint" [not null]
+  to_day "bigint" [not null]
+  reason "text"
+  changed_by "uuid"
+  adventure_id "uuid"
+  expedition_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#game_clock_history; full functions and dynamic triggers: objects.md"
+}
+
+Table wiki_pages {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  type "text" [not null, note: "CHECK type IN ('article', 'npc', 'player', 'settlement', 'region', 'faction', 'organization', 'shop', 'enterprise', 'map', 'timeline', 'adventure', 'folder')"]
+  title "text" [not null]
+  slug "text" [not null, unique]
+  parent_id "uuid"
+  visibility "visibility" [not null, default: `'draft'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  attributes "jsonb" [not null, default: `'{}'`]
+  body_md "text" [not null, default: `''`]
+  gm_notes "text" [not null, default: `''`]
+  current_rev "integer" [not null, default: `1`]
+  archived_at "timestamptz"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#wiki_pages; full functions and dynamic triggers: objects.md"
+}
+
+Table wiki_page_roles {
+  page_id "uuid" [not null]
+  role_id "uuid" [not null]
+  indexes {
+    (page_id, role_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#wiki_page_roles; full functions and dynamic triggers: objects.md"
+}
+
+Table wiki_versions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  page_id "uuid" [not null]
+  rev "integer" [not null]
+  title "text" [not null]
+  body_md "text" [not null]
+  gm_notes "text" [not null, default: `''`]
+  attributes "jsonb" [not null, default: `'{}'`]
+  author_id "uuid"
+  source "text" [not null, note: "CHECK source IN ('web', 'obsidian', 'import', 'system')"]
+  content_hash "text" [not null]
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (page_id, rev) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#wiki_versions; full functions and dynamic triggers: objects.md"
+}
+
+Table wiki_aliases {
+  page_id "uuid" [not null]
+  alias "text" [not null, unique]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#wiki_aliases; full functions and dynamic triggers: objects.md"
+}
+
+Table wiki_relations {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  from_page_id "uuid" [not null]
+  to_page_id "uuid" [not null]
+  kind "text" [not null]
+  attrs "jsonb" [not null, default: `'{}'`]
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (from_page_id, to_page_id, kind) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#wiki_relations; full functions and dynamic triggers: objects.md"
+}
+
+Table wiki_backlinks {
+  from_page_id "uuid" [not null]
+  to_page_id "uuid" [not null]
+  indexes {
+    (from_page_id, to_page_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#wiki_backlinks; full functions and dynamic triggers: objects.md"
+}
+
+Table assets {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  sha256 "text" [not null, unique]
+  mime "text" [not null]
+  path "text" [not null]
+  size_bytes "bigint" [not null]
+  uploaded_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#assets; full functions and dynamic triggers: objects.md"
+}
+
+Table chronicle_entries {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  game_day "bigint" [not null]
+  title "text" [not null]
+  body_md "text" [not null, default: `''`]
+  visibility "visibility" [not null, default: `'draft'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  state "text" [not null, default: `'draft'`, note: "CHECK state IN ('draft', 'published')"]
+  wiki_page_id "uuid"
+  adventure_id "uuid"
+  expedition_id "uuid"
+  author_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#chronicle_entries; full functions and dynamic triggers: objects.md"
+}
+
+Table calendar_events {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  calendar_id "uuid" [not null]
+  title "text" [not null]
+  description "text"
+  kind "text"
+  start_day "bigint" [not null]
+  duration_days "integer" [not null, default: `1`, note: "CHECK duration_days > 0"]
+  recurrence "jsonb"
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  location_wiki_page_id "uuid"
+  adventure_id "uuid"
+  fired_at "timestamptz"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendar_events; full functions and dynamic triggers: objects.md"
+}
+
+Table calendar_event_links {
+  event_id "uuid" [not null]
+  link_type "text" [not null, note: "CHECK link_type IN ('character', 'wiki', 'faction', 'adventure')"]
+  ref_id "uuid" [not null]
+  indexes {
+    (event_id, link_type, ref_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#calendar_event_links; full functions and dynamic triggers: objects.md"
+}
+
+Table maps {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  width "integer" [not null, note: "CHECK width > 0"]
+  height "integer" [not null, note: "CHECK height > 0"]
+  hex_orientation "text" [not null, default: `'pointy'`, note: "CHECK hex_orientation IN ('pointy', 'flat')"]
+  hex_size_miles "numeric(8, 2)" [not null, note: "CHECK hex_size_miles > 0"]
+  background_asset_id "uuid"
+  wiki_page_id "uuid"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#maps; full functions and dynamic triggers: objects.md"
+}
+
+Table terrain_types {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  key "text" [not null, unique]
+  name "text" [not null]
+  color "text" [not null, default: `'#888888'`]
+  icon "text"
+  travel_cost_mult "numeric(4, 2)" [not null, default: `1`, note: "CHECK travel_cost_mult > 0"]
+  passable "boolean" [not null, default: `TRUE`]
+  is_custom "boolean" [not null, default: `FALSE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#terrain_types; full functions and dynamic triggers: objects.md"
+}
+
+Table map_regions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  name "text" [not null]
+  wiki_page_id "uuid"
+  color "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (id, map_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#map_regions; full functions and dynamic triggers: objects.md"
+}
+
+Table hexes {
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  terrain_id "uuid"
+  elevation_ft "integer"
+  region_id "uuid"
+  weather_region_id "uuid"
+  fog_state "text" [not null, default: `'hidden'`, note: "CHECK fog_state IN ('hidden', 'explored', 'gm_only')"]
+  gm_notes "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (map_id, q, r) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#hexes; full functions and dynamic triggers: objects.md"
+}
+
+Table hex_features {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  kind "text" [not null]
+  name "text" [not null]
+  wiki_page_id "uuid"
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  icon "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#hex_features; full functions and dynamic triggers: objects.md"
+}
+
+Table map_linear_features {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  kind "text" [not null, note: "CHECK kind IN ('road', 'river', 'bridge', 'border')"]
+  name "text"
+  path "jsonb" [not null]
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#map_linear_features; full functions and dynamic triggers: objects.md"
+}
+
+Table map_pins {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  label "text" [not null]
+  wiki_page_id "uuid"
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#map_pins; full functions and dynamic triggers: objects.md"
+}
+
+Table routes {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  name "text" [not null]
+  waypoints "jsonb" [not null]
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#routes; full functions and dynamic triggers: objects.md"
+}
+
+Table exploration_history {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  previous_fog "text" [not null]
+  new_fog "text" [not null]
+  revealed_by "uuid"
+  adventure_id "uuid"
+  expedition_id "uuid"
+  game_day "bigint"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#exploration_history; full functions and dynamic triggers: objects.md"
+}
+
+Table climates {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  key "text" [not null, unique]
+  name "text" [not null]
+  params "jsonb" [not null, default: `'{}'`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#climates; full functions and dynamic triggers: objects.md"
+}
+
+Table weather_regions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  name "text" [not null]
+  climate_id "uuid" [not null]
+  map_region_id "uuid"
+  base_elevation_ft "integer"
+  forecast_visible_to_players "boolean" [not null, default: `FALSE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (id, map_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#weather_regions; full functions and dynamic triggers: objects.md"
+}
+
+Table weather_types {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  key "text" [not null, unique]
+  name "text" [not null]
+  severity "smallint" [not null, default: `0`]
+  travel_mult "numeric(4, 2)" [not null, default: `1`, note: "CHECK travel_mult > 0"]
+  visibility_mult "numeric(4, 2)" [not null, default: `1`, note: "CHECK visibility_mult > 0"]
+  icon "text"
+  is_custom "boolean" [not null, default: `FALSE`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#weather_types; full functions and dynamic triggers: objects.md"
+}
+
+Table weather_records {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  weather_region_id "uuid" [not null]
+  game_day "bigint" [not null]
+  weather_type_id "uuid" [not null]
+  temp_c "numeric(5, 1)"
+  cloud_pct "smallint" [note: "CHECK cloud_pct BETWEEN 0 AND 100"]
+  wind_kmh "smallint" [note: "CHECK wind_kmh >= 0"]
+  wind_dir_deg "smallint" [note: "CHECK wind_dir_deg BETWEEN 0 AND 359"]
+  visibility_m "integer"
+  humidity_pct "smallint" [note: "CHECK humidity_pct BETWEEN 0 AND 100"]
+  snow_depth_cm "smallint"
+  special "jsonb" [not null, default: `'{}'`]
+  state "text" [not null, default: `'forecast'`, note: "CHECK state IN ('forecast', 'actual')"]
+  source "text" [not null, note: "CHECK source IN ('generated', 'manual')"]
+  seed "bigint"
+  set_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (weather_region_id, game_day, state) [unique]
+    (id, map_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#weather_records; full functions and dynamic triggers: objects.md"
+}
+
+Table foundry_worlds {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  relay_url "text" [not null]
+  relay_client_id "text" [not null]
+  key_secret_ref "text" [not null]
+  foundry_version "text"
+  pf2e_system_version "text"
+  is_primary "boolean" [not null, default: `FALSE`]
+  status "text" [not null, default: `'unknown'`, note: "CHECK status IN ('unknown', 'online', 'offline')"]
+  last_seen_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#foundry_worlds; full functions and dynamic triggers: objects.md"
+}
+
+Table characters {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  owner_user_id "uuid"
+  former_owner_user_id "uuid"
+  name "text" [not null]
+  portrait_url "text"
+  status "text" [not null, default: `'draft'`, note: "CHECK status IN ('draft', 'pending_approval', 'active', 'unavailable', 'dead', 'retired', 'npc', 'archived')"]
+  ancestry "text"
+  heritage "text"
+  background "text"
+  class "text"
+  level "smallint" [not null, default: `1`, note: "CHECK level BETWEEN 1 AND 30"]
+  xp "integer" [not null, default: `0`, note: "CHECK xp >= 0"]
+  level_up_pending "boolean" [not null, default: `FALSE`]
+  hp_current "integer"
+  hp_max "integer"
+  ac "integer"
+  speed_ft "smallint"
+  size "text"
+  attributes "jsonb" [not null, default: `'{}'`]
+  skills "jsonb" [not null, default: `'{}'`]
+  gm_notes "text"
+  npc_wiki_page_id "uuid"
+  approved_by "uuid"
+  approved_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#characters; full functions and dynamic triggers: objects.md"
+}
+
+Table character_transfers {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  from_user_id "uuid"
+  to_user_id "uuid"
+  transferred_by "uuid"
+  reason "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#character_transfers; full functions and dynamic triggers: objects.md"
+}
+
+Table character_status_history {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  from_status "text"
+  to_status "text" [not null]
+  changed_by "uuid"
+  reason "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#character_status_history; full functions and dynamic triggers: objects.md"
+}
+
+Table character_reviews {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  reviewer_id "uuid" [not null]
+  decision "text" [not null, note: "CHECK decision IN ('approved', 'rejected', 'changes_requested', 'comment')"]
+  comment "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#character_reviews; full functions and dynamic triggers: objects.md"
+}
+
+Table foundry_actors {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  world_id "uuid" [not null]
+  actor_uuid "text" [not null]
+  character_id "uuid" [unique]
+  owner_confirmed_at "timestamptz"
+  linked_at "timestamptz" [not null, default: `now()`]
+  last_synced_at "timestamptz"
+  snapshot "jsonb"
+  snapshot_hash "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (world_id, actor_uuid) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#foundry_actors; full functions and dynamic triggers: objects.md"
+}
+
+Table character_history {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  kind "text" [not null]
+  ref_type "text"
+  ref_id "uuid"
+  payload "jsonb" [not null, default: `'{}'`]
+  author_id "uuid"
+  reason "text"
+  source "text" [not null, default: `'app'`]
+  game_day "bigint"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#character_history; full functions and dynamic triggers: objects.md"
+}
+
+Table factions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  kind "text" [not null, default: `'faction'`, note: "CHECK kind IN ('faction', 'organization', 'government', 'guild', 'cult', 'other')"]
+  wiki_page_id "uuid"
+  parent_faction_id "uuid"
+  summary "text"
+  color "text"
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  power_rating "smallint" [note: "CHECK power_rating BETWEEN 0 AND 100"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#factions; full functions and dynamic triggers: objects.md"
+}
+
+Table faction_reputation_tiers {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  faction_id "uuid"
+  ord "smallint" [not null]
+  name "text" [not null]
+  min_value "integer" [not null]
+  perks "jsonb" [not null, default: `'{}'`]
+  indexes {
+    (faction_id, ord) [unique, note: "SQL UNIQUE NULLS NOT DISTINCT (not represented by DBML semantics)"]
+    (faction_id, min_value) [unique, note: "SQL UNIQUE NULLS NOT DISTINCT (not represented by DBML semantics)"]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#faction_reputation_tiers; full functions and dynamic triggers: objects.md"
+}
+
+Table faction_reputation {
+  character_id "uuid" [not null]
+  faction_id "uuid" [not null]
+  value "integer" [not null, default: `0`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (character_id, faction_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#faction_reputation; full functions and dynamic triggers: objects.md"
+}
+
+Table faction_reputation_log {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  faction_id "uuid" [not null]
+  delta "integer" [not null, note: "CHECK delta <> 0"]
+  reason "text"
+  source_type "text"
+  source_id "uuid"
+  game_day "bigint"
+  author_id "uuid"
+  reversal_of "uuid" [unique]
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#faction_reputation_log; full functions and dynamic triggers: objects.md"
+}
+
+Table faction_relations {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  faction_a "uuid" [not null]
+  faction_b "uuid" [not null]
+  standing "smallint" [not null, default: `0`, note: "CHECK standing BETWEEN -100 AND 100"]
+  kind "text" [not null, default: `'neutral'`, note: "CHECK kind IN ('ally', 'friendly', 'neutral', 'tense', 'rival', 'war', 'vassal')"]
+  senior_faction_id "uuid"
+  since_game_day "bigint"
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  notes_gm "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (faction_a, faction_b) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#faction_relations; full functions and dynamic triggers: objects.md"
+}
+
+Table political_events {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  title "text" [not null]
+  description_md "text" [not null, default: `''`]
+  game_day "bigint" [not null]
+  state "text" [not null, default: `'draft'`, note: "CHECK state IN ('draft', 'applied', 'revoked')"]
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  effects "jsonb" [not null, default: `'[]'`]
+  wiki_page_id "uuid"
+  adventure_id "uuid"
+  expedition_id "uuid"
+  applied_by "uuid"
+  applied_at "timestamptz"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#political_events; full functions and dynamic triggers: objects.md"
+}
+
+Table political_event_effects {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  event_id "uuid" [not null]
+  ord "smallint" [not null]
+  effect "jsonb" [not null]
+  state "text" [not null, default: `'pending'`, note: "CHECK state IN ('pending', 'applied', 'reverted', 'failed')"]
+  apply_key "uuid" [not null, unique, default: `gen_random_uuid()`]
+  applied_at "timestamptz"
+  reverted_at "timestamptz"
+  error "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (event_id, ord) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#political_event_effects; full functions and dynamic triggers: objects.md"
+}
+
+Table faction_relation_history {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  relation_id "uuid" [not null]
+  old_standing "smallint"
+  new_standing "smallint" [not null]
+  old_kind "text"
+  new_kind "text" [not null]
+  game_day "bigint"
+  cause_event_id "uuid"
+  author_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#faction_relation_history; full functions and dynamic triggers: objects.md"
+}
+
+Table territory_control {
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  faction_id "uuid" [not null]
+  control_type "text" [not null, note: "CHECK control_type IN ('controlled', 'contested', 'influence')"]
+  strength "smallint" [not null, default: `50`, note: "CHECK strength BETWEEN 0 AND 100"]
+  since_game_day "bigint"
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (map_id, q, r, faction_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#territory_control; full functions and dynamic triggers: objects.md"
+}
+
+Table territory_history {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  faction_id "uuid" [not null]
+  old_control_type "text"
+  new_control_type "text"
+  old_strength "smallint"
+  new_strength "smallint"
+  game_day "bigint"
+  cause_event_id "uuid"
+  author_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#territory_history; full functions and dynamic triggers: objects.md"
+}
+
+Table currencies {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  key "text" [not null, unique]
+  name "text" [not null]
+  description "text"
+  icon "text"
+  scale "smallint" [not null, default: `0`]
+  transferable "boolean" [not null, default: `FALSE`]
+  player_editable "boolean" [not null, default: `FALSE`]
+  tradeable "boolean" [not null, default: `FALSE`]
+  allow_negative "boolean" [not null, default: `FALSE`]
+  foundry_bound "boolean" [not null, default: `FALSE`]
+  foundry_binding "jsonb"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#currencies; full functions and dynamic triggers: objects.md"
+}
+
+Table level_progression {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  xp_per_level "integer" [not null, default: `1000`, note: "CHECK xp_per_level > 0"]
+  max_level "smallint" [not null, default: `20`]
+  is_default "boolean" [not null, default: `FALSE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#level_progression; full functions and dynamic triggers: objects.md"
+}
+
+Table accounts {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  owner_type "text" [not null, note: "CHECK owner_type IN ('character', 'enterprise', 'shop', 'faction', 'system')"]
+  owner_id "uuid" [not null]
+  currency_id "uuid" [not null]
+  balance "bigint" [not null, default: `0`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (owner_type, owner_id, currency_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#accounts; full functions and dynamic triggers: objects.md"
+}
+
+Table ledger_transactions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  idempotency_key "text" [not null, unique]
+  kind "text" [not null, note: "CHECK kind IN ('reward', 'purchase', 'sale', 'transfer', 'reversal', 'mint', 'burn', 'adjustment', 'external_adjustment', 'enterprise', 'faction')"]
+  state "text" [not null, default: `'pending'`, note: "CHECK state IN ('pending', 'posted', 'void')"]
+  source "text" [not null, note: "CHECK source IN ('app', 'foundry', 'discord', 'system')"]
+  author_id "uuid"
+  reason "text"
+  reversal_of "uuid" [unique]
+  adventure_id "uuid"
+  expedition_id "uuid"
+  game_day "bigint"
+  created_at "timestamptz" [not null, default: `now()`]
+  posted_at "timestamptz"
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#ledger_transactions; full functions and dynamic triggers: objects.md"
+}
+
+Table ledger_entries {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  transaction_id "uuid" [not null]
+  account_id "uuid" [not null]
+  delta "bigint" [not null, note: "CHECK delta <> 0"]
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#ledger_entries; full functions and dynamic triggers: objects.md"
+}
+
+Table integration_jobs {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  target "text" [not null, note: "CHECK target IN ('foundry', 'discord', 'obsidian')"]
+  kind "text" [not null]
+  operation_id "uuid" [not null, unique, default: `gen_random_uuid()`]
+  payload "jsonb" [not null]
+  precondition "jsonb"
+  state "text" [not null, default: `'pending'`, note: "CHECK state IN ('pending', 'in_flight', 'awaiting_sync', 'succeeded', 'failed', 'cancelled')"]
+  attempts "integer" [not null, default: `0`]
+  max_attempts "integer" [not null, default: `8`]
+  next_attempt_at "timestamptz" [not null, default: `now()`]
+  last_error "text"
+  result "jsonb"
+  parent_type "text"
+  parent_id "uuid"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#integration_jobs; full functions and dynamic triggers: objects.md"
+}
+
+Table integration_job_attempts {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  job_id "uuid" [not null]
+  started_at "timestamptz" [not null, default: `now()`]
+  finished_at "timestamptz"
+  http_status "integer"
+  error "text"
+  response "jsonb"
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#integration_job_attempts; full functions and dynamic triggers: objects.md"
+}
+
+Table items_catalog {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  source "text" [not null, note: "CHECK source IN ('pf2e-compendium', 'foundry-world', 'custom')"]
+  foundry_uuid "text" [unique]
+  slug "text"
+  name "text" [not null]
+  item_level "smallint"
+  price_cp "bigint" [note: "CHECK price_cp >= 0"]
+  traits "jsonb" [not null, default: `'[]'`]
+  data "jsonb" [not null, default: `'{}'`]
+  synced_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#items_catalog; full functions and dynamic triggers: objects.md"
+}
+
+Table inventory_items {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  catalog_id "uuid"
+  foundry_item_id "text"
+  name "text" [not null]
+  quantity "integer" [not null, default: `1`, note: "CHECK quantity >= 0"]
+  state "jsonb" [not null, default: `'{}'`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (character_id, foundry_item_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#inventory_items; full functions and dynamic triggers: objects.md"
+}
+
+Table inventory_events {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  character_id "uuid" [not null]
+  catalog_id "uuid"
+  delta_qty "integer" [not null]
+  kind "text" [not null]
+  transaction_id "uuid"
+  operation_id "uuid"
+  author_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#inventory_events; full functions and dynamic triggers: objects.md"
+}
+
+Table treasure_budget_rules {
+  level "smallint" [pk, not null]
+  budget_cp "bigint" [not null]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#treasure_budget_rules; full functions and dynamic triggers: objects.md"
+}
+
+Table shops {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  description "text"
+  owner_wiki_page_id "uuid"
+  location_wiki_page_id "uuid"
+  map_id "uuid"
+  q "integer"
+  r "integer"
+  active "boolean" [not null, default: `TRUE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#shops; full functions and dynamic triggers: objects.md"
+}
+
+Table shop_stock {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  shop_id "uuid" [not null]
+  catalog_id "uuid" [not null]
+  price_amount "bigint" [not null, note: "CHECK price_amount >= 0"]
+  price_currency_id "uuid" [not null]
+  stock_qty "integer" [note: "CHECK stock_qty >= 0"]
+  per_character_limit "integer" [note: "CHECK per_character_limit > 0"]
+  min_character_level "smallint"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (shop_id, catalog_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#shop_stock; full functions and dynamic triggers: objects.md"
+}
+
+Table shop_requirements {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  shop_id "uuid"
+  stock_id "uuid"
+  kind "text" [not null, note: "CHECK kind IN ('faction_reputation', 'faction_tier')"]
+  faction_id "uuid" [not null]
+  min_value "integer"
+  min_tier_ord "smallint"
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#shop_requirements; full functions and dynamic triggers: objects.md"
+}
+
+Table purchases {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  stock_id "uuid" [not null]
+  character_id "uuid" [not null]
+  quantity "integer" [not null, note: "CHECK quantity > 0"]
+  transaction_id "uuid"
+  job_id "uuid"
+  state "text" [not null, default: `'pending'`, note: "CHECK state IN ('pending', 'confirmed', 'failed', 'cancelled')"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#purchases; full functions and dynamic triggers: objects.md"
+}
+
+Table adventures {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  title "text" [not null]
+  description "text" [not null, default: `''`]
+  hook "text"
+  creator_user_id "uuid" [not null]
+  gm_user_id "uuid"
+  status "text" [not null, default: `'draft'`, note: "CHECK status IN ('draft', 'pending_approval', 'approved', 'published', 'registration_open', 'registration_closed', 'running', 'completed', 'cancelled')"]
+  starts_at "timestamptz"
+  duration_min "integer" [note: "CHECK duration_min > 0"]
+  meeting_place "text"
+  region_id "uuid"
+  map_id "uuid"
+  target_q "integer"
+  target_r "integer"
+  target_wiki_page_id "uuid"
+  min_level "smallint" [not null]
+  max_level "smallint" [not null]
+  seats "smallint" [not null, note: "CHECK seats > 0"]
+  kind "text"
+  constraints "jsonb" [not null, default: `'{}'`]
+  foundry_scene_uuid "text"
+  start_game_day "bigint"
+  end_game_day "bigint"
+  cancel_reason "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#adventures; full functions and dynamic triggers: objects.md"
+}
+
+Table adventure_wiki_links {
+  adventure_id "uuid" [not null]
+  wiki_page_id "uuid" [not null]
+  indexes {
+    (adventure_id, wiki_page_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#adventure_wiki_links; full functions and dynamic triggers: objects.md"
+}
+
+Table adventure_signups {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  adventure_id "uuid" [not null]
+  character_id "uuid" [not null]
+  user_id "uuid" [not null]
+  state "text" [not null, default: `'queued'`, note: "CHECK state IN ('pending_confirmation', 'confirmed', 'queued', 'offered', 'declined', 'withdrawn', 'removed', 'expired')"]
+  queued_at "timestamptz" [not null, default: `now()`]
+  manual_order "integer"
+  offered_at "timestamptz"
+  offer_expires_at "timestamptz"
+  decided_by "uuid"
+  decision_reason "text"
+  level_at_signup "smallint" [not null]
+  during "tstzrange"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (adventure_id, character_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#adventure_signups; full functions and dynamic triggers: objects.md"
+}
+
+Table adventure_multi_char_grants {
+  adventure_id "uuid" [not null]
+  user_id "uuid" [not null]
+  max_characters "smallint" [not null, note: "CHECK max_characters >= 2"]
+  granted_by "uuid" [not null]
+  reason "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (adventure_id, user_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#adventure_multi_char_grants; full functions and dynamic triggers: objects.md"
+}
+
+Table signup_events {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  signup_id "uuid" [not null]
+  from_state "text"
+  to_state "text" [not null]
+  actor_user_id "uuid"
+  reason "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#signup_events; full functions and dynamic triggers: objects.md"
+}
+
+Table adventure_participants {
+  adventure_id "uuid" [not null]
+  character_id "uuid" [not null]
+  level_at_start "smallint" [not null]
+  attended "boolean" [not null, default: `TRUE`]
+  indexes {
+    (adventure_id, character_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#adventure_participants; full functions and dynamic triggers: objects.md"
+}
+
+Table discord_channels {
+  kind "text" [pk, not null]
+  guild_id "text" [not null]
+  channel_id "text" [not null]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#discord_channels; full functions and dynamic triggers: objects.md"
+}
+
+Table discord_messages {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  kind "text" [not null]
+  ref_type "text" [not null]
+  ref_id "uuid" [not null]
+  channel_id "text" [not null]
+  message_id "text" [not null]
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (ref_type, ref_id, kind) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#discord_messages; full functions and dynamic triggers: objects.md"
+}
+
+Table rewards {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  adventure_id "uuid"
+  expedition_id "uuid"
+  character_id "uuid" [not null]
+  kind "text" [not null, note: "CHECK kind IN ('xp', 'currency', 'item', 'special')"]
+  currency_id "uuid"
+  amount "bigint"
+  catalog_id "uuid"
+  quantity "integer"
+  comment "text"
+  transaction_id "uuid"
+  job_id "uuid"
+  state "text" [not null, default: `'pending'`, note: "CHECK state IN ('pending', 'awaiting_sync', 'applied', 'failed', 'reversed')"]
+  game_day "bigint"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#rewards; full functions and dynamic triggers: objects.md"
+}
+
+Table adventure_reports {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  adventure_id "uuid" [not null]
+  author_user_id "uuid" [not null]
+  kind "text" [not null, note: "CHECK kind IN ('public', 'personal', 'gm', 'participant')"]
+  body_md "text" [not null]
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#adventure_reports; full functions and dynamic triggers: objects.md"
+}
+
+Table report_links {
+  report_id "uuid" [not null]
+  link_type "text" [not null, note: "CHECK link_type IN ('location', 'npc', 'faction', 'event', 'wiki')"]
+  ref_id "uuid" [not null]
+  indexes {
+    (report_id, link_type, ref_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#report_links; full functions and dynamic triggers: objects.md"
+}
+
+Table expeditions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  map_id "uuid" [not null]
+  adventure_id "uuid"
+  leader_character_id "uuid"
+  status "text" [not null, default: `'planning'`, note: "CHECK status IN ('planning', 'active', 'returned', 'aborted', 'failed')"]
+  origin_q "integer" [not null]
+  origin_r "integer" [not null]
+  current_q "integer" [not null]
+  current_r "integer" [not null]
+  planned_days "integer" [note: "CHECK planned_days > 0"]
+  start_game_day "bigint"
+  end_game_day "bigint"
+  travel_rules "jsonb" [not null, default: `'{}'`]
+  gm_notes "text"
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (id, map_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expeditions; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_members {
+  expedition_id "uuid" [not null]
+  character_id "uuid" [not null]
+  role "text"
+  speed_ft_snapshot "smallint"
+  joined_game_day "bigint"
+  left_game_day "bigint"
+  left_at "timestamptz"
+  indexes {
+    (expedition_id, character_id) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_members; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_routes {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  expedition_id "uuid" [not null]
+  version "integer" [not null]
+  waypoints "jsonb" [not null]
+  planned_hexes "jsonb" [not null, default: `'[]'`]
+  estimated_days "numeric(6, 2)"
+  is_current "boolean" [not null, default: `TRUE`]
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (expedition_id, version) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_routes; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_legs {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  expedition_id "uuid" [not null]
+  day_no "integer" [not null, note: "CHECK day_no > 0"]
+  game_day "bigint"
+  map_id "uuid" [not null]
+  from_q "integer" [not null]
+  from_r "integer" [not null]
+  to_q "integer" [not null]
+  to_r "integer" [not null]
+  path "jsonb" [not null, default: `'[]'`]
+  travel_hours "smallint"
+  movement_budget "numeric(8, 2)"
+  hexes_moved "smallint"
+  weather_record_id "uuid"
+  modifiers "jsonb" [not null, default: `'{}'`]
+  state "text" [not null, default: `'planned'`, note: "CHECK state IN ('planned', 'completed', 'skipped')"]
+  outcome "text"
+  gm_notes "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (expedition_id, day_no) [unique]
+    (id, expedition_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_legs; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_supply_items {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  expedition_id "uuid" [not null]
+  kind "text" [not null]
+  name "text" [not null]
+  unit "text" [not null, default: `'pcs'`]
+  owner_character_id "uuid"
+  catalog_id "uuid"
+  per_member_per_day "numeric(8, 3)" [not null, default: `0`, note: "CHECK per_member_per_day >= 0"]
+  quantity "numeric(12, 3)" [not null, default: `0`, note: "CHECK quantity >= 0"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (id, expedition_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_supply_items; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_supply_ledger {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  expedition_id "uuid" [not null]
+  supply_item_id "uuid" [not null]
+  leg_id "uuid"
+  delta "numeric(12, 3)" [not null, note: "CHECK delta <> 0"]
+  reason "text" [not null, note: "CHECK reason IN ('loaded', 'consumed', 'found', 'lost', 'spent', 'manual')"]
+  game_day "bigint"
+  author_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_supply_ledger; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_events {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  expedition_id "uuid" [not null]
+  leg_id "uuid"
+  kind "text" [not null]
+  title "text" [not null]
+  description "text"
+  gm_notes "text"
+  visibility "visibility" [not null, default: `'gm_only'`, note: "PostgreSQL domain visibility: draft, gm_only, roles, public; see SQL"]
+  resolved "boolean" [not null, default: `FALSE`]
+  game_day "bigint"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_events; full functions and dynamic triggers: objects.md"
+}
+
+Table expedition_visited_hexes {
+  expedition_id "uuid" [not null]
+  map_id "uuid" [not null]
+  q "integer" [not null]
+  r "integer" [not null]
+  first_leg_id "uuid"
+  first_game_day "bigint"
+  times_visited "integer" [not null, default: `1`, note: "CHECK times_visited > 0"]
+  revealed "boolean" [not null, default: `FALSE`]
+  indexes {
+    (expedition_id, q, r) [pk]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#expedition_visited_hexes; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprises {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  name "text" [not null]
+  kind "text"
+  owner_character_id "uuid"
+  owner_user_id "uuid"
+  wiki_page_id "uuid"
+  map_id "uuid"
+  q "integer"
+  r "integer"
+  level "smallint" [not null, default: `1`]
+  reputation "integer" [not null, default: `0`]
+  description "text"
+  status "text" [not null, default: `'active'`, note: "CHECK status IN ('active', 'suspended', 'closed')"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprises; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_stock {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid" [not null]
+  catalog_id "uuid"
+  name "text" [not null]
+  unit "text" [not null, default: `'pcs'`]
+  quantity "numeric(12, 3)" [not null, default: `0`, note: "CHECK quantity >= 0"]
+  unit_value_cp "bigint"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_stock; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_staff {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid" [not null]
+  name "text" [not null]
+  role "text"
+  npc_wiki_page_id "uuid"
+  wage_cp "bigint"
+  hired_game_day "bigint"
+  left_game_day "bigint"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_staff; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_suppliers {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid" [not null]
+  name "text" [not null]
+  reliability "smallint" [note: "CHECK reliability BETWEEN 0 AND 100"]
+  wiki_page_id "uuid"
+  notes "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_suppliers; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_upgrades {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid" [not null]
+  name "text" [not null]
+  description "text"
+  cost_amount "bigint"
+  cost_currency_id "uuid"
+  state "text" [not null, default: `'available'`, note: "CHECK state IN ('available', 'in_progress', 'done')"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_upgrades; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_event_rules {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid"
+  name "text" [not null]
+  trigger_kind "text" [not null, note: "CHECK trigger_kind IN ('schedule', 'calendar', 'reputation_threshold', 'low_stock', 'order_completed')"]
+  config "jsonb" [not null, default: `'{}'`]
+  template "jsonb" [not null, default: `'{}'`]
+  requires_gm_approval "boolean" [not null, default: `TRUE`, note: "CHECK requires_gm_approval"]
+  active "boolean" [not null, default: `TRUE`]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_event_rules; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_events {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid" [not null]
+  rule_id "uuid"
+  title "text" [not null]
+  description "text"
+  occurred_game_day "bigint"
+  expires_game_day "bigint"
+  conditions "jsonb" [not null, default: `'{}'`]
+  available_actions "jsonb" [not null, default: `'[]'`]
+  consequences "jsonb" [not null, default: `'{}'`]
+  cost "jsonb"
+  reward "jsonb"
+  state "text" [not null, default: `'draft'`, note: "CHECK state IN ('draft', 'open', 'resolved', 'expired', 'cancelled')"]
+  created_by "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_events; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_actions {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  event_id "uuid" [not null]
+  character_id "uuid" [not null]
+  action_kind "text" [not null, note: "CHECK action_kind IN ('fulfill_order', 'find_supplier', 'negotiate', 'organize_delivery', 'advertise', 'hire', 'upgrade', 'change_assortment', 'solve_problem')"]
+  chosen_at "timestamptz" [not null, default: `now()`]
+  gm_outcome "text"
+  resolved_by "uuid"
+  resolved_at "timestamptz"
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_actions; full functions and dynamic triggers: objects.md"
+}
+
+Table enterprise_log {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  enterprise_id "uuid" [not null]
+  event_id "uuid"
+  kind "text" [not null]
+  delta "jsonb" [not null, default: `'{}'`]
+  game_day "bigint"
+  author_id "uuid"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#enterprise_log; full functions and dynamic triggers: objects.md"
+}
+
+Table vaults {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  kind "text" [not null, note: "CHECK kind IN ('gm', 'player')"]
+  name "text" [not null, unique]
+  webdav_url "text" [not null]
+  remote_root "text" [not null, default: `'/'`]
+  username "text" [not null]
+  password_enc "bytea" [not null]
+  categories "text[]" [not null, default: `'{}'`]
+  sync_interval_sec "integer" [not null, default: `300`, note: "CHECK sync_interval_sec >= 30"]
+  last_scan_at "timestamptz"
+  last_ok_at "timestamptz"
+  last_error "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#vaults; full functions and dynamic triggers: objects.md"
+}
+
+Table vault_files {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  vault_id "uuid" [not null]
+  entity_type "text" [not null]
+  entity_id "uuid" [not null]
+  rel_path "text" [not null]
+  exported_rev "integer"
+  exported_hash "text"
+  remote_etag "text"
+  remote_mtime "timestamptz"
+  last_seen_hash "text"
+  last_seen_at "timestamptz"
+  state "text" [not null, default: `'synced'`, note: "CHECK state IN ('synced', 'pending_import', 'conflict', 'pending_delete', 'orphan')"]
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (vault_id, rel_path) [unique]
+    (vault_id, entity_type, entity_id) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#vault_files; full functions and dynamic triggers: objects.md"
+}
+
+Table vault_conflicts {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  vault_file_id "uuid" [not null]
+  base_rev "integer"
+  db_rev "integer"
+  file_hash "text" [not null]
+  conflict_path "text" [not null]
+  state "text" [not null, default: `'open'`, note: "CHECK state IN ('open', 'resolved')"]
+  resolution "text" [note: "CHECK resolution IN ('keep_app', 'keep_file', 'merged')"]
+  resolved_by "uuid"
+  resolved_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#vault_conflicts; full functions and dynamic triggers: objects.md"
+}
+
+Table foundry_journals {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  world_id "uuid" [not null]
+  journal_uuid "text" [not null]
+  sheet_type "text"
+  wiki_page_id "uuid" [unique]
+  folder_path "text"
+  snapshot "jsonb"
+  snapshot_hash "text"
+  exported_rev "integer"
+  last_seen_hash "text"
+  state "text" [not null, default: `'synced'`, note: "CHECK state IN ('synced', 'pending_import', 'conflict', 'orphan')"]
+  last_synced_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  updated_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (world_id, journal_uuid) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#foundry_journals; full functions and dynamic triggers: objects.md"
+}
+
+Table vault_sync_log {
+  id "bigint" [pk, not null]
+  vault_id "uuid" [not null]
+  direction "text" [not null, note: "CHECK direction IN ('export', 'import')"]
+  entity_id "uuid"
+  action "text" [not null]
+  result "text" [not null]
+  detail "text"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#vault_sync_log; full functions and dynamic triggers: objects.md"
+}
+
+Table notifications {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  user_id "uuid" [not null]
+  kind "text" [not null]
+  payload "jsonb" [not null, default: `'{}'`]
+  dedupe_key "text"
+  read_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#notifications; full functions and dynamic triggers: objects.md"
+}
+
+Table notification_deliveries {
+  id "uuid" [pk, not null, default: `gen_random_uuid()`]
+  notification_id "uuid" [not null]
+  channel "text" [not null, note: "CHECK channel IN ('discord_dm', 'discord_channel', 'web')"]
+  state "text" [not null, default: `'pending'`, note: "CHECK state IN ('pending', 'sent', 'failed')"]
+  attempts "integer" [not null, default: `0`]
+  last_error "text"
+  delivered_at "timestamptz"
+  created_at "timestamptz" [not null, default: `now()`]
+  indexes {
+    (notification_id, channel) [unique]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#notification_deliveries; full functions and dynamic triggers: objects.md"
+}
+
+Table event_outbox {
+  id "bigint" [pk, not null]
+  kind "text" [not null]
+  entity_type "text"
+  entity_id "uuid"
+  payload "jsonb" [not null, default: `'{}'`]
+  created_at "timestamptz" [not null, default: `now()`]
+  published_at "timestamptz"
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#event_outbox; full functions and dynamic triggers: objects.md"
+}
+
+Table state_transitions {
+  entity "text" [not null]
+  from_state "text"
+  to_state "text" [not null]
+  indexes {
+    (entity, from_state, to_state) [unique, note: "SQL UNIQUE NULLS NOT DISTINCT (not represented by DBML semantics)"]
+  }
+  Note: "Canonical definition and PostgreSQL-specific indexes/constraints/triggers: tables.md#state_transitions; full functions and dynamic triggers: objects.md"
+}
+
+Ref fk_1: discord_accounts.user_id > users.id [delete: no action, update: no action]
+Ref fk_2: role_permissions.role_id > roles.id [delete: cascade, update: no action]
+Ref fk_3: role_permissions.permission_key > permissions.key [delete: cascade, update: no action]
+Ref fk_4: user_roles.user_id > users.id [delete: cascade, update: no action]
+Ref fk_5: user_roles.role_id > roles.id [delete: cascade, update: no action]
+Ref fk_6: user_roles.granted_by > users.id [delete: no action, update: no action]
+Ref fk_7: discord_role_map.role_id > roles.id [delete: cascade, update: no action]
+Ref fk_8: sessions.user_id > users.id [delete: cascade, update: no action]
+Ref fk_9: player_gm_notes.user_id > users.id [delete: cascade, update: no action]
+Ref fk_10: player_gm_notes.author_id > users.id [delete: no action, update: no action]
+Ref fk_11: notification_prefs.user_id > users.id [delete: cascade, update: no action]
+Ref fk_12: login_log.user_id > users.id [delete: no action, update: no action]
+Ref fk_13: campaign_settings.updated_by > users.id [delete: no action, update: no action]
+Ref fk_14: campaign_settings_history.changed_by > users.id [delete: no action, update: no action]
+Ref fk_15: audit_log.actor_user_id > users.id [delete: no action, update: no action]
+Ref fk_16: calendar_versions.calendar_id > calendars.id [delete: cascade, update: no action]
+Ref fk_17: calendar_versions.created_by > users.id [delete: no action, update: no action]
+Ref fk_18: calendar_months.version_id > calendar_versions.id [delete: cascade, update: no action]
+Ref fk_19: calendar_weekdays.version_id > calendar_versions.id [delete: cascade, update: no action]
+Ref fk_20: calendar_leap_rules.version_id > calendar_versions.id [delete: cascade, update: no action]
+Ref fk_21: game_clock.calendar_id > calendars.id [delete: no action, update: no action]
+Ref fk_22: game_clock.updated_by > users.id [delete: no action, update: no action]
+Ref fk_23: game_clock_history.changed_by > users.id [delete: no action, update: no action]
+Ref fk_24: wiki_pages.parent_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_25: wiki_pages.created_by > users.id [delete: no action, update: no action]
+Ref fk_26: wiki_page_roles.page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_27: wiki_page_roles.role_id > roles.id [delete: cascade, update: no action]
+Ref fk_28: wiki_versions.page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_29: wiki_versions.author_id > users.id [delete: no action, update: no action]
+Ref fk_30: wiki_aliases.page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_31: wiki_relations.from_page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_32: wiki_relations.to_page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_33: wiki_backlinks.from_page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_34: wiki_backlinks.to_page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_35: assets.uploaded_by > users.id [delete: no action, update: no action]
+Ref fk_36: chronicle_entries.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_37: chronicle_entries.author_id > users.id [delete: no action, update: no action]
+Ref fk_38: calendar_events.calendar_id > calendars.id [delete: no action, update: no action]
+Ref fk_39: calendar_events.location_wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_40: calendar_events.created_by > users.id [delete: no action, update: no action]
+Ref fk_41: calendar_event_links.event_id > calendar_events.id [delete: cascade, update: no action]
+Ref fk_42: maps.background_asset_id > assets.id [delete: no action, update: no action]
+Ref fk_43: maps.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_44: maps.created_by > users.id [delete: no action, update: no action]
+Ref fk_45: map_regions.map_id > maps.id [delete: cascade, update: no action]
+Ref fk_46: map_regions.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_47: hexes.map_id > maps.id [delete: cascade, update: no action]
+Ref fk_48: hexes.terrain_id > terrain_types.id [delete: no action, update: no action]
+Ref fk_49: hex_features.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_50: map_linear_features.map_id > maps.id [delete: cascade, update: no action]
+Ref fk_51: map_pins.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_52: map_pins.created_by > users.id [delete: no action, update: no action]
+Ref fk_53: routes.map_id > maps.id [delete: cascade, update: no action]
+Ref fk_54: routes.created_by > users.id [delete: no action, update: no action]
+Ref fk_55: exploration_history.revealed_by > users.id [delete: no action, update: no action]
+Ref fk_56: weather_regions.map_id > maps.id [delete: cascade, update: no action]
+Ref fk_57: weather_regions.climate_id > climates.id [delete: no action, update: no action]
+Ref fk_58: weather_records.weather_type_id > weather_types.id [delete: no action, update: no action]
+Ref fk_59: weather_records.set_by > users.id [delete: no action, update: no action]
+Ref fk_60: characters.owner_user_id > users.id [delete: no action, update: no action]
+Ref fk_61: characters.former_owner_user_id > users.id [delete: no action, update: no action]
+Ref fk_62: characters.npc_wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_63: characters.approved_by > users.id [delete: no action, update: no action]
+Ref fk_64: character_transfers.character_id > characters.id [delete: no action, update: no action]
+Ref fk_65: character_transfers.from_user_id > users.id [delete: no action, update: no action]
+Ref fk_66: character_transfers.to_user_id > users.id [delete: no action, update: no action]
+Ref fk_67: character_transfers.transferred_by > users.id [delete: no action, update: no action]
+Ref fk_68: character_status_history.character_id > characters.id [delete: no action, update: no action]
+Ref fk_69: character_status_history.changed_by > users.id [delete: no action, update: no action]
+Ref fk_70: character_reviews.character_id > characters.id [delete: cascade, update: no action]
+Ref fk_71: character_reviews.reviewer_id > users.id [delete: no action, update: no action]
+Ref fk_72: foundry_actors.world_id > foundry_worlds.id [delete: no action, update: no action]
+Ref fk_73: foundry_actors.character_id > characters.id [delete: no action, update: no action]
+Ref fk_74: character_history.character_id > characters.id [delete: no action, update: no action]
+Ref fk_75: character_history.author_id > users.id [delete: no action, update: no action]
+Ref fk_76: factions.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_77: factions.parent_faction_id > factions.id [delete: no action, update: no action]
+Ref fk_78: faction_reputation_tiers.faction_id > factions.id [delete: cascade, update: no action]
+Ref fk_79: faction_reputation.character_id > characters.id [delete: cascade, update: no action]
+Ref fk_80: faction_reputation.faction_id > factions.id [delete: cascade, update: no action]
+Ref fk_81: faction_reputation_log.character_id > characters.id [delete: no action, update: no action]
+Ref fk_82: faction_reputation_log.faction_id > factions.id [delete: no action, update: no action]
+Ref fk_83: faction_reputation_log.author_id > users.id [delete: no action, update: no action]
+Ref fk_84: faction_reputation_log.reversal_of > faction_reputation_log.id [delete: no action, update: no action]
+Ref fk_85: faction_relations.faction_a > factions.id [delete: cascade, update: no action]
+Ref fk_86: faction_relations.faction_b > factions.id [delete: cascade, update: no action]
+Ref fk_87: faction_relations.senior_faction_id > factions.id [delete: no action, update: no action]
+Ref fk_88: political_events.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_89: political_events.applied_by > users.id [delete: no action, update: no action]
+Ref fk_90: political_events.created_by > users.id [delete: no action, update: no action]
+Ref fk_91: political_event_effects.event_id > political_events.id [delete: no action, update: no action]
+Ref fk_92: faction_relation_history.relation_id > faction_relations.id [delete: no action, update: no action]
+Ref fk_93: faction_relation_history.cause_event_id > political_events.id [delete: no action, update: no action]
+Ref fk_94: faction_relation_history.author_id > users.id [delete: no action, update: no action]
+Ref fk_95: territory_control.faction_id > factions.id [delete: cascade, update: no action]
+Ref fk_96: territory_history.faction_id > factions.id [delete: no action, update: no action]
+Ref fk_97: territory_history.cause_event_id > political_events.id [delete: no action, update: no action]
+Ref fk_98: territory_history.author_id > users.id [delete: no action, update: no action]
+Ref fk_99: accounts.currency_id > currencies.id [delete: no action, update: no action]
+Ref fk_100: ledger_transactions.author_id > users.id [delete: no action, update: no action]
+Ref fk_101: ledger_transactions.reversal_of > ledger_transactions.id [delete: no action, update: no action]
+Ref fk_102: ledger_entries.transaction_id > ledger_transactions.id [delete: no action, update: no action]
+Ref fk_103: ledger_entries.account_id > accounts.id [delete: no action, update: no action]
+Ref fk_104: integration_jobs.created_by > users.id [delete: no action, update: no action]
+Ref fk_105: integration_job_attempts.job_id > integration_jobs.id [delete: no action, update: no action]
+Ref fk_106: inventory_items.character_id > characters.id [delete: cascade, update: no action]
+Ref fk_107: inventory_items.catalog_id > items_catalog.id [delete: no action, update: no action]
+Ref fk_108: inventory_events.character_id > characters.id [delete: no action, update: no action]
+Ref fk_109: inventory_events.catalog_id > items_catalog.id [delete: no action, update: no action]
+Ref fk_110: inventory_events.transaction_id > ledger_transactions.id [delete: no action, update: no action]
+Ref fk_111: inventory_events.author_id > users.id [delete: no action, update: no action]
+Ref fk_112: shops.owner_wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_113: shops.location_wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_114: shop_stock.shop_id > shops.id [delete: cascade, update: no action]
+Ref fk_115: shop_stock.catalog_id > items_catalog.id [delete: no action, update: no action]
+Ref fk_116: shop_stock.price_currency_id > currencies.id [delete: no action, update: no action]
+Ref fk_117: shop_requirements.shop_id > shops.id [delete: cascade, update: no action]
+Ref fk_118: shop_requirements.stock_id > shop_stock.id [delete: cascade, update: no action]
+Ref fk_119: shop_requirements.faction_id > factions.id [delete: no action, update: no action]
+Ref fk_120: purchases.stock_id > shop_stock.id [delete: no action, update: no action]
+Ref fk_121: purchases.character_id > characters.id [delete: no action, update: no action]
+Ref fk_122: purchases.transaction_id > ledger_transactions.id [delete: no action, update: no action]
+Ref fk_123: purchases.job_id > integration_jobs.id [delete: no action, update: no action]
+Ref fk_124: adventures.creator_user_id > users.id [delete: no action, update: no action]
+Ref fk_125: adventures.gm_user_id > users.id [delete: no action, update: no action]
+Ref fk_126: adventures.target_wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_127: adventure_wiki_links.adventure_id > adventures.id [delete: cascade, update: no action]
+Ref fk_128: adventure_wiki_links.wiki_page_id > wiki_pages.id [delete: cascade, update: no action]
+Ref fk_129: adventure_signups.adventure_id > adventures.id [delete: cascade, update: no action]
+Ref fk_130: adventure_signups.character_id > characters.id [delete: no action, update: no action]
+Ref fk_131: adventure_signups.user_id > users.id [delete: no action, update: no action]
+Ref fk_132: adventure_signups.decided_by > users.id [delete: no action, update: no action]
+Ref fk_133: adventure_multi_char_grants.adventure_id > adventures.id [delete: cascade, update: no action]
+Ref fk_134: adventure_multi_char_grants.user_id > users.id [delete: no action, update: no action]
+Ref fk_135: adventure_multi_char_grants.granted_by > users.id [delete: no action, update: no action]
+Ref fk_136: signup_events.signup_id > adventure_signups.id [delete: no action, update: no action]
+Ref fk_137: signup_events.actor_user_id > users.id [delete: no action, update: no action]
+Ref fk_138: adventure_participants.adventure_id > adventures.id [delete: cascade, update: no action]
+Ref fk_139: adventure_participants.character_id > characters.id [delete: no action, update: no action]
+Ref fk_140: rewards.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_141: rewards.character_id > characters.id [delete: no action, update: no action]
+Ref fk_142: rewards.currency_id > currencies.id [delete: no action, update: no action]
+Ref fk_143: rewards.catalog_id > items_catalog.id [delete: no action, update: no action]
+Ref fk_144: rewards.transaction_id > ledger_transactions.id [delete: no action, update: no action]
+Ref fk_145: rewards.job_id > integration_jobs.id [delete: no action, update: no action]
+Ref fk_146: rewards.created_by > users.id [delete: no action, update: no action]
+Ref fk_147: adventure_reports.adventure_id > adventures.id [delete: cascade, update: no action]
+Ref fk_148: adventure_reports.author_user_id > users.id [delete: no action, update: no action]
+Ref fk_149: report_links.report_id > adventure_reports.id [delete: cascade, update: no action]
+Ref fk_150: expeditions.map_id > maps.id [delete: no action, update: no action]
+Ref fk_151: expeditions.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_152: expeditions.leader_character_id > characters.id [delete: no action, update: no action]
+Ref fk_153: expeditions.created_by > users.id [delete: no action, update: no action]
+Ref fk_154: expedition_members.expedition_id > expeditions.id [delete: cascade, update: no action]
+Ref fk_155: expedition_members.character_id > characters.id [delete: no action, update: no action]
+Ref fk_156: expedition_routes.expedition_id > expeditions.id [delete: cascade, update: no action]
+Ref fk_157: expedition_routes.created_by > users.id [delete: no action, update: no action]
+Ref fk_158: expedition_legs.expedition_id > expeditions.id [delete: cascade, update: no action]
+Ref fk_159: expedition_supply_items.expedition_id > expeditions.id [delete: cascade, update: no action]
+Ref fk_160: expedition_supply_items.owner_character_id > characters.id [delete: no action, update: no action]
+Ref fk_161: expedition_supply_items.catalog_id > items_catalog.id [delete: no action, update: no action]
+Ref fk_162: expedition_supply_ledger.author_id > users.id [delete: no action, update: no action]
+Ref fk_163: expedition_events.expedition_id > expeditions.id [delete: cascade, update: no action]
+Ref fk_164: expedition_visited_hexes.expedition_id > expeditions.id [delete: cascade, update: no action]
+Ref fk_165: enterprises.owner_character_id > characters.id [delete: no action, update: no action]
+Ref fk_166: enterprises.owner_user_id > users.id [delete: no action, update: no action]
+Ref fk_167: enterprises.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_168: enterprise_stock.enterprise_id > enterprises.id [delete: cascade, update: no action]
+Ref fk_169: enterprise_stock.catalog_id > items_catalog.id [delete: no action, update: no action]
+Ref fk_170: enterprise_staff.enterprise_id > enterprises.id [delete: cascade, update: no action]
+Ref fk_171: enterprise_staff.npc_wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_172: enterprise_suppliers.enterprise_id > enterprises.id [delete: cascade, update: no action]
+Ref fk_173: enterprise_suppliers.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_174: enterprise_upgrades.enterprise_id > enterprises.id [delete: cascade, update: no action]
+Ref fk_175: enterprise_upgrades.cost_currency_id > currencies.id [delete: no action, update: no action]
+Ref fk_176: enterprise_event_rules.enterprise_id > enterprises.id [delete: cascade, update: no action]
+Ref fk_177: enterprise_events.enterprise_id > enterprises.id [delete: cascade, update: no action]
+Ref fk_178: enterprise_events.rule_id > enterprise_event_rules.id [delete: no action, update: no action]
+Ref fk_179: enterprise_events.created_by > users.id [delete: no action, update: no action]
+Ref fk_180: enterprise_actions.event_id > enterprise_events.id [delete: cascade, update: no action]
+Ref fk_181: enterprise_actions.character_id > characters.id [delete: no action, update: no action]
+Ref fk_182: enterprise_actions.resolved_by > users.id [delete: no action, update: no action]
+Ref fk_183: enterprise_log.enterprise_id > enterprises.id [delete: no action, update: no action]
+Ref fk_184: enterprise_log.event_id > enterprise_events.id [delete: no action, update: no action]
+Ref fk_185: enterprise_log.author_id > users.id [delete: no action, update: no action]
+Ref fk_186: vault_files.vault_id > vaults.id [delete: cascade, update: no action]
+Ref fk_187: vault_conflicts.vault_file_id > vault_files.id [delete: cascade, update: no action]
+Ref fk_188: vault_conflicts.resolved_by > users.id [delete: no action, update: no action]
+Ref fk_189: foundry_journals.world_id > foundry_worlds.id [delete: no action, update: no action]
+Ref fk_190: foundry_journals.wiki_page_id > wiki_pages.id [delete: no action, update: no action]
+Ref fk_191: vault_sync_log.vault_id > vaults.id [delete: no action, update: no action]
+Ref fk_192: notifications.user_id > users.id [delete: cascade, update: no action]
+Ref fk_193: notification_deliveries.notification_id > notifications.id [delete: cascade, update: no action]
+Ref fk_194: calendar_leap_rules.(version_id, month_ord) > calendar_months.(version_id, ord) [delete: no action, update: no action]
+Ref fk_195: game_clock_history.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_196: game_clock_history.expedition_id > expeditions.id [delete: no action, update: no action]
+Ref fk_197: chronicle_entries.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_198: chronicle_entries.expedition_id > expeditions.id [delete: no action, update: no action]
+Ref fk_199: calendar_events.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_200: hexes.(region_id, map_id) > map_regions.(id, map_id) [delete: set null, update: no action]
+Ref fk_201: hexes.(weather_region_id, map_id) > weather_regions.(id, map_id) [delete: set null, update: no action]
+Ref fk_202: hex_features.(map_id, q, r) > hexes.(map_id, q, r) [delete: cascade, update: no action]
+Ref fk_203: map_pins.(map_id, q, r) > hexes.(map_id, q, r) [delete: cascade, update: no action]
+Ref fk_204: exploration_history.(map_id, q, r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_205: exploration_history.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_206: exploration_history.(expedition_id, map_id) > expeditions.(id, map_id) [delete: no action, update: no action]
+Ref fk_207: weather_regions.(map_region_id, map_id) > map_regions.(id, map_id) [delete: set null, update: no action]
+Ref fk_208: weather_records.(weather_region_id, map_id) > weather_regions.(id, map_id) [delete: cascade, update: no action]
+Ref fk_209: political_events.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_210: political_events.expedition_id > expeditions.id [delete: no action, update: no action]
+Ref fk_211: territory_control.(map_id, q, r) > hexes.(map_id, q, r) [delete: cascade, update: no action]
+Ref fk_212: territory_history.(map_id, q, r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_213: ledger_transactions.adventure_id > adventures.id [delete: no action, update: no action]
+Ref fk_214: ledger_transactions.expedition_id > expeditions.id [delete: no action, update: no action]
+Ref fk_215: shops.(map_id, q, r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_216: adventures.(map_id, target_q, target_r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_217: adventures.(region_id, map_id) > map_regions.(id, map_id) [delete: no action, update: no action]
+Ref fk_218: rewards.expedition_id > expeditions.id [delete: no action, update: no action]
+Ref fk_219: expeditions.(map_id, origin_q, origin_r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_220: expeditions.(map_id, current_q, current_r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_221: expedition_legs.(map_id, from_q, from_r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_222: expedition_legs.(map_id, to_q, to_r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_223: expedition_legs.(expedition_id, map_id) > expeditions.(id, map_id) [delete: no action, update: no action]
+Ref fk_224: expedition_legs.(weather_record_id, map_id) > weather_records.(id, map_id) [delete: no action, update: no action]
+Ref fk_225: expedition_supply_ledger.(supply_item_id, expedition_id) > expedition_supply_items.(id, expedition_id) [delete: no action, update: no action]
+Ref fk_226: expedition_supply_ledger.(leg_id, expedition_id) > expedition_legs.(id, expedition_id) [delete: no action, update: no action]
+Ref fk_227: expedition_events.(leg_id, expedition_id) > expedition_legs.(id, expedition_id) [delete: no action, update: no action]
+Ref fk_228: expedition_visited_hexes.(map_id, q, r) > hexes.(map_id, q, r) [delete: no action, update: no action]
+Ref fk_229: expedition_visited_hexes.(expedition_id, map_id) > expeditions.(id, map_id) [delete: no action, update: no action]
+Ref fk_230: expedition_visited_hexes.(first_leg_id, expedition_id) > expedition_legs.(id, expedition_id) [delete: no action, update: no action]
+Ref fk_231: enterprises.(map_id, q, r) > hexes.(map_id, q, r) [delete: no action, update: no action]

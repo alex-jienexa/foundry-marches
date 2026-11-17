@@ -1,0 +1,824 @@
+%% GENERATED from schema.sql. All physical tables/FKs; key columns only.
+%% Conservative many-to-one; UNIQUE can further narrow cardinality.
+erDiagram
+  users {
+    uuid id PK
+  }
+  discord_accounts {
+    uuid id PK
+    uuid user_id FK
+  }
+  roles {
+    uuid id PK
+  }
+  permissions {
+    text key PK
+  }
+  role_permissions {
+    uuid role_id PK,FK
+    text permission_key PK,FK
+  }
+  user_roles {
+    uuid user_id PK,FK
+    uuid role_id PK,FK
+    uuid granted_by FK
+  }
+  discord_role_map {
+    text guild_id PK
+    text discord_role_id PK
+    uuid role_id FK
+  }
+  sessions {
+    uuid id PK
+    uuid user_id FK
+  }
+  service_tokens {
+    uuid id PK
+  }
+  player_gm_notes {
+    uuid id PK
+    uuid user_id FK
+    uuid author_id FK
+  }
+  notification_prefs {
+    uuid user_id PK,FK
+    text kind PK
+  }
+  login_log {
+    uuid id PK
+    uuid user_id FK
+  }
+  campaign_settings {
+    text key PK
+    uuid updated_by FK
+  }
+  campaign_settings_history {
+    bigint id PK
+    uuid changed_by FK
+  }
+  audit_log {
+    bigint id PK
+    uuid actor_user_id FK
+  }
+  backups {
+    uuid id PK
+  }
+  calendars {
+    uuid id PK
+  }
+  calendar_versions {
+    uuid id PK
+    uuid calendar_id FK
+    uuid created_by FK
+  }
+  calendar_months {
+    uuid version_id PK,FK
+    smallint ord PK
+  }
+  calendar_weekdays {
+    uuid version_id PK,FK
+    smallint ord PK
+  }
+  calendar_leap_rules {
+    uuid id PK
+    uuid version_id FK
+    smallint month_ord FK
+  }
+  game_clock {
+    smallint id PK
+    uuid calendar_id FK
+    uuid updated_by FK
+  }
+  game_clock_history {
+    bigint id PK
+    uuid changed_by FK
+    uuid adventure_id FK
+    uuid expedition_id FK
+  }
+  wiki_pages {
+    uuid id PK
+    uuid parent_id FK
+    uuid created_by FK
+  }
+  wiki_page_roles {
+    uuid page_id PK,FK
+    uuid role_id PK,FK
+  }
+  wiki_versions {
+    uuid id PK
+    uuid page_id FK
+    uuid author_id FK
+  }
+  wiki_aliases {
+    uuid page_id FK
+  }
+  wiki_relations {
+    uuid id PK
+    uuid from_page_id FK
+    uuid to_page_id FK
+  }
+  wiki_backlinks {
+    uuid from_page_id PK,FK
+    uuid to_page_id PK,FK
+  }
+  assets {
+    uuid id PK
+    uuid uploaded_by FK
+  }
+  chronicle_entries {
+    uuid id PK
+    uuid wiki_page_id FK
+    uuid adventure_id FK
+    uuid expedition_id FK
+    uuid author_id FK
+  }
+  calendar_events {
+    uuid id PK
+    uuid calendar_id FK
+    uuid location_wiki_page_id FK
+    uuid adventure_id FK
+    uuid created_by FK
+  }
+  calendar_event_links {
+    uuid event_id PK,FK
+    text link_type PK
+    uuid ref_id PK
+  }
+  maps {
+    uuid id PK
+    uuid background_asset_id FK
+    uuid wiki_page_id FK
+    uuid created_by FK
+  }
+  terrain_types {
+    uuid id PK
+  }
+  map_regions {
+    uuid id PK
+    uuid map_id FK
+    uuid wiki_page_id FK
+  }
+  hexes {
+    uuid map_id PK,FK
+    integer q PK
+    integer r PK
+    uuid terrain_id FK
+    uuid region_id FK
+    uuid weather_region_id FK
+  }
+  hex_features {
+    uuid id PK
+    uuid map_id FK
+    integer q FK
+    integer r FK
+    uuid wiki_page_id FK
+  }
+  map_linear_features {
+    uuid id PK
+    uuid map_id FK
+  }
+  map_pins {
+    uuid id PK
+    uuid map_id FK
+    integer q FK
+    integer r FK
+    uuid wiki_page_id FK
+    uuid created_by FK
+  }
+  routes {
+    uuid id PK
+    uuid map_id FK
+    uuid created_by FK
+  }
+  exploration_history {
+    uuid id PK
+    uuid map_id FK
+    integer q FK
+    integer r FK
+    uuid revealed_by FK
+    uuid adventure_id FK
+    uuid expedition_id FK
+  }
+  climates {
+    uuid id PK
+  }
+  weather_regions {
+    uuid id PK
+    uuid map_id FK
+    uuid climate_id FK
+    uuid map_region_id FK
+  }
+  weather_types {
+    uuid id PK
+  }
+  weather_records {
+    uuid id PK
+    uuid map_id FK
+    uuid weather_region_id FK
+    uuid weather_type_id FK
+    uuid set_by FK
+  }
+  foundry_worlds {
+    uuid id PK
+  }
+  characters {
+    uuid id PK
+    uuid owner_user_id FK
+    uuid former_owner_user_id FK
+    uuid npc_wiki_page_id FK
+    uuid approved_by FK
+  }
+  character_transfers {
+    uuid id PK
+    uuid character_id FK
+    uuid from_user_id FK
+    uuid to_user_id FK
+    uuid transferred_by FK
+  }
+  character_status_history {
+    uuid id PK
+    uuid character_id FK
+    uuid changed_by FK
+  }
+  character_reviews {
+    uuid id PK
+    uuid character_id FK
+    uuid reviewer_id FK
+  }
+  foundry_actors {
+    uuid id PK
+    uuid world_id FK
+    uuid character_id FK
+  }
+  character_history {
+    uuid id PK
+    uuid character_id FK
+    uuid author_id FK
+  }
+  factions {
+    uuid id PK
+    uuid wiki_page_id FK
+    uuid parent_faction_id FK
+  }
+  faction_reputation_tiers {
+    uuid id PK
+    uuid faction_id FK
+  }
+  faction_reputation {
+    uuid character_id PK,FK
+    uuid faction_id PK,FK
+  }
+  faction_reputation_log {
+    uuid id PK
+    uuid character_id FK
+    uuid faction_id FK
+    uuid author_id FK
+    uuid reversal_of FK
+  }
+  faction_relations {
+    uuid id PK
+    uuid faction_a FK
+    uuid faction_b FK
+    uuid senior_faction_id FK
+  }
+  political_events {
+    uuid id PK
+    uuid wiki_page_id FK
+    uuid adventure_id FK
+    uuid expedition_id FK
+    uuid applied_by FK
+    uuid created_by FK
+  }
+  political_event_effects {
+    uuid id PK
+    uuid event_id FK
+  }
+  faction_relation_history {
+    uuid id PK
+    uuid relation_id FK
+    uuid cause_event_id FK
+    uuid author_id FK
+  }
+  territory_control {
+    uuid map_id PK,FK
+    integer q PK,FK
+    integer r PK,FK
+    uuid faction_id PK,FK
+  }
+  territory_history {
+    uuid id PK
+    uuid map_id FK
+    integer q FK
+    integer r FK
+    uuid faction_id FK
+    uuid cause_event_id FK
+    uuid author_id FK
+  }
+  currencies {
+    uuid id PK
+  }
+  level_progression {
+    uuid id PK
+  }
+  accounts {
+    uuid id PK
+    uuid currency_id FK
+  }
+  ledger_transactions {
+    uuid id PK
+    uuid author_id FK
+    uuid reversal_of FK
+    uuid adventure_id FK
+    uuid expedition_id FK
+  }
+  ledger_entries {
+    uuid id PK
+    uuid transaction_id FK
+    uuid account_id FK
+  }
+  integration_jobs {
+    uuid id PK
+    uuid created_by FK
+  }
+  integration_job_attempts {
+    uuid id PK
+    uuid job_id FK
+  }
+  items_catalog {
+    uuid id PK
+  }
+  inventory_items {
+    uuid id PK
+    uuid character_id FK
+    uuid catalog_id FK
+  }
+  inventory_events {
+    uuid id PK
+    uuid character_id FK
+    uuid catalog_id FK
+    uuid transaction_id FK
+    uuid author_id FK
+  }
+  treasure_budget_rules {
+    smallint level PK
+  }
+  shops {
+    uuid id PK
+    uuid owner_wiki_page_id FK
+    uuid location_wiki_page_id FK
+    uuid map_id FK
+    integer q FK
+    integer r FK
+  }
+  shop_stock {
+    uuid id PK
+    uuid shop_id FK
+    uuid catalog_id FK
+    uuid price_currency_id FK
+  }
+  shop_requirements {
+    uuid id PK
+    uuid shop_id FK
+    uuid stock_id FK
+    uuid faction_id FK
+  }
+  purchases {
+    uuid id PK
+    uuid stock_id FK
+    uuid character_id FK
+    uuid transaction_id FK
+    uuid job_id FK
+  }
+  adventures {
+    uuid id PK
+    uuid creator_user_id FK
+    uuid gm_user_id FK
+    uuid region_id FK
+    uuid map_id FK
+    integer target_q FK
+    integer target_r FK
+    uuid target_wiki_page_id FK
+  }
+  adventure_wiki_links {
+    uuid adventure_id PK,FK
+    uuid wiki_page_id PK,FK
+  }
+  adventure_signups {
+    uuid id PK
+    uuid adventure_id FK
+    uuid character_id FK
+    uuid user_id FK
+    uuid decided_by FK
+  }
+  adventure_multi_char_grants {
+    uuid adventure_id PK,FK
+    uuid user_id PK,FK
+    uuid granted_by FK
+  }
+  signup_events {
+    uuid id PK
+    uuid signup_id FK
+    uuid actor_user_id FK
+  }
+  adventure_participants {
+    uuid adventure_id PK,FK
+    uuid character_id PK,FK
+  }
+  discord_channels {
+    text kind PK
+  }
+  discord_messages {
+    uuid id PK
+  }
+  rewards {
+    uuid id PK
+    uuid adventure_id FK
+    uuid expedition_id FK
+    uuid character_id FK
+    uuid currency_id FK
+    uuid catalog_id FK
+    uuid transaction_id FK
+    uuid job_id FK
+    uuid created_by FK
+  }
+  adventure_reports {
+    uuid id PK
+    uuid adventure_id FK
+    uuid author_user_id FK
+  }
+  report_links {
+    uuid report_id PK,FK
+    text link_type PK
+    uuid ref_id PK
+  }
+  expeditions {
+    uuid id PK
+    uuid map_id FK
+    uuid adventure_id FK
+    uuid leader_character_id FK
+    integer origin_q FK
+    integer origin_r FK
+    integer current_q FK
+    integer current_r FK
+    uuid created_by FK
+  }
+  expedition_members {
+    uuid expedition_id PK,FK
+    uuid character_id PK,FK
+  }
+  expedition_routes {
+    uuid id PK
+    uuid expedition_id FK
+    uuid created_by FK
+  }
+  expedition_legs {
+    uuid id PK
+    uuid expedition_id FK
+    uuid map_id FK
+    integer from_q FK
+    integer from_r FK
+    integer to_q FK
+    integer to_r FK
+    uuid weather_record_id FK
+  }
+  expedition_supply_items {
+    uuid id PK
+    uuid expedition_id FK
+    uuid owner_character_id FK
+    uuid catalog_id FK
+  }
+  expedition_supply_ledger {
+    uuid id PK
+    uuid expedition_id FK
+    uuid supply_item_id FK
+    uuid leg_id FK
+    uuid author_id FK
+  }
+  expedition_events {
+    uuid id PK
+    uuid expedition_id FK
+    uuid leg_id FK
+  }
+  expedition_visited_hexes {
+    uuid expedition_id PK,FK
+    uuid map_id FK
+    integer q PK,FK
+    integer r PK,FK
+    uuid first_leg_id FK
+  }
+  enterprises {
+    uuid id PK
+    uuid owner_character_id FK
+    uuid owner_user_id FK
+    uuid wiki_page_id FK
+    uuid map_id FK
+    integer q FK
+    integer r FK
+  }
+  enterprise_stock {
+    uuid id PK
+    uuid enterprise_id FK
+    uuid catalog_id FK
+  }
+  enterprise_staff {
+    uuid id PK
+    uuid enterprise_id FK
+    uuid npc_wiki_page_id FK
+  }
+  enterprise_suppliers {
+    uuid id PK
+    uuid enterprise_id FK
+    uuid wiki_page_id FK
+  }
+  enterprise_upgrades {
+    uuid id PK
+    uuid enterprise_id FK
+    uuid cost_currency_id FK
+  }
+  enterprise_event_rules {
+    uuid id PK
+    uuid enterprise_id FK
+  }
+  enterprise_events {
+    uuid id PK
+    uuid enterprise_id FK
+    uuid rule_id FK
+    uuid created_by FK
+  }
+  enterprise_actions {
+    uuid id PK
+    uuid event_id FK
+    uuid character_id FK
+    uuid resolved_by FK
+  }
+  enterprise_log {
+    uuid id PK
+    uuid enterprise_id FK
+    uuid event_id FK
+    uuid author_id FK
+  }
+  vaults {
+    uuid id PK
+  }
+  vault_files {
+    uuid id PK
+    uuid vault_id FK
+  }
+  vault_conflicts {
+    uuid id PK
+    uuid vault_file_id FK
+    uuid resolved_by FK
+  }
+  foundry_journals {
+    uuid id PK
+    uuid world_id FK
+    uuid wiki_page_id FK
+  }
+  vault_sync_log {
+    bigint id PK
+    uuid vault_id FK
+  }
+  notifications {
+    uuid id PK
+    uuid user_id FK
+  }
+  notification_deliveries {
+    uuid id PK
+    uuid notification_id FK
+  }
+  event_outbox {
+    bigint id PK
+  }
+  state_transitions {
+  }
+  users ||..o{ discord_accounts : "user_id"
+  roles ||..o{ role_permissions : "role_id"
+  permissions ||..o{ role_permissions : "permission_key"
+  users ||..o{ user_roles : "user_id"
+  roles ||..o{ user_roles : "role_id"
+  users |o..o{ user_roles : "granted_by"
+  roles ||..o{ discord_role_map : "role_id"
+  users ||..o{ sessions : "user_id"
+  users ||..o{ player_gm_notes : "user_id"
+  users ||..o{ player_gm_notes : "author_id"
+  users ||..o{ notification_prefs : "user_id"
+  users |o..o{ login_log : "user_id"
+  users |o..o{ campaign_settings : "updated_by"
+  users |o..o{ campaign_settings_history : "changed_by"
+  users |o..o{ audit_log : "actor_user_id"
+  calendars ||..o{ calendar_versions : "calendar_id"
+  users |o..o{ calendar_versions : "created_by"
+  calendar_versions ||..o{ calendar_months : "version_id"
+  calendar_versions ||..o{ calendar_weekdays : "version_id"
+  calendar_versions ||..o{ calendar_leap_rules : "version_id"
+  calendars ||..o{ game_clock : "calendar_id"
+  users |o..o{ game_clock : "updated_by"
+  users |o..o{ game_clock_history : "changed_by"
+  wiki_pages |o..o{ wiki_pages : "parent_id"
+  users |o..o{ wiki_pages : "created_by"
+  wiki_pages ||..o{ wiki_page_roles : "page_id"
+  roles ||..o{ wiki_page_roles : "role_id"
+  wiki_pages ||..o{ wiki_versions : "page_id"
+  users |o..o{ wiki_versions : "author_id"
+  wiki_pages ||..o{ wiki_aliases : "page_id"
+  wiki_pages ||..o{ wiki_relations : "from_page_id"
+  wiki_pages ||..o{ wiki_relations : "to_page_id"
+  wiki_pages ||..o{ wiki_backlinks : "from_page_id"
+  wiki_pages ||..o{ wiki_backlinks : "to_page_id"
+  users |o..o{ assets : "uploaded_by"
+  wiki_pages |o..o{ chronicle_entries : "wiki_page_id"
+  users |o..o{ chronicle_entries : "author_id"
+  calendars ||..o{ calendar_events : "calendar_id"
+  wiki_pages |o..o{ calendar_events : "location_wiki_page_id"
+  users |o..o{ calendar_events : "created_by"
+  calendar_events ||..o{ calendar_event_links : "event_id"
+  assets |o..o{ maps : "background_asset_id"
+  wiki_pages |o..o{ maps : "wiki_page_id"
+  users |o..o{ maps : "created_by"
+  maps ||..o{ map_regions : "map_id"
+  wiki_pages |o..o{ map_regions : "wiki_page_id"
+  maps ||..o{ hexes : "map_id"
+  terrain_types |o..o{ hexes : "terrain_id"
+  wiki_pages |o..o{ hex_features : "wiki_page_id"
+  maps ||..o{ map_linear_features : "map_id"
+  wiki_pages |o..o{ map_pins : "wiki_page_id"
+  users |o..o{ map_pins : "created_by"
+  maps ||..o{ routes : "map_id"
+  users |o..o{ routes : "created_by"
+  users |o..o{ exploration_history : "revealed_by"
+  maps ||..o{ weather_regions : "map_id"
+  climates ||..o{ weather_regions : "climate_id"
+  weather_types ||..o{ weather_records : "weather_type_id"
+  users |o..o{ weather_records : "set_by"
+  users |o..o{ characters : "owner_user_id"
+  users |o..o{ characters : "former_owner_user_id"
+  wiki_pages |o..o{ characters : "npc_wiki_page_id"
+  users |o..o{ characters : "approved_by"
+  characters ||..o{ character_transfers : "character_id"
+  users |o..o{ character_transfers : "from_user_id"
+  users |o..o{ character_transfers : "to_user_id"
+  users |o..o{ character_transfers : "transferred_by"
+  characters ||..o{ character_status_history : "character_id"
+  users |o..o{ character_status_history : "changed_by"
+  characters ||..o{ character_reviews : "character_id"
+  users ||..o{ character_reviews : "reviewer_id"
+  foundry_worlds ||..o{ foundry_actors : "world_id"
+  characters |o..o{ foundry_actors : "character_id"
+  characters ||..o{ character_history : "character_id"
+  users |o..o{ character_history : "author_id"
+  wiki_pages |o..o{ factions : "wiki_page_id"
+  factions |o..o{ factions : "parent_faction_id"
+  factions |o..o{ faction_reputation_tiers : "faction_id"
+  characters ||..o{ faction_reputation : "character_id"
+  factions ||..o{ faction_reputation : "faction_id"
+  characters ||..o{ faction_reputation_log : "character_id"
+  factions ||..o{ faction_reputation_log : "faction_id"
+  users |o..o{ faction_reputation_log : "author_id"
+  faction_reputation_log |o..o{ faction_reputation_log : "reversal_of"
+  factions ||..o{ faction_relations : "faction_a"
+  factions ||..o{ faction_relations : "faction_b"
+  factions |o..o{ faction_relations : "senior_faction_id"
+  wiki_pages |o..o{ political_events : "wiki_page_id"
+  users |o..o{ political_events : "applied_by"
+  users |o..o{ political_events : "created_by"
+  political_events ||..o{ political_event_effects : "event_id"
+  faction_relations ||..o{ faction_relation_history : "relation_id"
+  political_events |o..o{ faction_relation_history : "cause_event_id"
+  users |o..o{ faction_relation_history : "author_id"
+  factions ||..o{ territory_control : "faction_id"
+  factions ||..o{ territory_history : "faction_id"
+  political_events |o..o{ territory_history : "cause_event_id"
+  users |o..o{ territory_history : "author_id"
+  currencies ||..o{ accounts : "currency_id"
+  users |o..o{ ledger_transactions : "author_id"
+  ledger_transactions |o..o{ ledger_transactions : "reversal_of"
+  ledger_transactions ||..o{ ledger_entries : "transaction_id"
+  accounts ||..o{ ledger_entries : "account_id"
+  users |o..o{ integration_jobs : "created_by"
+  integration_jobs ||..o{ integration_job_attempts : "job_id"
+  characters ||..o{ inventory_items : "character_id"
+  items_catalog |o..o{ inventory_items : "catalog_id"
+  characters ||..o{ inventory_events : "character_id"
+  items_catalog |o..o{ inventory_events : "catalog_id"
+  ledger_transactions |o..o{ inventory_events : "transaction_id"
+  users |o..o{ inventory_events : "author_id"
+  wiki_pages |o..o{ shops : "owner_wiki_page_id"
+  wiki_pages |o..o{ shops : "location_wiki_page_id"
+  shops ||..o{ shop_stock : "shop_id"
+  items_catalog ||..o{ shop_stock : "catalog_id"
+  currencies ||..o{ shop_stock : "price_currency_id"
+  shops |o..o{ shop_requirements : "shop_id"
+  shop_stock |o..o{ shop_requirements : "stock_id"
+  factions ||..o{ shop_requirements : "faction_id"
+  shop_stock ||..o{ purchases : "stock_id"
+  characters ||..o{ purchases : "character_id"
+  ledger_transactions |o..o{ purchases : "transaction_id"
+  integration_jobs |o..o{ purchases : "job_id"
+  users ||..o{ adventures : "creator_user_id"
+  users |o..o{ adventures : "gm_user_id"
+  wiki_pages |o..o{ adventures : "target_wiki_page_id"
+  adventures ||..o{ adventure_wiki_links : "adventure_id"
+  wiki_pages ||..o{ adventure_wiki_links : "wiki_page_id"
+  adventures ||..o{ adventure_signups : "adventure_id"
+  characters ||..o{ adventure_signups : "character_id"
+  users ||..o{ adventure_signups : "user_id"
+  users |o..o{ adventure_signups : "decided_by"
+  adventures ||..o{ adventure_multi_char_grants : "adventure_id"
+  users ||..o{ adventure_multi_char_grants : "user_id"
+  users ||..o{ adventure_multi_char_grants : "granted_by"
+  adventure_signups ||..o{ signup_events : "signup_id"
+  users |o..o{ signup_events : "actor_user_id"
+  adventures ||..o{ adventure_participants : "adventure_id"
+  characters ||..o{ adventure_participants : "character_id"
+  adventures |o..o{ rewards : "adventure_id"
+  characters ||..o{ rewards : "character_id"
+  currencies |o..o{ rewards : "currency_id"
+  items_catalog |o..o{ rewards : "catalog_id"
+  ledger_transactions |o..o{ rewards : "transaction_id"
+  integration_jobs |o..o{ rewards : "job_id"
+  users |o..o{ rewards : "created_by"
+  adventures ||..o{ adventure_reports : "adventure_id"
+  users ||..o{ adventure_reports : "author_user_id"
+  adventure_reports ||..o{ report_links : "report_id"
+  maps ||..o{ expeditions : "map_id"
+  adventures |o..o{ expeditions : "adventure_id"
+  characters |o..o{ expeditions : "leader_character_id"
+  users |o..o{ expeditions : "created_by"
+  expeditions ||..o{ expedition_members : "expedition_id"
+  characters ||..o{ expedition_members : "character_id"
+  expeditions ||..o{ expedition_routes : "expedition_id"
+  users |o..o{ expedition_routes : "created_by"
+  expeditions ||..o{ expedition_legs : "expedition_id"
+  expeditions ||..o{ expedition_supply_items : "expedition_id"
+  characters |o..o{ expedition_supply_items : "owner_character_id"
+  items_catalog |o..o{ expedition_supply_items : "catalog_id"
+  users |o..o{ expedition_supply_ledger : "author_id"
+  expeditions ||..o{ expedition_events : "expedition_id"
+  expeditions ||..o{ expedition_visited_hexes : "expedition_id"
+  characters |o..o{ enterprises : "owner_character_id"
+  users |o..o{ enterprises : "owner_user_id"
+  wiki_pages |o..o{ enterprises : "wiki_page_id"
+  enterprises ||..o{ enterprise_stock : "enterprise_id"
+  items_catalog |o..o{ enterprise_stock : "catalog_id"
+  enterprises ||..o{ enterprise_staff : "enterprise_id"
+  wiki_pages |o..o{ enterprise_staff : "npc_wiki_page_id"
+  enterprises ||..o{ enterprise_suppliers : "enterprise_id"
+  wiki_pages |o..o{ enterprise_suppliers : "wiki_page_id"
+  enterprises ||..o{ enterprise_upgrades : "enterprise_id"
+  currencies |o..o{ enterprise_upgrades : "cost_currency_id"
+  enterprises |o..o{ enterprise_event_rules : "enterprise_id"
+  enterprises ||..o{ enterprise_events : "enterprise_id"
+  enterprise_event_rules |o..o{ enterprise_events : "rule_id"
+  users |o..o{ enterprise_events : "created_by"
+  enterprise_events ||..o{ enterprise_actions : "event_id"
+  characters ||..o{ enterprise_actions : "character_id"
+  users |o..o{ enterprise_actions : "resolved_by"
+  enterprises ||..o{ enterprise_log : "enterprise_id"
+  enterprise_events |o..o{ enterprise_log : "event_id"
+  users |o..o{ enterprise_log : "author_id"
+  vaults ||..o{ vault_files : "vault_id"
+  vault_files ||..o{ vault_conflicts : "vault_file_id"
+  users |o..o{ vault_conflicts : "resolved_by"
+  foundry_worlds ||..o{ foundry_journals : "world_id"
+  wiki_pages |o..o{ foundry_journals : "wiki_page_id"
+  vaults ||..o{ vault_sync_log : "vault_id"
+  users ||..o{ notifications : "user_id"
+  notifications ||..o{ notification_deliveries : "notification_id"
+  calendar_months ||..o{ calendar_leap_rules : "version_id,month_ord"
+  adventures |o..o{ game_clock_history : "adventure_id"
+  expeditions |o..o{ game_clock_history : "expedition_id"
+  adventures |o..o{ chronicle_entries : "adventure_id"
+  expeditions |o..o{ chronicle_entries : "expedition_id"
+  adventures |o..o{ calendar_events : "adventure_id"
+  map_regions |o..o{ hexes : "region_id,map_id"
+  weather_regions |o..o{ hexes : "weather_region_id,map_id"
+  hexes ||..o{ hex_features : "map_id,q,r"
+  hexes ||..o{ map_pins : "map_id,q,r"
+  hexes ||..o{ exploration_history : "map_id,q,r"
+  adventures |o..o{ exploration_history : "adventure_id"
+  expeditions |o..o{ exploration_history : "expedition_id,map_id"
+  map_regions |o..o{ weather_regions : "map_region_id,map_id"
+  weather_regions ||..o{ weather_records : "weather_region_id,map_id"
+  adventures |o..o{ political_events : "adventure_id"
+  expeditions |o..o{ political_events : "expedition_id"
+  hexes ||..o{ territory_control : "map_id,q,r"
+  hexes ||..o{ territory_history : "map_id,q,r"
+  adventures |o..o{ ledger_transactions : "adventure_id"
+  expeditions |o..o{ ledger_transactions : "expedition_id"
+  hexes |o..o{ shops : "map_id,q,r"
+  hexes |o..o{ adventures : "map_id,target_q,target_r"
+  map_regions |o..o{ adventures : "region_id,map_id"
+  expeditions |o..o{ rewards : "expedition_id"
+  hexes ||..o{ expeditions : "map_id,origin_q,origin_r"
+  hexes ||..o{ expeditions : "map_id,current_q,current_r"
+  hexes ||..o{ expedition_legs : "map_id,from_q,from_r"
+  hexes ||..o{ expedition_legs : "map_id,to_q,to_r"
+  expeditions ||..o{ expedition_legs : "expedition_id,map_id"
+  weather_records |o..o{ expedition_legs : "weather_record_id,map_id"
+  expedition_supply_items ||..o{ expedition_supply_ledger : "supply_item_id,expedition_id"
+  expedition_legs |o..o{ expedition_supply_ledger : "leg_id,expedition_id"
+  expedition_legs |o..o{ expedition_events : "leg_id,expedition_id"
+  hexes ||..o{ expedition_visited_hexes : "map_id,q,r"
+  expeditions ||..o{ expedition_visited_hexes : "expedition_id,map_id"
+  expedition_legs |o..o{ expedition_visited_hexes : "first_leg_id,expedition_id"
+  hexes |o..o{ enterprises : "map_id,q,r"

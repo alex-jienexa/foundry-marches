@@ -1,0 +1,31 @@
+sequenceDiagram
+  actor GM as Мастер / пользователь
+  participant API as Go API
+  participant PG as PostgreSQL
+  participant W as Worker / River
+  participant R as Relay
+  participant F as Foundry Actor
+  GM->>API: Команда изменения с идемпотентным ключом
+  API->>API: Сессия, permissions, CanSee
+  API->>PG: BEGIN: бизнес-запись + ledger + integration_jobs + River + event_outbox
+  PG-->>API: COMMIT, job_id
+  API-->>GM: Ожидает синхронизации
+  W->>PG: Получить job_id, предусловия, состояние
+  W->>R: Прочитать Actor
+  R->>F: Get snapshot
+  F-->>W: Снимок через relay
+  alt appliedOps уже содержит operation_id
+    W->>PG: Подтверждённый результат без повторной записи
+  else Метки нет и предусловие выполнено
+    W->>R: Абсолютное значение + operation_id
+    R->>F: Изменить документ
+    W->>R: Перечитать результат
+    R->>F: Get snapshot
+    F-->>W: Подтверждённое состояние через relay
+    W->>PG: Результат + зеркало + event_outbox
+  else Расхождение или результат неоднозначен
+    W->>PG: Нужна проверка мастера, без слепого повтора
+  end
+  PG-->>API: NOTIFY будит чтение outbox
+  API-->>GM: SSE, восстановление по Last-Event-ID
+  Note over W,F: Недоступность relay — штатное ожидание/повтор, не подтверждение успеха

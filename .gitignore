@@ -28,3 +28,8 @@ coverage/
 *.swo
 .pad/update-backups/
 .pad/update-conflicts/
+
+# Documentation validation tools (not application runtime)
+node_modules/
+__pycache__/
+*.pyc

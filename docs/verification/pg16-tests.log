@@ -1,0 +1,405 @@
+Output format is unaligned.
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+INSERT 0 4
+INSERT 0 2
+INSERT 0 10
+INSERT 0 5
+
+
+
+
+
+
+
+
+
+UPDATE 1
+
+
+
+
+
+UPDATE 1
+
+
+INSERT 0 2
+
+
+
+
+
+
+
+
+
+
+INSERT 0 1
+
+
+
+
+
+
+
+
+
+
+
+UPDATE 1
+
+
+UPDATE 1
+
+
+
+INSERT 0 1
+INSERT 0 1
+
+
+
+
+
+
+INSERT 0 1
+INSERT 0 1
+
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+
+INSERT 0 1
+
+
+
+
+
+
+
+
+INSERT 0 1
+INSERT 0 2
+
+INSERT 0 1
+INSERT 0 2
+
+
+
+INSERT 0 1
+INSERT 0 1
+
+
+
+INSERT 0 1
+
+
+
+
+
+
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+
+
+
+
+INSERT 0 2
+
+
+
+INSERT 0 1
+
+
+INSERT 0 2
+
+
+
+
+
+
+
+
+
+
+UPDATE 1
+
+
+
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+
+
+INSERT 0 2
+INSERT 0 1
+
+
+
+
+
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+
+
+
+
+
+INSERT 0 1
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+
+
+INSERT 0 1
+INSERT 0 3
+INSERT 0 2
+
+
+
+
+
+
+INSERT 0 2
+
+
+
+
+
+
+
+
+INSERT 0 1
+
+
+
+
+
+INSERT 0 1
+
+INSERT 0 1
+
+UPDATE 1
+
+
+
+UPDATE 1
+
+
+INSERT 0 1
+INSERT 0 1
+
+
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+UPDATE 1
+
+
+
+UPDATE 1
+INSERT 0 1
+
+INSERT 0 1
+
+
+
+
+
+
+
+
+
+
+
+
+INSERT 0 1
+
+
+
+INSERT 0 1
+
+INSERT 0 1
+
+
+
+
+
+INSERT 0 1
+
+
+PASS character: draft -> active is illegal
+PASS character: draft -> pending_approval
+PASS slots: third pending character is blocked
+PASS approve a1
+PASS active -> unavailable keeps the slot
+PASS unavailable -> active
+PASS approve a2
+PASS bob and carol characters become active
+PASS status history is written automatically (5 rows for a1)
+PASS limit lowered: existing characters stay editable
+PASS limit lowered: active -> unavailable -> active is allowed
+PASS a2 dies (frees a slot)
+PASS limit lowered: a new character cannot enter approval
+PASS limit lowered: revival is blocked when the slots are full
+PASS limit restored: a3 can be approved
+PASS setting changes are logged
+PASS signup: adventure in draft
+PASS adventure: draft -> approved -> published -> registration_open
+PASS adventure: registration_open -> published is illegal
+PASS signup a1 on adv1; the period is filled automatically
+PASS level snapshot cannot be edited
+PASS a supplied level_at_signup is ignored (real level 4 is stored)
+PASS spread: queued level-4 cannot take a seat next to level 1
+PASS overlap: same character on an overlapping adventure
+PASS ownership: bob signs up with the character of alice
+PASS multi-character: second character of alice without a grant
+PASS multi-character: allowed with a grant of 2
+PASS seats: both seats taken, carol is refused
+PASS seats: carol can queue
+PASS parameters: seats cannot drop below occupied seats
+PASS parameters: level range cannot exclude existing signups
+PASS signup state: confirmed -> queued is illegal
+PASS level snapshots can be refreshed by the controlled function
+PASS adventure reschedule moves the signup periods
+PASS signup state: confirmed -> withdrawn
+PASS signup state: withdrawn -> confirmed is illegal
+PASS signup events are written automatically
+PASS signup: no new signups when registration is closed
+PASS transfer is blocked while a signup is open
+PASS transfer a1 to bob (bob has one free slot)
+PASS transfer is recorded and the former owner is kept
+PASS transfer to a player with full slots is blocked
+PASS Foundry-owned: the app cannot write xp
+PASS app-owned: level_up_pending is writable
+PASS the sync path can write xp
+PASS inventory mirror: the app cannot add items to a linked actor
+PASS inventory mirror: the sync path can
+PASS inventory: a character without an actor is editable
+PASS inventory events: the same operation is not recorded twice
+PASS ledger: an unbalanced transaction cannot be posted
+PASS ledger: a balanced transaction is posted
+PASS ledger: the balance follows the posting
+PASS ledger: no entries can be added to a posted transaction
+PASS ledger: other columns of a transaction cannot change
+PASS ledger: duplicate idempotency key
+PASS ledger: the balance cannot be edited directly
+PASS ledger: a new account must start at zero
+PASS ledger: entries cannot be deleted
+PASS ledger: a negative balance is refused
+PASS ledger: a reversal must negate the original exactly
+PASS ledger: reconciliation finds no mismatch
+PASS accounts: get_or_create_account is idempotent
+PASS attempt: filled in while running
+PASS attempt: frozen after it finished
+PASS job: pending -> succeeded is illegal
+PASS hex region on the same map
+PASS hex region from another map
+PASS adventure region without a map
+PASS adventure region from another map
+PASS adventure target hex needs both coordinates
+PASS shop location must be complete
+PASS enterprise location must be complete
+PASS weather: a forecast
+PASS weather: the actual record for the same day
+PASS weather: a second forecast for the same day
+PASS weather: record with a region of another map
+PASS route: waypoints on the map
+PASS route: a hex that is not on the map
+PASS route: planned hexes that are not neighbours
+PASS leg: the path must end at the destination
+PASS leg: a map different from the expedition map
+PASS supplies: consumption lowers the stock
+PASS supplies: the stock cannot go below zero
+PASS supplies: a leg of another expedition
+PASS supplies: an item of another expedition
+PASS events: a leg of another expedition
+PASS visited hexes: first leg of another expedition
+PASS expedition cannot start without members
+PASS members join an expedition
+PASS a character cannot be in two active expeditions
+PASS the leader must be a member
+PASS expedition starts
+PASS expedition: planning -> returned is illegal
+PASS finishing an expedition frees its members
+PASS nobody can join a finished expedition
+PASS calendar is editable before the game clock starts
+PASS the clock cannot start on a calendar without weekdays
+PASS sealed: a month cannot change
+PASS sealed: a month cannot be added
+PASS sealed: a weekday cannot be removed
+PASS sealed: the version cannot be deleted
+PASS a new version cannot start in the past
+PASS bypass: a month cannot be moved out of a sealed version
+PASS bypass: a month cannot be moved into a sealed version
+PASS an unsealed version cannot start before the previous one
+PASS an unsealed version cannot start on or before the current day
+PASS an unsealed version can still be moved later
+PASS a version cannot move to another calendar
+PASS the clock cannot reach a version with an impossible anchor date
+PASS the clock reaching a valid version seals it
+PASS reputation: the value equals the sum of the log
+PASS reputation: the value cannot be edited directly
+PASS reputation: a reversal with another amount
+PASS reputation: a reversal for another character
+PASS reputation: an exact reversal
+PASS reputation: a reversal cannot be reversed
+PASS tiers: thresholds must grow with the tier number
+PASS tiers: two tiers with the same threshold
+PASS relation: created
+PASS relation: history is written on change
+PASS relation: a vassal needs a senior side
+PASS relation: the senior side must be one of the pair
+PASS relation: a vassal with a valid senior side
+PASS territory: control, contest and release leave a history
+PASS territory: two controlling factions on one hex
+PASS territory: a contesting faction is allowed
+PASS factions: a parent
+PASS factions: a cycle in the hierarchy
+PASS factions: a faction as its own parent
+PASS political event: no effects, cannot be applied
+PASS political event: a pending effect blocks applying
+PASS political event: applied when every effect is applied
+PASS political event: applied -> draft is illegal
+PASS political event: cannot be revoked while an effect is applied
+PASS political event: revoked after the effects are reverted
+PASS political event: a reverted effect cannot be applied again
+PASS shop: a purchase takes the money, the stock and queues a job
+PASS shop: a repeated request returns the same purchase
+PASS shop: the per-character limit
+PASS shop: not enough stock
+PASS shop: not enough money (nothing is left behind)
+PASS shop: a failed attempt left no purchase, no stock change
+PASS shop: reputation requirement
+PASS shop: the requirement is met
+PASS shop: a failed grant returns the money and the stock exactly
+PASS shop: a purchase cannot be failed twice
+PASS shop requirement: shop and item at once
+PASS shop requirement: tier kind with a value
+PASS wiki: a page with its first version in one transaction
+PASS wiki: a page without a matching version
+PASS wiki: an edit without a new revision
+PASS wiki: the revision cannot go back
+PASS wiki: an edit with a new revision and version
+PASS wiki: versions are immutable
+PASS wiki: restricted to roles but no roles
+PASS enterprise: a reputation change is logged
+PASS enterprise: a stock change is logged
+PASS enterprise: automation cannot skip the GM
+PASS notifications: the same event twice for one user
+PASS notifications: the same delivery channel twice
+PASS vault: plain http is refused
+PASS vault: a path that leaves the root
+PASS vault: https and a normal root
+PASS outbox: events get increasing ids
+PASS audit log: cannot be changed
+PASS audit log: cannot be deleted
+---- passed 166 / 166
+DO

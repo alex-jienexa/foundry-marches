@@ -1,0 +1,5 @@
+DBML PASS: 115 tables, 1030 columns, 231 FK
+MERMAID PASS: docs/database/er-diagram.mmd
+MERMAID PASS: docs/architecture/diagrams/system.mmd
+MERMAID PASS: docs/architecture/diagrams/deployment.mmd
+MERMAID PASS: docs/architecture/diagrams/sequence.mmd

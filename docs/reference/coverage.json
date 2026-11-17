@@ -1,0 +1,70 @@
+{
+  "source": "originals/West Marches PF2e — архитектурный план, схема БД и этапы разработки(2).md",
+  "sections": [
+    {
+      "part": 0,
+      "target": "docs/architecture/overview.md",
+      "sha256": "6186342d4d39dc651c419e757b74194e85265b6962d90d9419f13e7d8640dbf8"
+    },
+    {
+      "part": 1,
+      "target": "docs/architecture/overview.md",
+      "sha256": "ea94d9e74ca3177b7c09d6eb51d0214434c7f9df96ad818364d594119e73db18"
+    },
+    {
+      "part": 2,
+      "target": "docs/architecture/review.md",
+      "sha256": "2ebe73be20a8d812b7b519bf340632059ad63b4f525f99074f975eb786d6bc14"
+    },
+    {
+      "part": 3,
+      "target": "docs/architecture/foundry.md",
+      "sha256": "81d4a0a1c9921713eec31e7870d2f619748c73ce920b9697a53dcf96248aa5de"
+    },
+    {
+      "part": 4,
+      "target": "docs/architecture/obsidian.md",
+      "sha256": "78c15e64500abf98171d6208daa25029a39520888354addf984fffcbf357ce3b"
+    },
+    {
+      "part": 5,
+      "target": "docs/architecture/overview.md",
+      "sha256": "93003a55a07964ec52f4a378fd0a0891be6cea1f2dc4ebdc0b04eb4000e3431d"
+    },
+    {
+      "part": 6,
+      "target": "docs/database/design.md",
+      "sha256": "419039d6a4cd5b421b52b1ed2697c53cf7268e265a3b4f2567605af1354d2036"
+    },
+    {
+      "part": 7,
+      "target": "docs/architecture/states.md",
+      "sha256": "40c798c6fd7a98ffe150a7a689929f0cb991881f24982db6f2f121fb5660ef72"
+    },
+    {
+      "part": 8,
+      "target": "docs/architecture/expeditions.md",
+      "sha256": "c27d84f02f3ce88c8c095a319badfdf5cc9b0d09f899465d0e334eac7e235a17"
+    },
+    {
+      "part": 9,
+      "target": "docs/architecture/factions.md",
+      "sha256": "ce3de78f694d9f06aba4bf8525aa081210ba94254dfe7709f4c613a18769fa63"
+    },
+    {
+      "part": 10,
+      "target": "docs/development/roadmap.md",
+      "sha256": "d66577c8f11441e5fc3a97abaf6f280615c5bc7fc6446c4f166c9cf60c15488c"
+    },
+    {
+      "part": 11,
+      "target": "docs/development/open-questions.md",
+      "sha256": "51a1845f425330eb6e161731a124e7350a1be14cba5cbca1b3cec7d4e56127a9"
+    },
+    {
+      "part": 12,
+      "target": "docs/reference/sources.md",
+      "sha256": "65aff615c25b97c56b53d03d75e6789a0eb4960635e2a56d5a91429716a500c4"
+    }
+  ]
+}
