@@ -77,20 +77,24 @@ Relay API не следует публиковать в интернет без 
 
 ## 7. Следующие шаги
 
-1. Получить read-only inventory текущего Foundry module (точная версия/manifest/настройки без секретов) и Docker networks/mounts для Foundry container.
-2. Изучить конкретный upstream relay release и compose file; проверить image provenance, volumes, exposed ports, env defaults, authentication and quota behavior.
-3. Подготовить отдельный compose project и конфигурацию с loopback-only API binding; сначала показать владельцу команды и diff.
-4. После отдельного подтверждения применить deployment и настроить Foundry module URL/key.
-5. Выполнить smoke test `GET /clients` и read-only Actor snapshot.
-6. Затем провести разрешённые write tests только на указанном тестовом Actor.
+Deployment, Relay URL, Pairing и read-only Actor smoke test выполнены; актуальные параметры и доказательства приведены в §9.
+
+1. Исследовать read-only inventory/coins. Текущий тестовый Actor вернул `items=[]`, поэтому для проверки coin items нужен отдельный тестовый setup или согласованное добавление тестовых данных.
+2. Согласовать политику level-up: автоматическая или GM-confirmed.
+3. Перед любыми write tests получить snapshot Actor и проверить восстановление; затем отдельно согласовать точную XP/item операцию.
+4. Проверить XP operation flag и идемпотентность, grant item by UUID.
+5. Проверить SSE hooks и реальную headless GM session без открытого браузера.
+6. Проверить usage accounting и индивидуальные API-key limits; конфигурация `MONTHLY_REQUEST_LIMIT=0` сама по себе не является тестом квоты.
+7. Подготовить отдельный WebDAV test directory и проверить ETag/If-Match.
+8. Получить обезличенные JSON exports Campaign Codex и проверить импорт/экспортный формат.
 
 ## 8. Открытые вопросы
 
-- Точный способ хранения Foundry data/modules и Docker network configuration.
-- Точный текущий manifest/version Foundry REST API module.
-- Какой путь и сервер WebDAV; отдельный тестовый каталог и credentials.
-- Обезличенные JSON exports Campaign Codex.
-- Требуемая политика level-up: автоматическая или GM-confirmed (решение владельца ещё требуется).
+- Нет отдельного тестового мира; для write tests использовать только согласованный Actor `Actor.mxgc0DRWC8bA9ruI` с предварительным snapshot/restore plan.
+- Требуется решение владельца по автоматическому или GM-confirmed level-up.
+- Требуется отдельный WebDAV test path вне Obsidian campaign notes.
+- Требуются обезличенные JSON exports Campaign Codex.
+- Требуется отдельно проверить ограничения доступа к публично доступной Relay admin UI (IP allowlist сейчас выключен по решению владельца).
 
 
 ## 9. Live deployment и проверка подключения (2026-11-17)
