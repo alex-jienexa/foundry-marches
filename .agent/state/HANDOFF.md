@@ -45,3 +45,18 @@ TASK-002 начата в ветке `feat/task-002-integration-spike`, созд�
 ## Текущий commit
 
 Изменения PAD/TASK-002 в ветке `feat/task-002-integration-spike`; см. историю ветки. Live-интеграции ещё не проверялись.
+
+## Live-обновление — 2026-11-17
+
+### Подтверждено владельцем
+- Relay 3.4.1 развёрнут на Arch Linux host в `/opt/foundry-marches-relay`; SQLite, persistent `./data:/app/data`, host bind `127.0.0.1:3010:3010`.
+- Образ закреплён как `threehats/foundryvtt-rest-api-relay:3.4.1@sha256:60df34aca78968f072a77e7d19358073aa514175e0ecec43406cb1a1ed64948e` (linux/amd64).
+- Caddy проксирует `relay.jiene.ru` → `127.0.0.1:3010`; HTTPS и HTTP→HTTPS redirect проверены. Foundry работает через `foundry.jiene.ru`.
+- Foundry options: hostname `foundry.jiene.ru`, proxyPort 443, proxySSL true.
+- Foundry module URL изменён на `wss://relay.jiene.ru/relay`; admin login и Pairing успешны.
+- REST read smoke test: `GET /get` с UUID `Actor.mxgc0DRWC8bA9ruI` и clientId `fvtt_cca540151c686a43` вернул entity-result с Actor name `АНДРЕЙ`, type character, Foundry 14.367, PF2e 8.7.0, level 1, XP 0, HP 0, items [].
+- Проверка была read-only; временный JSON удалён, API key в репозиторий/чат не попадал.
+- Подробный журнал, точная конфигурация и результаты — `docs/architecture/decisions/spike-0-results.md`.
+
+### Не считать завершённым
+Coins/inventory model, XP write + operation flag/idempotency, level-up, item UUID grant, SSE, headless session, фактический quota/usage accounting, WebDAV ETag/If-Match и Campaign Codex export остаются pending. Не выполнять write tests до snapshot/restore подготовки и подтверждения конкретной операции владельцем.
