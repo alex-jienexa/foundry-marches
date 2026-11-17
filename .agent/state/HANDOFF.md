@@ -1,33 +1,28 @@
-# Session handoff
+# Передача контекста FoundryMarches
 
-> This is the single canonical handoff. Replace this note at the end of meaningful work; do not create competing handoff files.
+## Текущее состояние
 
-## Current state
+Выполнен локальный перенос четырёх файлов v0.3 на основу публичного commit `3032d2da61c090bde83887f564f9487d1e99e27e`. В удалённый репозиторий ничего не записывалось; этот пакет ещё должен вручную внести владелец. Проверить Git перед работой — дальнейшие изменения main возможны.
 
-- Project status: initializing.
-- Current focus: establish project context and reproducible development workflow.
-- Active task: `TASK-001`.
-- Working tree / branch: inspect Git; do not assume this note is current.
+## Завершено
 
-## Completed
+TASK-001: контекст и доступные проверки. Полные docs, неизменённые оригиналы/SQL/тесты, генерируемые DBML/ER/каталог, навигация PAD, требования и задачи всех этапов 0–11. `.pad/template-base/`, исходные protocols/agents/schemas сохранены. Реальные проверки: [docs/verification.md](../../docs/verification.md).
 
-- PAD starter structure created.
+## Не сделано
 
-## In progress
+Код приложения, Go/UI/bot scaffold, runtime Compose, goose migrations, действующий OpenAPI и live Foundry/WebDAV/Discord/Codex. Ни один этап 0–11 не закрыт. Готовность baseline SQL не означает готовность сервиса.
 
-- Project-specific context and toolchain verification.
+## Решения и блокеры
 
-## Blockers and decisions needed
+Владелец отвечает на [10 исходных вопросов](../../docs/development/open-questions.md), предоставляет образцы Codex/Markdown и при необходимости отсутствующее ТЗ v1.0/дополнения. Это не блокирует импорт, но блокирует зависимую реализацию. Нельзя считать полученные когда-то доступы разрешением на live-записи.
 
-- Project owner must supply or confirm project purpose, constraints, and required toolchain.
+## Следующие действия
 
-## Next actions
+1. Проверить `git status --short --branch`, `git log -5 --oneline`, diff и [индекс](../context/DOCUMENTATION.md).
+2. TASK-002: спайк 0; TASK-003: основа — могут стартовать независимо, этап 2 ждёт обоих.
+3. Следовать полному плану и не вырезать домены. Обновлять SQL и производные вместе.
+4. Перед закрытием задачи — точные команды/результаты, state и этот единственный HANDOFF.
 
-1. Read `AGENTS.md` and `.agent/README.md`.
-2. Complete `.agent/context/PROJECT.md` with verified facts.
-3. Run documented checks and record exact outcomes.
-4. Synchronize `current.yaml` and this handoff.
+## Проверки
 
-## Recovery note
-
-Before relying on this handoff, inspect `git status --short --branch`, `git log -5 --oneline`, and relevant diffs. Repository evidence takes precedence over stale notes.
+`python3 scripts/validate_artifacts.py`; `python3 scripts/generate_database_docs.py --check`; [SQL-инструкции](../../tests/database/README.md). Runtime build/setup пока отсутствуют и прямо помечены как недоступные.

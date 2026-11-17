@@ -1,16 +1,29 @@
-schema_version: "1.0"
-project_status: initializing # initializing | active | paused | maintenance | archived
-health: unknown # healthy | at_risk | blocked | unknown
-updated_at: null # ISO 8601 timestamp with timezone, e.g. 2026-11-16T19:00:00+03:00
-current_focus: "Complete project context and verify the development workflow"
-active_task: TASK-001
+schema_version: '1.0'
+project_status: initializing
+health: at_risk
+updated_at: '2026-11-17T13:45:00+03:00'
+current_focus: Полные артефакты импортированы; начать спайк 0 и основу, реализация
+  ещё отсутствует
+active_task: null
 active_branch: null
 last_checkpoint: null
-last_verified_commit: null
-open_blockers: []
+last_verified_commit: 3032d2da61c090bde83887f564f9487d1e99e27e
+open_blockers:
+- Для полного сопоставления нужен отсутствующий текст ТЗ v1.0/дополнений; импорт предоставленных
+  файлов этим не блокируется
+- Live-спайк требует разрешённых тестовых доступов/данных; 10 вопросов владельцу остаются
+  открытыми
 next_actions:
-  - "Complete .agent/context/PROJECT.md"
-  - "Verify setup, build, and test commands"
-  - "Update this snapshot and HANDOFF.md"
-recent_changes: []
-risks: []
+- Проверить локальный diff и вручную внести пакет в репозиторий
+- 'TASK-002: выполнить спайк 0 на согласованных тестовых данных'
+- 'TASK-003: создать основу, миграции и команды запуска/сборки'
+recent_changes:
+- Весь исходный Markdown распределён по полным разделам, оригиналы сохранены с SHA-256
+- SQL baseline и оригинальные тесты сохранены без изменений
+- DBML/ER/каталог генерируются из AST; добавлена навигация PAD и этапные задачи
+- 'Локальный baseline PG15/PG16: 166/166 функциональных и 9/9 race проверок'
+risks:
+- last_verified_commit — проверенный исходный публичный snapshot, не commit локального
+  импорта
+- Нет приложения, production deploy, утверждённого полного API или результатов live-интеграций
+- Сводки/диаграммы не заменяют SQL и полную спецификацию

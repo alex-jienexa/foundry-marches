@@ -32,3 +32,8 @@ This directory is the durable context store for AI-assisted work. Keep it concis
 - Update rather than append repetitive status prose; preserve historical decisions in ADRs and Git.
 - Keep exactly one canonical `state/HANDOFF.md`.
 - If a note conflicts with the repository, inspect the code and Git history, then correct the note. Never blindly trust stale memory.
+
+
+## FoundryMarches navigation
+
+After `context/PROJECT.md`, read `context/DOCUMENTATION.md`. Domain summaries: `ARCHITECTURE.md`, `DATABASE.md`, `DEVELOPMENT.md`. Full material lives in `../docs/`; originals are immutable evidence, SQL is authoritative for executable DB structure. See `../docs/repository-analysis.md` for adaptation rationale. All stages remain in scope, no implementation stage is marked complete by importing docs.

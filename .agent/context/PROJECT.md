@@ -1,48 +1,36 @@
-# Project context
+# FoundryMarches — контекст проекта
 
-> Replace this starter document with verified project facts. Keep it concise and link to source material.
+## Назначение и статус
 
-## Purpose
+Русскоязычная платформа West Marches PF2e для игроков и мастеров: интеграции Foundry VTT, Discord, Obsidian через существующий WebDAV и Campaign Codex. В репозитории пока нет реализации, только PAD, спецификация и исполняемая SQL-модель v0.3.
 
-Describe the problem, intended users, and desired outcome.
+## Полный scope
 
-## Scope
+Пользователи и RBAC; персонажи, одобрение, NPC, лимиты и владение; Foundry-снимки, XP/уровни, монеты и предметы; приключения, очередь/предложения и Discord; double-entry журнал, награды, магазины; Wiki, хроника, отчёты, Obsidian/Codex; гекс-карта, туман, календарь/погода; экспедиции/припасы; фракции/репутация/территории; торговое предприятие; статистика/графы/расширенные отчёты. Безопасность, аудит, бэкапы и восстановление обязательны. Все этапы 0–11: [полный план](../../docs/development/roadmap.md).
 
-### In scope
-- Define the first release boundaries.
+Не в текущей задаче переноса: реализация, деплой, удалённые записи или сокращение продукта. Само ТЗ v1.0 с дополнениями не приложено: [пробелы](../../docs/development/source-gaps.md).
 
-### Out of scope
-- Record explicit exclusions.
+## Термины
 
-## Domain language
+| Термин | Смысл |
+|---|---|
+| Adventure | игровая сессия/приключение с регистрацией и очередью |
+| Expedition | многодневный поход; не обязан соответствовать одному adventure |
+| Actor | документ Foundry, владеет состоянием листа |
+| Ledger | неизменяемая история и намерение изменения; свои валюты — в приложении |
+| Integration job | каноническая операция внешней системы, не River job |
+| CanSee | единая серверная политика видимости |
+| Game day | абсолютный bigint-номер дня, не timestamp реального времени |
+| Vault | существующее WebDAV-хранилище Markdown |
 
-| Term | Meaning | Source / owner |
-|---|---|---|
-| Example term | Replace with a project-specific definition | TBD |
+## Ограничения
 
-## Constraints
+Целевой стек: Go/chi/pgx/sqlc, PostgreSQL 15+, River, SolidJS/TypeScript/Vite, discordgo, Caddy, goose, Docker Compose. Это решение плана, не установленные зависимости приложения. Секреты вне Git, права на сервере, скрытые данные не выдавать игроку, история не стирается, сюжетные решения остаются мастеру.
 
-- Technical constraints:
-- Business or operational constraints:
-- Legal, privacy, or security constraints:
+## Проверки и начало работы
 
-## Architecture overview
+Артефакты: `python3 scripts/validate_artifacts.py`; генерация: `python3 scripts/generate_database_docs.py --check`. SQL: [tests/database](../../tests/database/README.md). Go/UI build/setup и запуск Compose ещё отсутствуют. Начать с TASK-002 (спайк) и/или TASK-003 (основа), соблюдая зависимости.
 
-Describe major components and their responsibilities. Link to architecture diagrams and source files rather than duplicating them.
+## Открытые решения
 
-## Development environment
-
-- Required toolchain:
-- Setup command:
-- Test command:
-- Build command:
-
-## Authoritative references
-
-- Add links to maintained specifications, API contracts, and external references.
-
-## Open questions and assumptions
-
-| Item | Type (question / assumption) | Owner | Review condition |
-|---|---|---|---|
-| Initial project context is incomplete | question | project owner | Before implementation |
+Все десять вопросов и запрошенные образцы: [open-questions](../../docs/development/open-questions.md). Владелец — project-owner. Версии Foundry/PF2e и live-интеграции из плана требуют спайка; не считать их проверенными импортом. [Полный индекс](DOCUMENTATION.md).
