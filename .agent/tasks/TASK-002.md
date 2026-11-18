@@ -5,7 +5,7 @@ status: in_progress
 priority: high
 assignee: ChatGPT
 created_at: '2026-11-17'
-updated_at: '2026-11-17'
+updated_at: '2026-11-18'
 estimate: null
 parent: null
 depends_on:
@@ -56,3 +56,7 @@ relay у вас на хосте; чтение листа PF2e; монеты ка
 - 2026-11-17 — Развёрнут self-hosted ThreeHats Relay 3.4.1 на Arch Linux; image зафиксирован digest `sha256:60df34aca78968f072a77e7d19358073aa514175e0ecec43406cb1a1ed64948e`, SQLite data persistent, host port привязан к loopback `127.0.0.1:3010`. Caddy проксирует `relay.jiene.ru` по HTTPS; Foundry доступен через `foundry.jiene.ru`. Секреты не внесены в репозиторий.
 - 2026-11-17 — Foundry VTT 14 build 367 / PF2e 8.7.0; модуль ThreeHats REST API 3.4.1 переведён с публичного Relay на `wss://relay.jiene.ru/relay`. Владелец подтвердил вход в admin UI и успешный Pairing.
 - 2026-11-17 — Read-only REST smoke test PASS: запрос `GET https://relay.jiene.ru/get?uuid=Actor.mxgc0DRWC8bA9ruI&clientId=fvtt_cca540151c686a43` с API key вернул `entity-result` для Actor `АНДРЕЙ`; PF2e 8.7.0, Foundry 14.367, level 1, XP 0, HP 0, items 0. Actor не изменялся; временный JSON удалён, shell variable с ключом очищена. Подробности в `docs/architecture/decisions/spike-0-results.md`.
+
+
+- 2026-11-18 — Подтверждена полная синхронизация мира через приложение после синхронизации мира Foundry после обновления PF2e. Найдены и сохранены 11 Actor snapshots в `foundry_actors`; для всех `character_id IS NULL`, disposition `snapshot_only`. Это ожидаемо до явной привязки. Внутренний WorldID приложения — UUID; Relay identifier `westmarches` не подменяет его. Foundry Actor не изменялись.
+- 2026-11-18 — Этап 0 остаётся `in_progress`: WebDAV ETag/If-Match, Campaign Codex exports, SSE/headless session и usage/quota не проверены.
