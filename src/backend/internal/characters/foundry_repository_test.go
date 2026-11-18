@@ -86,7 +86,7 @@ func TestFoundryRepositorySyncActorUsesOneTransaction(t *testing.T) {
 	defer state.mu.Unlock()
 	if !state.committed { t.Fatal("transaction was not committed") }
 	joined := strings.Join(state.queries, "\n")
-	for _, expected := range []string{"set_config('app.writer', 'foundry_sync', true)", "INSERT INTO characters", "UPDATE foundry_actors", "DELETE FROM inventory_items", "INSERT INTO inventory_items"} {
+	for _, expected := range []string{"SET LOCAL app.writer = 'foundry_sync'", "INSERT INTO characters", "UPDATE foundry_actors", "DELETE FROM inventory_items", "INSERT INTO inventory_items"} {
 		if !strings.Contains(joined, expected) { t.Fatalf("expected SQL %q in transaction queries:\n%s", expected, joined) }
 	}
 	if strings.Index(joined, "INSERT INTO characters") > strings.Index(joined, "UPDATE foundry_actors") {
