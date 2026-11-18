@@ -191,3 +191,72 @@ func TestDecodeSkillsSeparatesLoreWithoutDerivingIt(t *testing.T) {
 		t.Fatalf("unexpected standard skills: %+v", skills.Standard)
 	}
 }
+
+
+func TestDecodeStatisticsKeepsMissingValuesUnknown(t *testing.T) {
+	decoded, err := DecodeActor(readFixture(t, fixtureActor))
+	if err != nil { t.Fatal(err) }
+	stats := decoded.Character.Statistics
+	if len(stats.Abilities) != 0 {
+		t.Fatalf("null Actor.system.abilities must not be reconstructed: %+v", stats.Abilities)
+	}
+	if stats.Proficiencies.Perception != nil || len(stats.Proficiencies.Saves) != 0 {
+		t.Fatalf("missing Actor proficiencies must remain unavailable: %+v", stats.Proficiencies)
+	}
+	class := decoded.Character.Build.ClassProficiencies
+	if class == nil || class.PerceptionRank == nil || *class.PerceptionRank != 2 {
+		t.Fatalf("class progression profile not decoded: %+v", class)
+	}
+	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 {
+		t.Fatalf("unexpected class save baseline: %+v", class.SavingThrows)
+	}
+	if class.AdditionalSkills == nil || *class.AdditionalSkills != 3 {
+		t.Fatalf("class additional skill count missing: %+v", class)
+	}
+}
+
+func TestDecodeEquipmentCalculationInputs(t *testing.T) {
+	decoded, err := DecodeActor(readFixture(t, fixtureActor))
+	if err != nil { t.Fatal(err) }
+	var armor *CharacterItemDto
+	for i := range decoded.Character.Items {
+		if decoded.Character.Items[i].Type == "armor" { armor = &decoded.Character.Items[i]; break }
+	}
+	if armor == nil || armor.Armor == nil || armor.Runes == nil {
+		t.Fatalf("armor calculation inputs missing: %+v", armor)
+	}
+	if armor.Armor.ACBonus == nil || *armor.Armor.ACBonus != 2 ||
+		armor.Armor.DexCap == nil || *armor.Armor.DexCap != 3 {
+		t.Fatalf("unexpected armor values: %+v", armor.Armor)
+	}
+	if armor.Runes.Potency == nil || *armor.Runes.Potency != 1 ||
+		armor.Runes.Resilient == nil || *armor.Runes.Resilient != 1 {
+		t.Fatalf("unexpected rune values: %+v", armor.Runes)
+	}
+}
+
+func TestDecodeExplicitAbilityAndProficiencyInputs(t *testing.T) {
+	raw := []byte(`{"_id":"a1","type":"character","items":[],"system":{
+		"abilities":{"str":{"value":18,"mod":4},"dex":{"value":14,"mod":2}},
+		"proficiencies":{
+			"perception":{"rank":2},
+			"savingThrows":{"fortitude":{"rank":3},"reflex":{"rank":2}},
+			"defenses":{"unarmored":{"rank":1}}
+		}
+	}}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	stats := decoded.Character.Statistics
+	if got := stats.Abilities["str"]; got.Score == nil || *got.Score != 18 || got.Modifier == nil || *got.Modifier != 4 {
+		t.Fatalf("unexpected Strength input: %+v", got)
+	}
+	if stats.Proficiencies.Perception == nil || stats.Proficiencies.Perception.Rank == nil || *stats.Proficiencies.Perception.Rank != 2 {
+		t.Fatalf("perception proficiency missing: %+v", stats.Proficiencies.Perception)
+	}
+	if got := stats.Proficiencies.Saves["fortitude"]; got.Rank == nil || *got.Rank != 3 {
+		t.Fatalf("Fortitude proficiency missing: %+v", got)
+	}
+	if got := stats.Proficiencies.Defenses["unarmored"]; got.Rank == nil || *got.Rank != 1 {
+		t.Fatalf("unarmored proficiency missing: %+v", got)
+	}
+}
