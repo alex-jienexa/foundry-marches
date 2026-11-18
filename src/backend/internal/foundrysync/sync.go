@@ -92,6 +92,9 @@ func (s *SyncService) SyncAll(ctx context.Context) (SyncReport, error) {
 			report.Results = append(report.Results, result)
 			continue
 		}
+		var actorDocument struct { Type string `json:"type"` }
+		_ = json.Unmarshal(snapshot, &actorDocument)
+		result.ActorType = actorDocument.Type
 		disposition, syncErr := s.sink.SyncDiscoveredActor(ctx, s.worldID, actor.UUID, snapshot)
 		if syncErr != nil {
 			result.Error = syncErr.Error()
