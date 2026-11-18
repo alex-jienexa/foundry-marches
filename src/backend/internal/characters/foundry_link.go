@@ -26,7 +26,7 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 		return errors.New("world ID, Actor UUID, character ID and linking user ID are required")
 	}
 
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return fmt.Errorf("begin Foundry Actor link transaction: %w", err)
 	}
