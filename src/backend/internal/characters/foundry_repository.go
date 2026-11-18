@@ -89,6 +89,7 @@ func upsertFoundryActor(ctx context.Context, tx sqlExecer, record FoundrySyncRec
 INSERT INTO foundry_actors (world_id, actor_uuid, character_id, snapshot, snapshot_hash, last_synced_at)
 VALUES ($1, $2, $3, $4::jsonb, $5, now())
 ON CONFLICT (world_id, actor_uuid) DO UPDATE SET
+  character_id = COALESCE(foundry_actors.character_id, EXCLUDED.character_id),
   snapshot = EXCLUDED.snapshot,
   snapshot_hash = EXCLUDED.snapshot_hash,
   last_synced_at = now()
