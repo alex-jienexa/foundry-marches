@@ -48,9 +48,9 @@ The tests decode the committed Relay fixtures under the repository-level
 - current perception, saving-throw and defense proficiency ranks, when the Actor contains them under `system.proficiencies`;
 - current skill ranks remain in `CharacterDto.Skills`.
 
-Missing values stay absent. The decoder does not reconstruct ability scores from boosts, derive current proficiency from class progression, or execute PF2e rules.
+Missing values stay absent. The decoder does not reconstruct ability scores from boosts or execute PF2e rules. The calculator may use class progression and supported Rule Elements to derive effective proficiency ranks while preserving the baseline and source breakdown.
 
-`CharacterBuildDto.ClassProficiencies` is deliberately separate. It records the class item's progression baseline (`perception`, `savingThrows`, `defenses`, `trainedSkills`) and is **not** authoritative evidence of the character's current prepared rank. In particular, the `additional` class skill count is not used to invent selected skills.
+`CharacterBuildDto.ClassProficiencies` is deliberately separate. It records the class item's progression baseline (`perception`, `savingThrows`, `defenses`, `attacks`, `spellcasting`, `trainedSkills`) and is not by itself the character's final effective rank. The calculator starts from this baseline and applies supported upgrades. The `additional` class skill count is never used to invent selected skills.
 
 Equipment calculation inputs are exposed only where their source data is structured and recognized:
 - armor `acBonus`, `dexCap` and `strength`;
@@ -61,7 +61,7 @@ The raw Actor snapshot remains authoritative for all unrecognized fields.
 
 `CharacterDerivedStatsDto` defines the future calculator output contract: each statistic has an optional value, a status (`complete`, `incomplete`, `unavailable`), a breakdown and warnings. A missing input must never be replaced with zero. The calculation version is explicit so future algorithm changes can be distinguished.
 
-The current decoder only prepares these DTOs; it does not yet calculate AC, Perception, saves or skill totals. Temporary effects, situational modifiers, Rule Elements and other runtime-prepared values are outside this contract.
+The decoder only prepares DTOs; calculations live in the sibling `calculator` package. The calculator intentionally excludes temporary effects, situational modifiers and unsupported runtime-prepared behavior.
 
 
 ## Class progression and Rule Elements
@@ -72,7 +72,7 @@ The class Item's `system.items` map is decoded as `ClassFeatureReferenceDto` ent
 
 Rule Elements present on the class Item and owned Actor Items are projected into `RuleElementDto`. The original rule JSON is retained in `Raw`, including unsupported fields. This is declarative data only: no predicates, formulas, grants, selectors, or other Rule Element behavior are executed by the decoder.
 
-PF2e `ActiveEffectLike` can upgrade proficiency ranks, including through a `ChoiceSet`-selected path. The eventual calculator may support a deliberately narrow, documented subset (static numeric `upgrade` values and simple level brackets). Unsupported expressions, predicates, conditional rules and unresolved compendium references must produce warnings/incomplete results, never guessed ranks. This is necessary because Rule Elements can depend on selections, predicates, actor level and data-preparation phases.
+PF2e `ActiveEffectLike` can upgrade proficiency ranks, including through a `ChoiceSet`-selected path. The calculator supports a deliberately narrow, documented subset (static numeric `upgrade` values and simple level brackets). Unsupported expressions, predicates, conditional rules and unresolved compendium references must produce warnings/incomplete results, never guessed ranks. This is necessary because Rule Elements can depend on selections, predicates, actor level and data-preparation phases.
 
 Fighter fixture expectations: perception 2; Fortitude 2, Reflex 2, Will 1; defenses Heavy/Light/Medium/Unarmored 1; attacks Advanced 1, Martial 2, Simple 2, Unarmed 2; spellcasting 0. Its class progression table contains 15 feature references, two at level 1. The `fighterSkill` ChoiceSet and its ActiveEffectLike are preserved as source rules.
 
@@ -85,10 +85,12 @@ The sibling `calculator` package resolves effective proficiency ranks from:
 3. static numeric `ActiveEffectLike` rules with `mode: upgrade`, including simple
    level brackets and `ChoiceSet` selections preserved on the source item.
 
-The resolver does not evaluate predicates, formulas, grants, `FlatModifier`,
-conditional rules or other Rule Element kinds. Class feature references whose
-level has been reached but whose compendium document is not present among Actor
-Items are reported as warnings. A warning makes the rank result incomplete.
+The rank resolver does not evaluate predicates, formulas, grants or conditional
+rank rules. The derived-stat calculator additionally supports only unconditional
+numeric `FlatModifier` rules with `type: item`. Class feature references whose
+level has been reached but whose document is not present among Actor Items can
+be supplied through `ResolveProficiencyRanksWithFeatureRules`; otherwise they
+are reported as warnings and the rank result is incomplete.
 
 Run tests from `src/backend` with `go test ./...` and `go vet ./...`.
 
