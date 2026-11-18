@@ -1,6 +1,7 @@
 package calculator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -22,6 +23,66 @@ type ProficiencyRanks = pf2e.CharacterProficiencyRanksDto
 // is reported as unresolved, rather than guessed.
 func ResolveProficiencyRanks(character pf2e.CharacterDto) ProficiencyRanks {
 	return ResolveProficiencyRanksWithFeatureRules(character, nil)
+}
+
+// CompendiumItemResolver is implemented by the read-only Foundry/Relay
+// adapter. It must return the Item document for the exact compendium UUID.
+type CompendiumItemResolver interface {
+	ResolveCompendiumItem(ctx context.Context, uuid string) ([]byte, error)
+}
+
+// ResolveProficiencyRanksWithResolver fetches class-feature documents for
+// progression entries already reached by the character, decodes their Rule
+// Elements, and then resolves the effective proficiency ranks.
+func ResolveProficiencyRanksWithResolver(ctx context.Context, character pf2e.CharacterDto, resolver CompendiumItemResolver) ProficiencyRanks {
+	featureRules, loadWarnings := LoadClassFeatureRuleElements(ctx, character, resolver)
+	result := ResolveProficiencyRanksWithFeatureRules(character, featureRules)
+	result.Warnings = mergeWarnings(result.Warnings, loadWarnings)
+	result.Complete = result.Complete && len(result.Warnings) == 0
+	return result
+}
+
+// LoadClassFeatureRuleElements resolves only reached class features that are
+// not already embedded as Actor Items. A missing resolver or failed lookup is
+// retained as a warning; it never silently produces a lower rank.
+func LoadClassFeatureRuleElements(ctx context.Context, character pf2e.CharacterDto, resolver CompendiumItemResolver) (map[string][]pf2e.RuleElementDto, []string) {
+	resolved := make(map[string][]pf2e.RuleElementDto)
+	var warnings []string
+	class := character.Build.ClassProficiencies
+	if class == nil {
+		return resolved, warnings
+	}
+	level := 0
+	if character.Progression.Level != nil {
+		level = *character.Progression.Level
+	}
+	for _, feature := range class.Features {
+		if feature.Level == nil || level < *feature.Level || hasCompendiumSource(character.Items, feature.UUID) {
+			continue
+		}
+		if resolver == nil {
+			warnings = append(warnings, "no compendium resolver configured for "+feature.UUID)
+			continue
+		}
+		payload, err := resolver.ResolveCompendiumItem(ctx, feature.UUID)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("resolve class feature %s: %v", feature.UUID, err))
+			continue
+		}
+		decoded, err := pf2e.DecodeItem(payload)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("decode class feature %s: %v", feature.UUID, err))
+			continue
+		}
+		parts := strings.Split(feature.UUID, ".")
+		expectedID := parts[len(parts)-1]
+		if decoded.Foundry.ID != expectedID {
+			warnings = append(warnings, fmt.Sprintf("class feature UUID %s resolved to unexpected Item ID %s", feature.UUID, decoded.Foundry.ID))
+			continue
+		}
+		resolved[feature.UUID] = decoded.Character.RuleElements
+	}
+	return resolved, warnings
 }
 
 // ResolveProficiencyRanksWithFeatureRules additionally accepts Rule Elements
