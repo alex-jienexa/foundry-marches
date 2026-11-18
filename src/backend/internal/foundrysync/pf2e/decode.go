@@ -119,6 +119,24 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 	}, nil
 }
 
+// DecodeItemResponse unwraps a Relay entity-result envelope when present,
+// then decodes the returned Item document. Bare Item JSON is also accepted.
+func DecodeItemResponse(payload []byte) (*DecodedItem, error) {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &envelope); err != nil {
+		return nil, fmt.Errorf("%w: decode Item response: %v", ErrInvalidPayload, err)
+	}
+	if data, ok := envelope["data"]; ok && len(data) > 0 && !bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		var kind string
+		_ = json.Unmarshal(envelope["type"], &kind)
+		if kind != "" && kind != "entity-result" {
+			return nil, fmt.Errorf("%w: unexpected Relay Item response type %q", ErrInvalidPayload, kind)
+		}
+		return DecodeItem(data)
+	}
+	return DecodeItem(payload)
+}
+
 // DecodeItem returns both a normalized projection and the source Item document.
 func DecodeItem(payload []byte) (*DecodedItem, error) {
 	var item FoundryItemDto
