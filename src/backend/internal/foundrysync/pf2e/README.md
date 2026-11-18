@@ -89,8 +89,10 @@ The rank resolver does not evaluate predicates, formulas, grants or conditional
 rank rules. The derived-stat calculator additionally supports only unconditional
 numeric `FlatModifier` rules with `type: item`. Class feature references whose
 level has been reached but whose document is not present among Actor Items can
-be supplied through `ResolveProficiencyRanksWithFeatureRules`; otherwise they
-are reported as warnings and the rank result is incomplete.
+be loaded by an implementation of `calculator.CompendiumItemResolver` and
+`CalculateDerivedStatsWithResolver`; otherwise they are reported as warnings
+and the rank result is incomplete. The resolver must return the exact Item
+JSON for the requested UUID; it is read-only.
 
 Run tests from `src/backend` with `go test ./...` and `go vet ./...`.
 
