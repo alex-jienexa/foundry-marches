@@ -2,23 +2,26 @@ schema_version: '1.0'
 project_status: in_progress
 health: at_risk
 updated_at: '2026-11-18'
-current_focus: TASK-004 — транзакционная привязка обнаруженного Foundry Actor к существующему персонажу приложения; далее user auth/RBAC, HTTP endpoint и approval
+current_focus: Discord bot-only identity/RBAC and confirmed Foundry Actor linking; next verification, approval and ownership flow
 active_task: TASK-004
 active_branch: feat/task-004-character-linking
-last_checkpoint: '2026-11-18: main merge commit 618bf862dd070e3688709cc319cf55b042e96df0; отдельная ветка feat/task-004-character-linking содержит repository link slice и opt-in PostgreSQL tests'
+last_checkpoint: '2026-11-18: feat/task-004-character-linking adds Discord Gateway bot, internal bot API, hybrid RBAC, migration and confirmed Actor linking; runtime verification pending'
 last_verified_commit: 618bf862dd070e3688709cc319cf55b042e96df0
 open_blockers:
 - Отсутствует исходное ТЗ v1.0 и два дополнения; не реконструировать требования по догадкам
-- Не завершены Discord OAuth, user sessions, RBAC и аудит (этап 1)
-- Не реализованы пользовательская session/RBAC и POST /api/characters/link; repository slice написан, но не запускался в этой среде
+- Новые Discord Go packages/бот/API ещё не прошли локальный gofmt, go test, go vet и Docker build
+- Migration 0002_discord_bot_auth.sql ещё не применена к существующей БД
+- Bot token, Application ID, Guild ID и service token ещё не настроены в production .env
+- Наличие application character Андрея нужно проверить через /characters до link test
 - Не получены Campaign Codex JSON exports и образцы Obsidian; WebDAV ETag/If-Match не проверен
 - Не проверены Relay SSE, headless GM session и usage/quota
 - GitHub Actions workflow существует, но удалённый run для текущей ветки ещё не подтверждён
 next_actions:
-- Запустить gofmt, go test ./..., go vet ./... и opt-in PostgreSQL integration suite для ветки feat/task-004-character-linking
-- Реализовать/подключить user identity, sessions и RBAC permission foundry.manage; не использовать sync bearer token для пользовательских операций
-- После появления auth boundary добавить POST /api/characters/link с корректными HTTP status mapping и actor user ID из auth context
-- После link endpoint завершить approval/review flow, лимиты/NPC и устойчивый sync lifecycle
+- Запустить gofmt, go test ./..., go vet ./... и Docker build для API и bot
+- Проверить Compose config, применить migration 0002 к существующей БД без удаления volume
+- Создать Discord application/bot, настроить IDs/secrets и запустить discord-bot service по docs/integrations/discord-bot.md
+- Проверить /register, owner bootstrap, role grant/map и Actor link flow на Андрее
+- Затем реализовать approval/review, ownership confirmation, limits/NPC и устойчивый sync lifecycle
 - После link завершить approval, лимиты/NPC и устойчивый sync lifecycle
 - Продолжить незавершённые проверки этапа 0 и этапа 1 без изменения production/Foundry данных без отдельного разрешения
 - CI: после открытия PR владельцем проверить фактический GitHub Actions run; CD пока не проектировать в коде до отдельного одобрения
@@ -27,12 +30,14 @@ recent_changes:
 - Все 11 записей имеют внутренний world_id UUID 00000000-0000-4000-8000-000000000001 и character_id NULL; snapshot_only ожидаем до явной привязки
 - Foundry REST Relay 3.4.1 deployed, Pairing подтверждён; интеграция read-only
 - Docker Compose PostgreSQL 18 Alpine и API запущены; GET /healthz вернул HTTP 200
-- Backend содержит Relay adapter, PF2e DTO/decoder/calculator, sync service, persistence repository, PostgreSQL integration tests и отдельный FoundryRepository.LinkActor slice (ещё не проверен запуском)
+- Backend содержит Relay adapter, PF2e DTO/decoder/calculator, sync service, persistence repository, PostgreSQL integration tests, FoundryRepository.LinkActor и Discord-only internal auth/RBAC/link API (новые компоненты ещё не проверены запуском)
+- Добавлен отдельный Discord Gateway bot с регистрацией, role grant/map, списком Actor/characters и confirmation button
+- Добавлена migration 0002_discord_bot_auth.sql, Dockerfile.bot, Compose service discord-bot и инструкция docs/integrations/discord-bot.md
 - CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs; фактический удалённый run для этой ветки не наблюдался
 - Документация runtime, roadmap, milestones, open questions, tasks и PAD обновлена в этой ветке
 risks:
 - Этапы 0, 1 и 2 частично выполнены, но ни один не закрыт целиком
-- Bootstrap sync endpoint использует отдельный Bearer token; пользовательский link endpoint намеренно не публикуется до реализации session/RBAC
+- Foundry sync token и Discord bot service token должны оставаться разными секретами; новые Discord components ещё не прошли runtime verification
 - Синхронизация синхронная; job queue/retry и production observability не завершены
 - Нельзя выполнять destructive DB operations или удалять postgres_data volume
 - Нельзя изменять Foundry Actor; XP write остаётся вне текущей read-only модели
