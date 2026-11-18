@@ -1,0 +1,1997 @@
+{
+  "type": "entity-result",
+  "requestId": "entity_1794987106048",
+  "uuid": "Actor.mxgc0DRWC8bA9ruI",
+  "data": {
+    "name": "АНДРЕЙ",
+    "type": "character",
+    "ownership": {
+      "default": 1,
+      "1QIbSagkQ4oEC0Q1": 3
+    },
+    "prototypeToken": {
+      "flags": {
+        "pf2e": {
+          "linkToActorSize": true,
+          "autoscale": true
+        }
+      },
+      "height": 1,
+      "width": 1,
+      "actorLink": true,
+      "sight": {
+        "enabled": true,
+        "range": 0,
+        "angle": 360,
+        "visionMode": "basic",
+        "color": null,
+        "attenuation": 0.1,
+        "brightness": 0,
+        "saturation": 0,
+        "contrast": 0
+      },
+      "name": "АНДРЕЙ",
+      "displayName": 20,
+      "depth": 1,
+      "texture": {
+        "src": "systems/pf2e/icons/default-icons/character.svg",
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "fit": "contain",
+        "scaleX": 1,
+        "scaleY": 1,
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "lockRotation": true,
+      "rotation": 0,
+      "alpha": 1,
+      "disposition": -1,
+      "displayBars": 20,
+      "bar1": {
+        "attribute": "attributes.hp"
+      },
+      "bar2": {
+        "attribute": null
+      },
+      "light": {
+        "negative": false,
+        "priority": 0,
+        "alpha": 0.5,
+        "angle": 360,
+        "bright": 0,
+        "color": null,
+        "coloration": 1,
+        "dim": 0,
+        "attenuation": 0.5,
+        "luminosity": 0.5,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "animation": {
+          "type": null,
+          "speed": 5,
+          "intensity": 5,
+          "reverse": false
+        },
+        "darkness": {
+          "min": 0,
+          "max": 1
+        }
+      },
+      "detectionModes": {},
+      "occludable": {
+        "radius": 0
+      },
+      "ring": {
+        "enabled": false,
+        "colors": {
+          "ring": null,
+          "background": null
+        },
+        "effects": 1,
+        "subject": {
+          "scale": 1,
+          "texture": null
+        }
+      },
+      "turnMarker": {
+        "mode": 1,
+        "animation": null,
+        "src": null,
+        "disposition": false
+      },
+      "movementAction": null,
+      "randomImg": false,
+      "appendNumber": false,
+      "prependAdjective": false
+    },
+    "effects": [],
+    "system": {
+      "attributes": {
+        "hp": {
+          "value": 20,
+          "temp": 0
+        }
+      },
+      "initiative": {
+        "statistic": "perception"
+      },
+      "details": {
+        "languages": {
+          "value": [],
+          "details": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "biography": {
+          "appearance": "",
+          "backstory": "",
+          "birthPlace": "",
+          "attitude": "",
+          "beliefs": "",
+          "anathema": [],
+          "edicts": [],
+          "likes": "",
+          "dislikes": "",
+          "catchphrases": "",
+          "campaignNotes": "",
+          "allies": "",
+          "enemies": "",
+          "organizations": "",
+          "visibility": {
+            "appearance": true,
+            "backstory": false,
+            "personality": false,
+            "campaign": false
+          }
+        },
+        "keyability": {
+          "value": "str"
+        },
+        "xp": {
+          "value": 0,
+          "min": 0,
+          "max": 1000
+        },
+        "age": {
+          "value": ""
+        },
+        "height": {
+          "value": ""
+        },
+        "weight": {
+          "value": ""
+        },
+        "gender": {
+          "value": ""
+        },
+        "ethnicity": {
+          "value": ""
+        },
+        "nationality": {
+          "value": ""
+        }
+      },
+      "resources": {
+        "heroPoints": {
+          "value": 1,
+          "max": 3
+        }
+      },
+      "_migration": {
+        "version": 0.961,
+        "previous": null
+      },
+      "abilities": null,
+      "skills": {
+        "thievery": {
+          "rank": 3
+        },
+        "medicine": {
+          "rank": 2
+        },
+        "intimidation": {
+          "rank": 4
+        }
+      },
+      "pfs": {
+        "playerNumber": null,
+        "characterNumber": null,
+        "levelBump": false,
+        "currentFaction": "EA",
+        "school": null,
+        "reputation": {
+          "EA": null,
+          "GA": null,
+          "HH": null,
+          "VS": null,
+          "RO": null,
+          "VW": null
+        }
+      },
+      "exploration": [],
+      "build": {
+        "attributes": {
+          "boosts": {
+            "1": [
+              "str",
+              "wis",
+              "con",
+              "dex"
+            ]
+          }
+        }
+      }
+    },
+    "_id": "mxgc0DRWC8bA9ruI",
+    "img": "systems/pf2e/icons/default-icons/character.svg",
+    "items": [
+      {
+        "_id": "iGn340umy3bYyD57",
+        "img": "systems/pf2e/icons/ancestries/human.webp",
+        "name": "Человек / Human",
+        "system": {
+          "additionalLanguages": {
+            "count": 1,
+            "custom": "",
+            "value": []
+          },
+          "boosts": {
+            "0": {
+              "value": [
+                "cha",
+                "con",
+                "dex",
+                "int",
+                "str",
+                "wis"
+              ],
+              "selected": "str"
+            },
+            "1": {
+              "value": [
+                "str",
+                "dex",
+                "con",
+                "int",
+                "wis",
+                "cha"
+              ],
+              "selected": "wis"
+            },
+            "2": {
+              "value": [],
+              "selected": null
+            }
+          },
+          "description": {
+            "value": "<p><em>Будучи непредсказуемым и разнообразным, как любой из народов Голариона, люди обладают исключительным стремлением и способностью переносить невзгоды и распространяться. Хотя многие цивилизации процветали до того, как человечество приобрело известность, люди построили одни из величайших и самых ужасных обществ на протяжении всей истории, и сегодня они являются самыми густонаселенными народами в царствах Внутреннего моря.</em></p><p>@UUID[Compendium.pf2e.journals.JournalEntry.45SK8rdbbxvEHfMn.JournalEntryPage.7pU8yM7yPMw92SY3]</p>",
+            "gm": ""
+          },
+          "flaws": {
+            "0": {
+              "value": [],
+              "selected": null
+            }
+          },
+          "hands": 2,
+          "hp": 8,
+          "items": {},
+          "languages": {
+            "custom": "",
+            "value": [
+              "common"
+            ]
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "reach": 5,
+          "rules": [],
+          "size": "med",
+          "speed": 25,
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "human",
+              "humanoid"
+            ],
+            "otherTags": []
+          },
+          "vision": "normal",
+          "slug": "human",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "alternateAncestryBoosts": null,
+          "voluntary": {
+            "legacy": false,
+            "boost": null,
+            "flaws": []
+          }
+        },
+        "type": "ancestry",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.ancestries.Item.IiG7DgeLWYrSNXuX",
+          "createdTime": 1794986853388,
+          "modifiedTime": 1794986892123,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Human",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        }
+      },
+      {
+        "_id": "UJW3X8lrZC4UMSWf",
+        "folder": "O7DVLyyF05fGfpdo",
+        "img": "systems/pf2e/icons/features/ancestry/wintertouched-human.webp",
+        "name": "Зимостойкий человек / Wintertouched Human",
+        "system": {
+          "ancestry": {
+            "name": "Human",
+            "slug": "human",
+            "uuid": "Compendium.pf2e.ancestries.Item.IiG7DgeLWYrSNXuX"
+          },
+          "description": {
+            "value": "<p>Сила зимы течёт сквозь вас. Это наследие наиболее распространено в Иррисене среди Ядвиг, благодаря их происхождению от Бабы-Яги, а так же среди некоторых Эрутаков, получившим силу от духов. Вы получаете сопротивление холоду, равное половине вашего уровня (минимум 1), и считаете эффекты @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.tjuR9WvTxFNXQbwv#temperaturnye-effekty]{Холодной окружающей среды} так, как если бы они были на одну ступень лучше (невероятный холод становится экстремальным, экстремальный становится сильным и т.д.).</p>",
+            "gm": ""
+          },
+          "publication": {
+            "license": "OGL",
+            "remaster": false,
+            "title": "Pathfinder Lost Omens Character Guide",
+            "authors": ""
+          },
+          "rules": [
+            {
+              "key": "Resistance",
+              "type": "cold",
+              "value": "max(1,floor(@actor.level/2))"
+            }
+          ],
+          "traits": {
+            "rarity": "common",
+            "value": [],
+            "otherTags": []
+          },
+          "slug": "wintertouched-human",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          }
+        },
+        "type": "heritage",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.heritages.Item.KO33MNyY9VqNQmbZ",
+          "createdTime": 1794986859630,
+          "modifiedTime": 1794986859631,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Wintertouched Human",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        }
+      },
+      {
+        "_id": "wRnKD5kAlQCJEvlA",
+        "img": "systems/pf2e/icons/classes/fighter.webp",
+        "name": "Воин / Fighter",
+        "system": {
+          "ancestryFeatLevels": {
+            "value": [
+              1,
+              5,
+              9,
+              13,
+              17
+            ]
+          },
+          "attacks": {
+            "advanced": 1,
+            "martial": 2,
+            "other": {
+              "name": "",
+              "rank": 0
+            },
+            "simple": 2,
+            "unarmed": 2
+          },
+          "classFeatLevels": {
+            "value": [
+              1,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20
+            ]
+          },
+          "defenses": {
+            "heavy": 1,
+            "light": 1,
+            "medium": 1,
+            "unarmored": 1
+          },
+          "description": {
+            "value": "<p><em>Сражаясь ради чести, жадности, верности или просто ради азарта битвы, вы бесспорно являетесь мастером владения оружием и боевыми техниками. Вы сочетаете свои действия в комбинациях открывающих движений, завершающих ударов, и контратак, когда ваши враги по неосторожности ослабят защиту. Являетесь ли вы рыцарем, наёмником, снайпером или мастером клинка, вы искусно отточили свои боевые навыки и обрушиваете сокрушительные критические атаки на своих врагов.</em></p><p>@UUID[Compendium.pf2e.journals.JournalEntry.kzxu2dI7tFxv6Ix6.JournalEntryPage.HZbrRRVzW7w17L2W]</p>",
+            "gm": ""
+          },
+          "generalFeatLevels": {
+            "value": [
+              3,
+              7,
+              11,
+              15,
+              19
+            ]
+          },
+          "hp": 10,
+          "items": {
+            "0c3e5": {
+              "img": "icons/weapons/axes/axe-broad-engraved-black-grey.webp",
+              "level": 13,
+              "name": "Легендарное владение оружием",
+              "uuid": "Compendium.pf2e.classfeatures.Item.F5VenhIQMDkeGvmV"
+            },
+            "2jey6": {
+              "img": "icons/equipment/head/helm-barbute-rounded-steel.webp",
+              "level": 11,
+              "name": "Воинский опыт",
+              "uuid": "Compendium.pf2e.classfeatures.Item.bAaI7h937Nr3g93U"
+            },
+            "9c5ay": {
+              "img": "icons/equipment/chest/breastplate-banded-steel-gold.webp",
+              "level": 11,
+              "name": "Опыт с доспехами",
+              "uuid": "Compendium.pf2e.classfeatures.Item.x5jaCJxsmD5sx3KB"
+            },
+            "EYY9w": {
+              "img": "icons/skills/melee/strike-hammer-destructive-orange.webp",
+              "level": 1,
+              "name": "Реагирующий удар",
+              "uuid": "Compendium.pf2e.classfeatures.Item.hmShTfPOcTaKgbf4"
+            },
+            "Yo8rt": {
+              "img": "icons/magic/symbols/symbol-lightning-bolt.webp",
+              "level": 15,
+              "name": "Закалённые рефлексы",
+              "uuid": "Compendium.pf2e.classfeatures.Item.2ImD2TB0RVic1VUc"
+            },
+            "e1e4m": {
+              "img": "icons/equipment/shield/round-wooden-boss-gold-brown.webp",
+              "level": 1,
+              "name": "Блок щитом",
+              "uuid": "Compendium.pf2e.classfeatures.Item.eZNCckLzbH3GyncH"
+            },
+            "eDncW": {
+              "img": "icons/creatures/mammals/bull-horned-blue.webp",
+              "level": 9,
+              "name": "Закалённый в боях",
+              "uuid": "Compendium.pf2e.classfeatures.Item.gdSmSTaGDxf4g2d8"
+            },
+            "enizk": {
+              "img": "icons/environment/settlement/target-dummy.webp",
+              "level": 15,
+              "name": "Улучшенная адаптация",
+              "uuid": "Compendium.pf2e.classfeatures.Item.W2rwudMNcAxs8VoX"
+            },
+            "ij943": {
+              "img": "icons/environment/people/charge.webp",
+              "level": 7,
+              "name": "Оценка противника",
+              "uuid": "Compendium.pf2e.classfeatures.Item.TIvzBALymvb56L79"
+            },
+            "lakjk": {
+              "img": "icons/sundries/flags/banner-standard-tattered-red.webp",
+              "level": 3,
+              "name": "Храбрость",
+              "uuid": "Compendium.pf2e.classfeatures.Item.GJKJafDGuX4BeAeN"
+            },
+            "q0xyz": {
+              "img": "icons/equipment/chest/breastplate-sculpted-grey.webp",
+              "level": 17,
+              "name": "Мастерство доспехов",
+              "uuid": "Compendium.pf2e.classfeatures.Item.CGB1TczFhQhdQxml"
+            },
+            "txlgu": {
+              "img": "icons/environment/settlement/target-dummy.webp",
+              "level": 9,
+              "name": "Боевая адаптация",
+              "uuid": "Compendium.pf2e.classfeatures.Item.8g6HzARbhfcgilP8"
+            },
+            "u1d1r": {
+              "img": "systems/pf2e/icons/features/classes/weapon-specialization.webp",
+              "level": 7,
+              "name": "Специализация в оружии",
+              "uuid": "Compendium.pf2e.classfeatures.Item.9EqIasqfI8YIM3Pt"
+            },
+            "u8k07": {
+              "img": "icons/weapons/swords/sword-guard-steel-green.webp",
+              "level": 5,
+              "name": "Воинское мастерство оружия",
+              "uuid": "Compendium.pf2e.classfeatures.Item.gApJtAdNb9ST4Ms9"
+            },
+            "uKeq1": {
+              "img": "icons/skills/melee/hand-grip-sword-orange.webp",
+              "level": 15,
+              "name": "Выдающаяся специализация в оружии",
+              "uuid": "Compendium.pf2e.classfeatures.Item.Z7HX6TeFsaup7Dx9"
+            },
+            "x98c2": {
+              "img": "icons/skills/ranged/arrow-flying-broadhead-metal.webp",
+              "level": 19,
+              "name": "Разносторонняя легенда",
+              "uuid": "Compendium.pf2e.classfeatures.Item.0H2LxtiZTJ275pSD"
+            }
+          },
+          "keyAbility": {
+            "value": [
+              "dex",
+              "str"
+            ],
+            "selected": "str"
+          },
+          "perception": 2,
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [
+            {
+              "adjustName": false,
+              "choices": [
+                {
+                  "label": "PF2E.Skill.Acrobatics",
+                  "value": "acrobatics"
+                },
+                {
+                  "label": "PF2E.Skill.Athletics",
+                  "value": "athletics"
+                }
+              ],
+              "flag": "fighterSkill",
+              "key": "ChoiceSet",
+              "prompt": "PF2E.SpecificRule.Prompt.Skill",
+              "selection": "athletics"
+            },
+            {
+              "key": "ActiveEffectLike",
+              "mode": "upgrade",
+              "path": "system.skills.{item|flags.system.rulesSelections.fighterSkill}.rank",
+              "value": 1
+            }
+          ],
+          "savingThrows": {
+            "fortitude": 2,
+            "reflex": 2,
+            "will": 1
+          },
+          "skillFeatLevels": {
+            "value": [
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20
+            ]
+          },
+          "skillIncreaseLevels": {
+            "value": [
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              19
+            ]
+          },
+          "spellcasting": 0,
+          "trainedSkills": {
+            "additional": 3,
+            "value": []
+          },
+          "traits": {
+            "rarity": "common",
+            "otherTags": []
+          },
+          "slug": "fighter",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          }
+        },
+        "type": "class",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.classes.Item.8zn3cD6GSmoo1LW4",
+          "createdTime": 1794986870552,
+          "modifiedTime": 1794986885799,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Fighter",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        }
+      },
+      {
+        "img": "icons/skills/melee/strike-hammer-destructive-orange.webp",
+        "name": "Реагирующий удар / Reactive Strike",
+        "system": {
+          "actionType": {
+            "value": "passive"
+          },
+          "actions": {
+            "value": null
+          },
+          "category": "classfeature",
+          "description": {
+            "value": "<p>Всегда внимательный к уязвимостям, вы можете быстро атаковать неприятеля, который оставляет брешь в своей защите. Вы получаете реакцию @UUID[Compendium.pf2e.actionspf2e.Item.KAVf7AmRnbCAHrkT].</p>",
+            "gm": ""
+          },
+          "level": {
+            "value": 1
+          },
+          "prerequisites": {
+            "value": []
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [
+            {
+              "key": "GrantItem",
+              "uuid": "Compendium.pf2e.actionspf2e.Item.KAVf7AmRnbCAHrkT",
+              "flag": "reactiveStrike"
+            }
+          ],
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "fighter"
+            ],
+            "otherTags": []
+          },
+          "slug": "reactive-strike",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "onlyLevel1": false,
+          "maxTakable": 1,
+          "subfeatures": {
+            "proficiencies": {},
+            "senses": {},
+            "suppressedFeatures": []
+          },
+          "location": "wRnKD5kAlQCJEvlA"
+        },
+        "type": "feat",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.classfeatures.Item.hmShTfPOcTaKgbf4",
+          "createdTime": 1794986870554,
+          "modifiedTime": 1794986870560,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Reactive Strike",
+            "originalPayload": {},
+            "lang": "ru"
+          },
+          "pf2e": {
+            "itemGrants": {
+              "reactiveStrike": {
+                "id": "QjU7vb49pi4ec07f",
+                "onDelete": "detach"
+              }
+            }
+          }
+        },
+        "_id": "5NZhZhc1bP1fL7Qu"
+      },
+      {
+        "img": "icons/equipment/shield/round-wooden-boss-gold-brown.webp",
+        "name": "Блок щитом / Shield Block",
+        "system": {
+          "actionType": {
+            "value": "passive"
+          },
+          "actions": {
+            "value": null
+          },
+          "category": "classfeature",
+          "description": {
+            "value": "<p>Вы получаете общую способность @UUID[Compendium.pf2e.feats-srd.Item.jM72TjJ965jocBV8], это реакция для уменьшения урона с помощью щита.</p>",
+            "gm": ""
+          },
+          "level": {
+            "value": 1
+          },
+          "prerequisites": {
+            "value": []
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [
+            {
+              "key": "GrantItem",
+              "uuid": "Compendium.pf2e.feats-srd.Item.jM72TjJ965jocBV8",
+              "flag": "shieldBlock"
+            }
+          ],
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "champion",
+              "commander",
+              "druid",
+              "exemplar",
+              "fighter",
+              "guardian",
+              "inventor",
+              "runesmith"
+            ],
+            "otherTags": []
+          },
+          "slug": "shield-block",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "onlyLevel1": false,
+          "maxTakable": 1,
+          "subfeatures": {
+            "proficiencies": {},
+            "senses": {},
+            "suppressedFeatures": []
+          },
+          "location": "wRnKD5kAlQCJEvlA"
+        },
+        "type": "feat",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.classfeatures.Item.eZNCckLzbH3GyncH",
+          "createdTime": 1794986870555,
+          "modifiedTime": 1794986870561,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 100,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Shield Block",
+            "originalPayload": {},
+            "lang": "ru"
+          },
+          "pf2e": {
+            "itemGrants": {
+              "shieldBlock": {
+                "id": "kXflcWszDjVmwwYw",
+                "onDelete": "detach"
+              }
+            }
+          }
+        },
+        "_id": "brsbmVqgQZLzS4AP"
+      },
+      {
+        "folder": "mbyY4IHblvI3wYlS",
+        "img": "systems/pf2e/icons/actions/Reaction.webp",
+        "name": "Реагирующий удар / Reactive Strike",
+        "system": {
+          "actionType": {
+            "value": "reaction"
+          },
+          "actions": {
+            "value": null
+          },
+          "category": "defensive",
+          "description": {
+            "value": "<p><strong>Триггер:</strong> Существо в вашей досягаемости совершает действие @Trait[Manipulate]{воздействия} или @Trait[Move]{движения}, атаку дальнего боя, или покидает квадрат во время используемого действия @Trait[Move]{движения}.</p><hr><p>Вы набрасываетесь на врага, который открылся для удара. Совершите @UUID[Compendium.pf2e.actionspf2e.Item.VjxZFuUXrCU94MWR]{Удар} ближнего боя по спровоцировавшему существу. Если ваша атака является критическим попаданием, и спровоцировавшее действие имело признак @Trait[Manipulate]{воздействие}, то вы прерываете это действие. Штраф множественных атак не применяется к этому \"Удару\", а сам он не учитывается при подсчёте вашего штрафа множественных атак.</p>",
+            "gm": ""
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [],
+          "traits": {
+            "value": [],
+            "otherTags": []
+          },
+          "slug": "reactive-strike",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          }
+        },
+        "type": "action",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.actionspf2e.Item.KAVf7AmRnbCAHrkT",
+          "createdTime": 1794986870558,
+          "modifiedTime": 1794986870561,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Reactive Strike",
+            "originalPayload": {},
+            "lang": "ru"
+          },
+          "pf2e": {
+            "grantedBy": {
+              "id": "5NZhZhc1bP1fL7Qu",
+              "onDelete": "cascade"
+            }
+          }
+        },
+        "_id": "QjU7vb49pi4ec07f"
+      },
+      {
+        "folder": "68m1OED3fDU3fIfR",
+        "img": "icons/sundries/books/book-red-exclamation.webp",
+        "name": "Блок щитом / Shield Block",
+        "system": {
+          "actionType": {
+            "value": "reaction"
+          },
+          "actions": {
+            "value": null
+          },
+          "category": "general",
+          "description": {
+            "value": "<p><strong>Триггер:</strong> Вы должны получить физический урон (дробящий, колющий или рубящий) от @Trait[Attack]{атаки}, а ваш щит поднят.</p><hr><p>Вы выставляете свой щит, чтобы прикрыться от удара. Ваш щит защищает вас от части урона в количестве вплоть до значения Твердости щита. И щит, и вы получаете любой оставшийся урон в полном объёме, в результате чего щит может оказаться @UUID[Compendium.pf2e.conditionitems.Item.6dNUvdb1dhToNDj3]{Сломан} или уничтожен.</p>",
+            "gm": ""
+          },
+          "level": {
+            "value": 1
+          },
+          "prerequisites": {
+            "value": []
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [],
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "general"
+            ],
+            "otherTags": []
+          },
+          "slug": "shield-block",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "onlyLevel1": false,
+          "maxTakable": 1,
+          "subfeatures": {
+            "proficiencies": {},
+            "senses": {},
+            "suppressedFeatures": []
+          },
+          "location": null
+        },
+        "type": "feat",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.feats-srd.Item.jM72TjJ965jocBV8",
+          "createdTime": 1794986870559,
+          "modifiedTime": 1794986870561,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Shield Block",
+            "originalPayload": {},
+            "lang": "ru"
+          },
+          "pf2e": {
+            "grantedBy": {
+              "id": "brsbmVqgQZLzS4AP",
+              "onDelete": "cascade"
+            }
+          }
+        },
+        "_id": "kXflcWszDjVmwwYw"
+      },
+      {
+        "_id": "0lpjN20JQnM04FVG",
+        "img": "systems/pf2e/icons/default-icons/background.svg",
+        "name": "Канонир / Cannoneer",
+        "system": {
+          "description": {
+            "gm": "",
+            "value": "<p>Вы служили членом экипажа на борту военного судна или пиратского корабля и отвечали за эксплуатацию и обслуживание корабельных пушек. При выполнении ваших обязанностей, для вас были одинаково важны сильная спина и быстрые рефлексы, и вы знаете толк во взрывчатых веществах и опасностях, которые они таят. Эти навыки сослужили вам хорошую службу в вашей новой жизни авантюриста, ведь по сравнению с весом пушки, груз снаряжения, который заставляет бледнеть ваших союзников, вызывает у вас лишь смех.</p><p>Выберите два повышения атрибутов. Одно должно быть использовано для <strong>Ловкости</strong> или <strong>Силы</strong>, а другое — свободное.</p><p>Вы обучены <strong>Атлетике</strong> и Знаниям военного дела (Warfare), а также получаете способность навыка @UUID[Compendium.pf2e.feats-srd.Item.C0Tcelg3BAPhML6J].</p>"
+          },
+          "rules": [],
+          "slug": "cannoneer",
+          "_migration": {
+            "version": 0.961,
+            "lastMigration": null,
+            "previous": null
+          },
+          "traits": {
+            "otherTags": [],
+            "value": [],
+            "rarity": "common"
+          },
+          "publication": {
+            "title": "Pathfinder Guns & Gears",
+            "authors": "",
+            "license": "ORC",
+            "remaster": true
+          },
+          "boosts": {
+            "0": {
+              "value": [
+                "dex",
+                "str"
+              ],
+              "selected": "str"
+            },
+            "1": {
+              "value": [
+                "cha",
+                "con",
+                "dex",
+                "int",
+                "str",
+                "wis"
+              ],
+              "selected": "con"
+            }
+          },
+          "items": {
+            "ab9pz": {
+              "img": "icons/sundries/books/book-red-exclamation.webp",
+              "level": 1,
+              "name": "Hefty Hauler",
+              "uuid": "Compendium.pf2e.feats-srd.Item.C0Tcelg3BAPhML6J"
+            }
+          },
+          "trainedSkills": {
+            "value": [
+              "athletics"
+            ],
+            "lore": [
+              "Warfare Lore"
+            ],
+            "custom": ""
+          }
+        },
+        "type": "background",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.backgrounds.Item.8CLTXqyjdzEMKnZC",
+          "createdTime": 1794986880766,
+          "modifiedTime": 1794986888811,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Cannoneer",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        }
+      },
+      {
+        "folder": "QhHpEbq98ZJAyDiH",
+        "img": "icons/sundries/books/book-red-exclamation.webp",
+        "name": "Сильный носильщик / Hefty Hauler",
+        "system": {
+          "actionType": {
+            "value": "passive"
+          },
+          "actions": {
+            "value": null
+          },
+          "category": "skill",
+          "description": {
+            "value": "<p>Вы можете нести больше, чем можно предположить по вашему виду. Увеличьте свои ограничения максимальной Массы и перегрузки на 2.</p>",
+            "gm": ""
+          },
+          "level": {
+            "value": 1
+          },
+          "prerequisites": {
+            "value": [
+              {
+                "value": "Обучен Атлетике"
+              }
+            ]
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [
+            {
+              "key": "ActiveEffectLike",
+              "mode": "add",
+              "path": "inventory.bulk.encumberedAfterAddend",
+              "value": 2
+            },
+            {
+              "key": "ActiveEffectLike",
+              "mode": "add",
+              "path": "inventory.bulk.maxAddend",
+              "value": 2
+            }
+          ],
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "general",
+              "skill"
+            ],
+            "otherTags": []
+          },
+          "slug": "hefty-hauler",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "onlyLevel1": false,
+          "maxTakable": 1,
+          "subfeatures": {
+            "proficiencies": {},
+            "senses": {},
+            "suppressedFeatures": []
+          },
+          "location": "0lpjN20JQnM04FVG"
+        },
+        "type": "feat",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.feats-srd.Item.C0Tcelg3BAPhML6J",
+          "createdTime": 1794986880768,
+          "modifiedTime": 1794986880769,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Hefty Hauler",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        },
+        "_id": "ikUOaeb7tbFch0zQ"
+      },
+      {
+        "_id": "9NA6ZQMTT6ktuuKl",
+        "folder": "RStBridCTD0EzIJ7",
+        "img": "icons/sundries/books/book-red-exclamation.webp",
+        "name": "Двойной разрез / Double Slice",
+        "system": {
+          "actionType": {
+            "value": "action"
+          },
+          "actions": {
+            "value": 2
+          },
+          "category": "class",
+          "description": {
+            "value": "<p><strong>Требования:</strong> Вы владеете двумя оружиями ближнего боя, каждое в отдельной руке.</p><hr><p>Вы набрасываетесь на врага с обоими оружиями. Совершите 2 @UUID[Compendium.pf2e.actionspf2e.Item.VjxZFuUXrCU94MWR]{Удара}, по одному удару каждым из требуемых оружий ближнего боя, и для каждого используя ваш текущий штраф множественных атак. Оба \"Удара\" должны быть по одной и той же цели. Если второй \"Удар\" сделан оружием, без признака @Trait[Agile]{быстрое}, то он получает штраф −2.</p><p>Если обе атаки попадают, объедините их урон и потом добавляйте любые другие применимые эффекты от обоих оружий. Вы добавляете любой точный урон только один раз, к атаке на свой выбор. Объедините урон от обоих \"Ударов\" и примените сопротивления и слабости только один раз. При расчете штрафа множественных атак, это считается как 2 атаки.</p>",
+            "gm": ""
+          },
+          "level": {
+            "value": 1,
+            "taken": 1
+          },
+          "prerequisites": {
+            "value": []
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "rules": [
+            {
+              "key": "RollOption",
+              "label": "PF2E.SpecificRule.Fighter.DoubleSlice.SecondAttackLabel",
+              "option": "double-slice-second",
+              "toggleable": true
+            },
+            {
+              "key": "FlatModifier",
+              "predicate": [
+                "double-slice-second",
+                {
+                  "not": "item:trait:agile"
+                }
+              ],
+              "selector": [
+                "melee-strike-attack-roll"
+              ],
+              "value": -2
+            }
+          ],
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "fighter"
+            ],
+            "otherTags": []
+          },
+          "slug": "double-slice",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "onlyLevel1": false,
+          "maxTakable": 1,
+          "subfeatures": {
+            "proficiencies": {},
+            "senses": {},
+            "suppressedFeatures": []
+          },
+          "location": "class-1"
+        },
+        "type": "feat",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.feats-srd.Item.onde0SxLoxLBTnvm",
+          "createdTime": 1794986927375,
+          "modifiedTime": 1794986927376,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Double Slice",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        }
+      },
+      {
+        "_id": "eigghsutPbyzCdeg",
+        "folder": "hFVleadZ20Wc5Hkc",
+        "img": "icons/sundries/books/book-red-exclamation.webp",
+        "name": "Видящий во мраке / Gloomseer",
+        "system": {
+          "actionType": {
+            "value": "passive"
+          },
+          "actions": {
+            "value": null
+          },
+          "category": "ancestry",
+          "description": {
+            "value": "<p>Мрак не таит в себе ничего страшного для вас, а завеса тьмы над Нидалом заставила вас чувствовать себя комфортно при тусклом свете. Вы получаете @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.q2chuQ4Am5puc9Cc#sumerechnoe-zrenie]{Сумеречное зрение}.</p>",
+            "gm": ""
+          },
+          "level": {
+            "value": 1,
+            "taken": 1
+          },
+          "prerequisites": {
+            "value": [
+              {
+                "value": "Этнос Нидалец"
+              }
+            ]
+          },
+          "publication": {
+            "license": "OGL",
+            "remaster": false,
+            "title": "Pathfinder Lost Omens Character Guide",
+            "authors": ""
+          },
+          "rules": [],
+          "subfeatures": {
+            "senses": {
+              "low-light-vision": {
+                "acuity": "imprecise",
+                "range": 30,
+                "special": {
+                  "ancestry": false,
+                  "llv": false,
+                  "second": false
+                }
+              }
+            },
+            "proficiencies": {},
+            "suppressedFeatures": []
+          },
+          "traits": {
+            "rarity": "common",
+            "value": [
+              "human"
+            ],
+            "otherTags": []
+          },
+          "slug": "gloomseer",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "onlyLevel1": false,
+          "maxTakable": 1,
+          "location": "ancestry-1"
+        },
+        "type": "feat",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.feats-srd.Item.sL2GmYve5NXJ0wc1",
+          "createdTime": 1794986935000,
+          "modifiedTime": 1794986935000,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Gloomseer",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        }
+      },
+      {
+        "img": "icons/weapons/swords/sword-guard-blue.webp",
+        "name": "Длинный меч / Longsword",
+        "system": {
+          "description": {
+            "gm": "",
+            "value": "<p>Длинные мечи, также известные как романские мечи, могут иметь одностороннюю или двустороннюю заточку. Их клинки тяжёлые и имеют длину от 3 до 4 футов.</p>"
+          },
+          "rules": [],
+          "slug": "longsword",
+          "_migration": {
+            "version": 0.961,
+            "lastMigration": null,
+            "previous": null
+          },
+          "traits": {
+            "otherTags": [],
+            "value": [
+              "versatile-p"
+            ],
+            "rarity": "common"
+          },
+          "publication": {
+            "title": "Pathfinder Player Core",
+            "authors": "",
+            "license": "ORC",
+            "remaster": true
+          },
+          "level": {
+            "value": 0
+          },
+          "quantity": 1,
+          "baseItem": "longsword",
+          "bulk": {
+            "value": 1
+          },
+          "hp": {
+            "value": 0,
+            "max": 0
+          },
+          "hardness": 0,
+          "price": {
+            "value": {
+              "gp": 1
+            }
+          },
+          "equipped": {
+            "carryType": "worn",
+            "invested": null,
+            "handsHeld": 0
+          },
+          "containerId": null,
+          "size": "med",
+          "material": {
+            "type": null,
+            "grade": null
+          },
+          "identification": {
+            "status": "identified",
+            "unidentified": {
+              "name": "",
+              "img": "",
+              "data": {
+                "description": {
+                  "value": ""
+                }
+              }
+            }
+          },
+          "usage": {
+            "value": "held-in-one-hand",
+            "canBeAmmo": false
+          },
+          "category": "martial",
+          "group": "sword",
+          "bonus": {
+            "value": 0
+          },
+          "damage": {
+            "dice": 1,
+            "die": "d8",
+            "damageType": "slashing",
+            "persistent": null
+          },
+          "splashDamage": {
+            "value": 0
+          },
+          "range": null,
+          "expend": null,
+          "ammo": null,
+          "reload": {
+            "value": null
+          },
+          "grade": null,
+          "runes": {
+            "potency": 0,
+            "striking": 0,
+            "property": []
+          },
+          "specific": null,
+          "subitems": [],
+          "bonusDamage": {
+            "value": 0
+          }
+        },
+        "type": "weapon",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.equipment-srd.Item.LJdbVTOZog39EEbi",
+          "createdTime": 1794986948790,
+          "modifiedTime": 1794986948790,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Longsword",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        },
+        "_id": "5wcJ3QmZJGTFQBfd"
+      },
+      {
+        "img": "systems/pf2e/icons/equipment/treasure/currency/gold-pieces.webp",
+        "name": "Золотые монеты / Gold Pieces",
+        "system": {
+          "baseItem": null,
+          "bulk": {
+            "value": 1
+          },
+          "category": "coin",
+          "containerId": null,
+          "description": {
+            "value": "",
+            "gm": ""
+          },
+          "hardness": 0,
+          "hp": {
+            "max": 0,
+            "value": 0
+          },
+          "level": {
+            "value": 0
+          },
+          "material": {
+            "grade": null,
+            "type": null
+          },
+          "price": {
+            "value": {
+              "gp": 1
+            },
+            "per": 1
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "quantity": 11,
+          "rules": [],
+          "size": "med",
+          "traits": {
+            "rarity": "common",
+            "value": [],
+            "otherTags": []
+          },
+          "slug": "gold-pieces",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "equipped": {
+            "carryType": "worn"
+          },
+          "identification": {
+            "status": "identified",
+            "unidentified": null
+          },
+          "temporary": false
+        },
+        "type": "treasure",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.equipment-srd.Item.B6B7tBWJSqOBz5zz",
+          "createdTime": 1794986956211,
+          "modifiedTime": 1794986956211,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Gold Pieces",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        },
+        "_id": "s5jq8RfJbbVCzfBn"
+      },
+      {
+        "img": "systems/pf2e/icons/equipment/treasure/currency/silver-pieces.webp",
+        "name": "Серебряные монеты / Silver Pieces",
+        "system": {
+          "baseItem": null,
+          "bulk": {
+            "value": 1
+          },
+          "category": "coin",
+          "containerId": null,
+          "description": {
+            "value": "",
+            "gm": ""
+          },
+          "hardness": 0,
+          "hp": {
+            "max": 0,
+            "value": 0
+          },
+          "level": {
+            "value": 0
+          },
+          "material": {
+            "grade": null,
+            "type": null
+          },
+          "price": {
+            "value": {
+              "sp": 1
+            },
+            "per": 1
+          },
+          "publication": {
+            "license": "ORC",
+            "remaster": true,
+            "title": "Pathfinder Player Core",
+            "authors": ""
+          },
+          "quantity": 34,
+          "rules": [],
+          "size": "med",
+          "traits": {
+            "rarity": "common",
+            "value": [],
+            "otherTags": []
+          },
+          "slug": "silver-pieces",
+          "_migration": {
+            "version": 0.961,
+            "previous": null
+          },
+          "equipped": {
+            "carryType": "worn"
+          },
+          "identification": {
+            "status": "identified",
+            "unidentified": null
+          },
+          "temporary": false
+        },
+        "type": "treasure",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.equipment-srd.Item.5Ew82vBF9YfaiY9f",
+          "createdTime": 1794986956211,
+          "modifiedTime": 1794986956212,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Silver Pieces",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        },
+        "_id": "ypBeiQS5UEaz86FK"
+      },
+      {
+        "img": "icons/consumables/potions/bottle-round-corked-orante-red.webp",
+        "name": "Зелье исцеления (Малое) / Healing Potion (Lesser)",
+        "system": {
+          "description": {
+            "gm": "",
+            "value": "<p><strong>Активация:</strong> @Glyph[Action 1] (@Trait[Manipulate]{воздействие})</p><hr><p><em>Зелье исцеления</em> это бутылёк с рубиново-красной жидкостью, которая дает пьющему его ощущение покалывания по мере быстрого заживления ран. Когда вы пьёте <em>зелье исцеления</em>, то восстанавливаете @Damage[(2d8+5)[healing]]{2d8+5 ОЗ}.</p>"
+          },
+          "rules": [],
+          "slug": "healing-potion-lesser",
+          "_migration": {
+            "version": 0.961,
+            "lastMigration": null,
+            "previous": null
+          },
+          "traits": {
+            "otherTags": [],
+            "value": [
+              "consumable",
+              "healing",
+              "magical",
+              "potion",
+              "vitality"
+            ],
+            "rarity": "common"
+          },
+          "publication": {
+            "title": "Pathfinder GM Core",
+            "authors": "",
+            "license": "ORC",
+            "remaster": true
+          },
+          "level": {
+            "value": 3
+          },
+          "quantity": 1,
+          "baseItem": null,
+          "bulk": {
+            "value": 0.1
+          },
+          "hp": {
+            "value": 0,
+            "max": 0
+          },
+          "hardness": 0,
+          "price": {
+            "value": {
+              "gp": 12
+            }
+          },
+          "equipped": {
+            "carryType": "worn"
+          },
+          "containerId": null,
+          "size": "med",
+          "material": {
+            "type": null,
+            "grade": null
+          },
+          "identification": {
+            "status": "identified",
+            "unidentified": {
+              "name": "",
+              "img": "",
+              "data": {
+                "description": {
+                  "value": ""
+                }
+              }
+            }
+          },
+          "category": "potion",
+          "uses": {
+            "value": 1,
+            "max": 1,
+            "autoDestroy": true
+          },
+          "damage": {
+            "formula": "2d8+5",
+            "kind": "healing",
+            "type": "vitality"
+          },
+          "usage": {
+            "value": "held-in-one-hand"
+          },
+          "spell": null
+        },
+        "type": "consumable",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.equipment-srd.Item.e0vSAQfxhHauiAoD",
+          "createdTime": 1794986964903,
+          "modifiedTime": 1794986964903,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Healing Potion (Lesser)",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        },
+        "_id": "aVCOFubV9ZqIoC1o"
+      },
+      {
+        "img": "icons/equipment/chest/breastplate-layered-leather-studded-brown.webp",
+        "name": "Теневой доспех / Umbral Armor",
+        "system": {
+          "description": {
+            "gm": "",
+            "value": "<p>Этот темный <em>стойкости теневой клепаный кожаный доспех +1</em> часто используется для обхода вражеских позиций или быстрого преодоления препятствий на поле боя, поскольку она позволяет вам частично перемещаться по Незримому Миру (Netherworld).</p><p><strong>Активация—Затенённое перемещение:</strong> @Glyph[Action 1] (@Trait[Concentrate]{концентрация}, @Trait[Shadow]{тень})</p><p><strong>Частота:</strong> Раз в день</p><hr><p><strong>Эффект:</strong> Вы на мгновение скользите в Незримый Мир (Netherworld), что позволяет вам \"Переместиться\" с удвоенной Скоростью. Это движение не провоцирует реакции и игнорирует сложную и опасную местность. На доспехах остаются тени, из-за чего вы @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W]{Скрыты} на 1 раунд после этого.</p>"
+          },
+          "rules": [],
+          "slug": "umbral-armor",
+          "_migration": {
+            "version": 0.961,
+            "lastMigration": null,
+            "previous": null
+          },
+          "traits": {
+            "otherTags": [],
+            "value": [
+              "invested",
+              "magical"
+            ],
+            "rarity": "uncommon"
+          },
+          "publication": {
+            "title": "Pathfinder Battlecry!",
+            "authors": "",
+            "license": "ORC",
+            "remaster": true
+          },
+          "level": {
+            "value": 10
+          },
+          "quantity": 1,
+          "baseItem": "studded-leather-armor",
+          "bulk": {
+            "value": 1
+          },
+          "hp": {
+            "value": 0,
+            "max": 0
+          },
+          "hardness": 0,
+          "price": {
+            "value": {
+              "gp": 1000
+            }
+          },
+          "equipped": {
+            "carryType": "worn",
+            "invested": true,
+            "handsHeld": 0,
+            "inSlot": true
+          },
+          "containerId": null,
+          "size": "med",
+          "material": {
+            "type": null,
+            "grade": null
+          },
+          "identification": {
+            "status": "identified",
+            "unidentified": {
+              "name": "",
+              "img": "",
+              "data": {
+                "description": {
+                  "value": ""
+                }
+              }
+            }
+          },
+          "category": "light",
+          "group": "leather",
+          "acBonus": 2,
+          "strength": 1,
+          "dexCap": 3,
+          "checkPenalty": -1,
+          "speedPenalty": 0,
+          "grade": null,
+          "runes": {
+            "potency": 1,
+            "resilient": 1,
+            "property": [
+              "shadow"
+            ]
+          },
+          "subitems": [],
+          "specific": {
+            "material": {
+              "grade": null,
+              "type": null
+            },
+            "runes": {
+              "potency": 1,
+              "property": [
+                "shadow"
+              ],
+              "resilient": 1
+            }
+          }
+        },
+        "type": "armor",
+        "_stats": {
+          "coreVersion": "14.367",
+          "systemId": "pf2e",
+          "systemVersion": "8.7.0",
+          "compendiumSource": "Compendium.pf2e.equipment-srd.Item.s6E2ZdtEUz3Lxx3B",
+          "createdTime": 1794986984626,
+          "modifiedTime": 1794986987401,
+          "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+          "duplicateSource": null,
+          "exportSource": null
+        },
+        "effects": [],
+        "folder": null,
+        "sort": 0,
+        "ownership": {
+          "default": 0,
+          "1QIbSagkQ4oEC0Q1": 3
+        },
+        "flags": {
+          "babele": {
+            "translated": true,
+            "hasTranslation": true,
+            "originalName": "Umbral Armor",
+            "originalPayload": {},
+            "lang": "ru"
+          }
+        },
+        "_id": "3GClWNRkRoxIDPvO"
+      }
+    ],
+    "folder": null,
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.367",
+      "systemId": "pf2e",
+      "systemVersion": "8.7.0",
+      "createdTime": 1794939553948,
+      "modifiedTime": 1794986911387,
+      "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+      "compendiumSource": null,
+      "duplicateSource": null,
+      "exportSource": null
+    }
+  }
+}
