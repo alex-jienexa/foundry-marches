@@ -2,31 +2,36 @@ schema_version: '1.0'
 project_status: in_progress
 health: at_risk
 updated_at: '2026-11-18'
-current_focus: TASK-002 — read-only PF2e Actor schema inspection завершён; архитектурное решение по будущей character reputation зафиксировано, реализация отложена до разработки приложения
-active_task: TASK-002
-active_branch: feat/task-002-integration-spike
-last_checkpoint: Self-hosted Relay 3.4.1 deployed; Foundry Pairing and read-only PF2e Actor schema inspection (details/resources/initiative/abilities/pfs/exploration/migration) passed (2026-11-18)
-last_verified_commit: 3032d2da61c090bde83887f564f9487d1e99e27e
+current_focus: TASK-004 — проектирование явной привязки существующего персонажа приложения к Foundry Actor после подтверждённой синхронизации 11 Actor
+active_task: TASK-004
+active_branch: feat/task-004-character-decoder
+last_checkpoint: '2026-11-18: self-hosted Relay 3.4.1 и Docker Compose API/PostgreSQL работают; world sync завершён, 11 Actor snapshots сохранены, все пока snapshot_only до явной привязки'
+last_verified_commit: 4ca6fa87c4b7b40e25832f7ca15400bb39f5d713
 open_blockers:
-- Для полного сопоставления нужен отсутствующий текст ТЗ v1.0/дополнений
-- Нет отдельного тестового мира; записи в основной игровой Actor не согласованы по конкретным операциям/откату
-- Нужны read-only сведения о Docker networks/mounts и текущем module manifest; отдельная WebDAV directory и образцы Codex
+- Отсутствует исходное ТЗ v1.0 и два дополнения; не реконструировать требования по догадкам
+- Не завершены Discord OAuth, user sessions, RBAC и аудит (этап 1)
+- Не реализована явная привязка Actor к существующему персонажу приложения (этап 2)
+- Не получены Campaign Codex JSON exports и образцы Obsidian; WebDAV ETag/If-Match не проверен
+- Не проверены Relay SSE, headless GM session и usage/quota
+- GitHub Actions workflow существует, но удалённый run для текущей ветки ещё не подтверждён
 next_actions:
-- Сопоставить подтверждённые Actor paths с доменной моделью FoundryGateway; сохранять различия null / object / array
-- Подготовить отдельного заполненного тестового Actor для проверки inventory/coins; текущий Actor имеет items=[]
-- Подготовить безопасный snapshot/restore план перед любыми write tests
-- После отдельного подтверждения выполнить XP write/idempotency и item UUID tests
-- Проверить SSE, headless GM session, usage/quota, WebDAV ETag/If-Match и Campaign Codex export
-- 'TASK-003: создать основу, миграции и команды запуска/сборки' (независимая задача)
-- В будущем при разработке приложения реализовать подсистему репутации персонажа по docs/architecture/decisions/character-reputation.md; не использовать system.pfs.reputation как хранилище репутации вестмарша
+- Изучить ограничения и индексы foundry_actors/characters перед проектированием link operation
+- Спроектировать явную привязку Actor type=character к существующему application character: same world UUID, unique link on both sides, authorization, atomic transaction
+- Реализовать link API/repository/tests; не создавать персонажей, не назначать владельцев и не менять Foundry Actor
+- После link завершить approval, лимиты/NPC и устойчивый sync lifecycle
+- Продолжить незавершённые проверки этапа 0 и этапа 1 без изменения production/Foundry данных без отдельного разрешения
+- CI: после открытия PR владельцем проверить фактический GitHub Actions run; CD пока не проектировать в коде до отдельного одобрения
 recent_changes:
-- Зафиксировано ADR для будущей подсистемы репутации отдельного персонажа; хранение в БД приложения, PFS — только ориентир, реализация отложена
-- Весь исходный Markdown распределён по полным разделам, оригиналы сохранены с SHA-256
-- SQL baseline и оригинальные тесты сохранены без изменений
-- DBML/ER/каталог генерируются из AST; добавлена навигация PAD и этапные задачи
-- 'Локальный baseline PG15/PG16: 166/166 функциональных и 9/9 race проверок'
+- Успешно синхронизирован мир Foundry после синхронизации мира вслед за обновлением PF2e: обнаружено и сохранено 11 Actor snapshots
+- Все 11 записей имеют внутренний world_id UUID 00000000-0000-4000-8000-000000000001 и character_id NULL; snapshot_only ожидаем до явной привязки
+- Foundry REST Relay 3.4.1 deployed, Pairing подтверждён; интеграция read-only
+- Docker Compose PostgreSQL 18 Alpine и API запущены; GET /healthz вернул HTTP 200
+- Backend содержит Relay adapter, PF2e DTO/decoder/calculator, sync service, persistence repository и PostgreSQL integration tests
+- CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs; фактический удалённый run для этой ветки не наблюдался
+- Документация runtime, roadmap, milestones, open questions, tasks и PAD обновлена в этой ветке
 risks:
-- last_verified_commit — проверенный исходный публичный snapshot, не commit локального
-  импорта
-- Нет приложения, production deploy, утверждённого полного API или результатов live-интеграций
-- Сводки/диаграммы не заменяют SQL и полную спецификацию
+- Этапы 0, 1 и 2 частично выполнены, но ни один не закрыт целиком
+- Bootstrap sync endpoint использует отдельный Bearer token и пока не имеет полноценной пользовательской авторизации
+- Синхронизация синхронная; job queue/retry и production observability не завершены
+- Нельзя выполнять destructive DB operations или удалять postgres_data volume
+- Нельзя изменять Foundry Actor; XP write остаётся вне текущей read-only модели
