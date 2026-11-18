@@ -22,6 +22,12 @@ func TestCalculateFighterDerivedStatsFromPersistentInputs(t *testing.T) {
 	assertValue(t, "Reflex", got.Saves["reflex"], 10)
 	assertValue(t, "Will", got.Saves["will"], 5)
 	assertValue(t, "Athletics", got.Skills["athletics"], 7)
+	if got.Proficiencies.Perception == nil || got.Proficiencies.Perception.Rank != 2 {
+		t.Fatalf("effective proficiency DTO missing Perception rank: %+v", got.Proficiencies)
+	}
+	if got.Proficiencies.Spellcasting == nil || got.Proficiencies.Spellcasting.Rank != 0 {
+		t.Fatalf("effective proficiency DTO missing spellcasting baseline: %+v", got.Proficiencies)
+	}
 	if got.Version != DerivedCalculationVersion { t.Fatalf("calculation version = %q", got.Version) }
 }
 
