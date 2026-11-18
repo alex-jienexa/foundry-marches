@@ -69,7 +69,7 @@ func LoadClassFeatureRuleElements(ctx context.Context, character pf2e.CharacterD
 			warnings = append(warnings, fmt.Sprintf("resolve class feature %s: %v", feature.UUID, err))
 			continue
 		}
-		decoded, err := pf2e.DecodeItem(payload)
+		decoded, err := pf2e.DecodeItemResponse(payload)
 		if err != nil {
 			warnings = append(warnings, fmt.Sprintf("decode class feature %s: %v", feature.UUID, err))
 			continue
