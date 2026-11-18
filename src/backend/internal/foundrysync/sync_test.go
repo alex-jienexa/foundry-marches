@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"strings"
 	"testing"
@@ -148,7 +147,7 @@ func TestSyncAllPropagatesDiscoveryFailure(t *testing.T) {
 
 type discoveryFailureGateway struct{}
 func (discoveryFailureGateway) ListActors(context.Context, string) ([]relay.ActorReference, error) {
-	return nil, fmt.Errorf("discovery failed")
+	return nil, errors.New("discovery failed")
 }
 func (discoveryFailureGateway) GetActorSnapshot(context.Context, string, string) ([]byte, error) {
 	return nil, nil
