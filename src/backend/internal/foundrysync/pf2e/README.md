@@ -74,7 +74,7 @@ Rule Elements present on the class Item and owned Actor Items are projected into
 
 PF2e `ActiveEffectLike` can upgrade proficiency ranks, including through a `ChoiceSet`-selected path. The calculator supports a deliberately narrow, documented subset (static numeric `upgrade` values and simple level brackets). Unsupported expressions, predicates, conditional rules and unresolved compendium references must produce warnings/incomplete results, never guessed ranks. This is necessary because Rule Elements can depend on selections, predicates, actor level and data-preparation phases.
 
-Fighter fixture expectations: perception 2; Fortitude 2, Reflex 2, Will 1; defenses Heavy/Light/Medium/Unarmored 1; attacks Advanced 1, Martial 2, Simple 2, Unarmed 2; spellcasting 0. Its class progression table contains 15 feature references, two at level 1. The `fighterSkill` ChoiceSet and its ActiveEffectLike are preserved as source rules.
+Fighter fixture expectations: perception 2; Fortitude 2, Reflex 2, Will 1; defenses Heavy/Light/Medium/Unarmored 1; attacks Advanced 1, Martial 2, Simple 2, Unarmed 2; spellcasting 0. Its class progression table contains 16 feature references, two at level 1. The `fighterSkill` ChoiceSet and its ActiveEffectLike are preserved as source rules.
 
 
 ## Proficiency calculator
@@ -100,3 +100,40 @@ Run tests from `src/backend` with `go test ./...` and `go vet ./...`.
 The calculator's `CalculateDerivedStats` returns both effective proficiency ranks (including attack, defense and tradition-specific spellcasting ranks) and totals for Perception, AC, Fortitude, Reflex, Will and skills present in the normalized rank set. It uses PF2e proficiency bonuses (untrained 0; trained `level+2`; each subsequent rank adds 2), the stored ability modifier (or a modifier derived from an explicitly stored ability score), armor category/AC bonus/Dexterity cap, armor potency rune and resilient rune. It also accepts simple, unconditional `FlatModifier` item bonuses with a numeric value and `type: item`.
 
 Item bonuses of the same type do not stack: only the highest supported item bonus is applied. Unsupported predicates, formulas, missing equipment state, unresolved class-feature documents and missing ability/rank/level inputs yield incomplete or unavailable results rather than fabricated totals. This first calculator version intentionally does not implement circumstance/status bonuses, conditions, temporary effects, spell effects, attacks, DCs, shield AC, or the complete Rule Element engine.
+
+
+## PostgreSQL persistence adapter
+
+The `internal/characters` package maps the decoded Actor into a database write
+model and persists it transactionally using the v0.3 schema:
+
+- `characters` receives the normalized identity, build labels, progression,
+  HP values, attributes payload and skills payload. Fields owned by the app
+  (owner, status, approval) are not changed.
+- `foundry_actors` receives the permanent Actor UUID, complete JSONB snapshot,
+  SHA-256 snapshot hash and sync timestamp. An Actor already linked to another
+  character is rejected; the link is never silently reassigned.
+- `inventory_items` is reconciled by Foundry Item ID. Existing row IDs and
+  catalog links are preserved, stale Actor-owned rows are removed, and no
+  `inventory_events` are fabricated by a snapshot refresh.
+- The full Actor JSON exists only in `foundry_actors.snapshot`. Each inventory
+  row stores only the normalized `CharacterItemDto` projection in `state`.
+
+The repository sets transaction-local `app.writer = 'foundry_sync'` before
+writing. It accepts an already-established world/character/Actor association;
+it does not implement player ownership confirmation or the linking API. It does
+not call Foundry or mutate an Actor.
+
+Missing DTO values remain absent in the mapping. The current SQL schema has
+non-null defaults for `characters.level`, `characters.xp` and
+`inventory_items.quantity`; for a missing item quantity the exact null remains
+in `inventory_items.state`, while the indexed relational column follows the
+existing schema default on insert and retains its prior value on update. This
+schema behavior is explicit and should be revisited if exact nullable quantity
+semantics become a database requirement.
+
+The persistence package uses `database/sql` and accepts a caller-configured
+database handle; driver selection and connection-pool lifecycle belong to the
+application composition root. Mapper tests run with `go test ./...`. A live
+PostgreSQL integration test still needs to be wired into the project test
+environment before this adapter is considered fully verified.
