@@ -79,7 +79,7 @@ ON CONFLICT (id) DO UPDATE SET
 	_, err := tx.ExecContext(ctx, query, c.ID, c.Name, nullableString(c.PortraitURL),
 		nullableString(c.Ancestry), nullableString(c.Heritage), nullableString(c.Background),
 		nullableString(c.Class), nullableInt(c.Level), nullableInt(c.XP),
-		nullableInt(c.HPCurrent), nullableInt(c.HPMax), []byte(c.Attributes), []byte(c.Skills))
+		nullableInt(c.HPCurrent), nullableInt(c.HPMax), string(c.Attributes), string(c.Skills))
 	if err != nil { return fmt.Errorf("upsert character %s: %w", c.ID, err) }
 	return nil
 }
@@ -96,7 +96,7 @@ WHERE world_id = $1
   AND character_id = $3
 `
 	result, err := tx.ExecContext(ctx, query, record.WorldID, record.ActorUUID,
-		record.CharacterID, []byte(record.ActorSnapshot), record.SnapshotHash)
+		record.CharacterID, string(record.ActorSnapshot), record.SnapshotHash)
 	if err != nil { return fmt.Errorf("update linked Foundry Actor %s: %w", record.ActorUUID, err) }
 	affected, err := result.RowsAffected()
 	if err != nil { return fmt.Errorf("check Foundry Actor link: %w", err) }
@@ -124,7 +124,7 @@ DELETE FROM inventory_items
 WHERE character_id = $1
   AND foundry_item_id IS NOT NULL
   AND foundry_item_id NOT IN (SELECT jsonb_array_elements_text($2::jsonb))
-`, characterID, encodedIDs); err != nil {
+`, characterID, string(encodedIDs)); err != nil {
 		return fmt.Errorf("remove stale Foundry inventory items: %w", err)
 	}
 	for _, item := range items {
@@ -136,14 +136,14 @@ INSERT INTO inventory_items (character_id, foundry_item_id, name, state)
 VALUES ($1, $2, $3, $4::jsonb)
 ON CONFLICT (character_id, foundry_item_id) DO UPDATE SET
   name = EXCLUDED.name, state = EXCLUDED.state
-`, characterID, item.FoundryItemID, item.Name, []byte(item.State))
+`, characterID, item.FoundryItemID, item.Name, string(item.State))
 		} else {
 			_, err = tx.ExecContext(ctx, `
 INSERT INTO inventory_items (character_id, foundry_item_id, name, quantity, state)
 VALUES ($1, $2, $3, $4, $5::jsonb)
 ON CONFLICT (character_id, foundry_item_id) DO UPDATE SET
   name = EXCLUDED.name, quantity = EXCLUDED.quantity, state = EXCLUDED.state
-`, characterID, item.FoundryItemID, item.Name, *item.Quantity, []byte(item.State))
+`, characterID, item.FoundryItemID, item.Name, *item.Quantity, string(item.State))
 		}
 		if err != nil { return fmt.Errorf("upsert Foundry item %s: %w", item.FoundryItemID, err) }
 	}
