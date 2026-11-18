@@ -264,14 +264,17 @@ type RuleElementDto struct {
 	Value     json.RawMessage `json:"value,omitempty"`
 	Flag      string          `json:"flag,omitempty"`
 	Selection json.RawMessage `json:"selection,omitempty"`
-	Predicate json.RawMessage `json:"predicate,omitempty"`
-	Raw       json.RawMessage `json:"raw"`
+	Predicate    json.RawMessage `json:"predicate,omitempty"`
+	Selector     json.RawMessage `json:"selector,omitempty"`
+	ModifierType string          `json:"modifierType,omitempty"`
+	Raw          json.RawMessage `json:"raw"`
 }
 
 type ArmorItemDataDto struct {
-	ACBonus  *int `json:"acBonus"`
-	DexCap   *int `json:"dexCap"`
-	Strength *int `json:"strength"`
+	Category *string `json:"category"`
+	ACBonus  *int    `json:"acBonus"`
+	DexCap   *int    `json:"dexCap"`
+	Strength *int    `json:"strength"`
 }
 
 type ItemRuneDataDto struct {
@@ -287,6 +290,11 @@ const (
 	ModifierPotency   ModifierKind = "potency"
 	ModifierResilient ModifierKind = "resilient"
 	ModifierUntyped   ModifierKind = "untyped"
+	ModifierBase      ModifierKind = "base"
+	ModifierAbility   ModifierKind = "ability"
+	ModifierProficiency ModifierKind = "proficiency"
+	ModifierArmor     ModifierKind = "armor"
+	ModifierRune      ModifierKind = "rune"
 )
 
 // DerivedStatDto is a calculated value plus its auditable arithmetic.
