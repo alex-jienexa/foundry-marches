@@ -117,19 +117,19 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var out struct { Actors []actor `json:"actors"` }
 		if err:=b.post(ActorsPath,id,&out); err!=nil { b.edit(s,i,"Ошибка: "+err.Error(),nil); return }
 		lines:=[]string{}; for _,a:=range out.Actors { lines=append(lines,fmt.Sprintf("• %s — %s",a.Name,a.ActorUUID)) }
-		if len(lines)==0 { b.edit(s,i,"Несвязанных Actor типа character нет. Сначала синхронизируйте Foundry.",nil) } else { b.edit(s,i,"Несвязанные Actor (до 100):\n"+strings.Join(lines,"\n"),nil) }
+		if len(lines)==0 { b.edit(s,i,"Несвязанных Actor типа character нет. Сначала синхронизируйте Foundry.",nil) } else { b.edit(s,i,truncateMessage("Несвязанные Actor (до 100):\n"+strings.Join(lines,"\n")),nil) }
 	case "characters":
 		var out struct { Characters []character `json:"characters"` }
 		if err:=b.post(CharactersPath,id,&out); err!=nil { b.edit(s,i,"Ошибка: "+err.Error(),nil); return }
 		lines:=[]string{}; for _,c:=range out.Characters { lines=append(lines,fmt.Sprintf("• %s [%s] — %s",c.Name,c.Status,c.ID)) }
-		if len(lines)==0 { b.edit(s,i,"Персонажей приложения пока нет. Foundry sync не создаёт их автоматически.",nil) } else { b.edit(s,i,"Персонажи приложения (до 200):\n"+strings.Join(lines,"\n"),nil) }
+		if len(lines)==0 { b.edit(s,i,"Персонажей приложения пока нет. Foundry sync не создаёт их автоматически.",nil) } else { b.edit(s,i,truncateMessage("Персонажи приложения (до 200):\n"+strings.Join(lines,"\n")),nil) }
 	case "character-link":
 		o:=commandOptions(i.ApplicationCommandData().Options)
 		p:=linkPayload{identity:id,ActorUUID:o["actor_uuid"],CharacterID:o["character_id"]}
 		var preview linkPreview
 		if err:=b.post(PreviewPath,p,&preview); err!=nil { b.edit(s,i,"Нельзя подготовить привязку: "+err.Error(),nil); return }
 		key,err:=randomKey(); if err!=nil { b.edit(s,i,"Не удалось создать подтверждение.",nil); return }
-		b.mu.Lock(); b.pending[key]=pendingLink{p.ActorUUID,p.CharacterID,u.ID,i.GuildID,time.Now().Add(10*time.Minute)}; b.mu.Unlock()
+		b.mu.Lock(); for token, pending := range b.pending { if time.Now().After(pending.expiresAt) { delete(b.pending, token) } }; b.pending[key]=pendingLink{p.ActorUUID,p.CharacterID,u.ID,i.GuildID,time.Now().Add(10*time.Minute)}; b.mu.Unlock()
 		components:=[]discordgo.MessageComponent{discordgo.ActionsRow{Components:[]discordgo.MessageComponent{
 			discordgo.Button{Label:"Подтвердить привязку",Style:discordgo.SuccessButton,CustomID:"fm-link:"+key}}}}
 		b.edit(s,i,fmt.Sprintf("Проверьте привязку:\nFoundry: %s (%s)\nПерсонаж: %s (%s)\nВладелец персонажа не изменится.",preview.ActorName,preview.ActorUUID,preview.CharacterName,preview.CharacterID),components)
@@ -186,3 +186,13 @@ func (b *bot) edit(s *discordgo.Session,i *discordgo.InteractionCreate,content s
 }
 func randomKey()(string,error){var raw [12]byte;if _,err:=rand.Read(raw[:]);err!=nil{return "",err};return hex.EncodeToString(raw[:]),nil}
 func requiredEnv(key string)string{v:=strings.TrimSpace(os.Getenv(key));if v==""{log.Fatalf("required environment variable %s is not set",key)};return v}
+
+func truncateMessage(value string) string {
+	const maxRunes = 1850
+	runes := []rune(value)
+	if len(runes) <= maxRunes {
+		return value
+	}
+	return string(runes[:maxRunes-20]) + "
+… список сокращён"
+}
