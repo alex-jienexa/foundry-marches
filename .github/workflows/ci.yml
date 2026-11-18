@@ -70,3 +70,22 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/database/schema_tests.sql
       - name: Run 9 concurrency checks
         run: bash tests/database/schema_race_tests.sh
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+          cache-dependency-path: src/backend/go.mod
+      - name: Verify Go formatting
+        working-directory: src/backend
+        run: test -z "$(gofmt -l .)"
+      - name: Run Go tests
+        working-directory: src/backend
+        run: go test ./...
+      - name: Run Go vet
+        working-directory: src/backend
+        run: go vet ./...
