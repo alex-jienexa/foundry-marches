@@ -61,6 +61,7 @@ func TestResolveOnlySupportedStaticAndBracketedUpgrades(t *testing.T) {
 				RuleElements: []pf2e.RuleElementDto{
 					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.attributes.perception.rank", Value: []byte("2")},
 					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.saves.will.rank", Value: []byte(`{"brackets":[{"start":1,"end":6,"value":2},{"start":7,"value":3}]}`)},
+				{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.proficiencies.spellcasting.arcane.rank", Value: []byte("2")},
 				},
 			},
 		},
@@ -68,6 +69,7 @@ func TestResolveOnlySupportedStaticAndBracketedUpgrades(t *testing.T) {
 	got := ResolveProficiencyRanks(character)
 	if got.Perception == nil || got.Perception.Rank != 2 { t.Fatalf("perception upgrade not applied: %+v", got.Perception) }
 	if got.Saves["will"].Rank != 3 { t.Fatalf("level bracket not applied: %+v", got.Saves["will"]) }
+	if got.SpellcastingTraditions["arcane"].Rank != 2 { t.Fatalf("tradition spellcasting rank not applied: %+v", got.SpellcastingTraditions) }
 	if len(got.Warnings) != 0 { t.Fatalf("unexpected warnings: %v", got.Warnings) }
 }
 
