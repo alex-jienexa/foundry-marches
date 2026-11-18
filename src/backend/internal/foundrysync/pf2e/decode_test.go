@@ -192,10 +192,11 @@ func TestDecodeSkillsSeparatesLoreWithoutDerivingIt(t *testing.T) {
 	}
 }
 
-
 func TestDecodeStatisticsKeepsMissingValuesUnknown(t *testing.T) {
 	decoded, err := DecodeActor(readFixture(t, fixtureActor))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	stats := decoded.Character.Statistics
 	if len(stats.Abilities) != 0 {
 		t.Fatalf("null Actor.system.abilities must not be reconstructed: %+v", stats.Abilities)
@@ -217,10 +218,15 @@ func TestDecodeStatisticsKeepsMissingValuesUnknown(t *testing.T) {
 
 func TestDecodeEquipmentCalculationInputs(t *testing.T) {
 	decoded, err := DecodeActor(readFixture(t, fixtureActor))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	var armor *CharacterItemDto
 	for i := range decoded.Character.Items {
-		if decoded.Character.Items[i].Type == "armor" { armor = &decoded.Character.Items[i]; break }
+		if decoded.Character.Items[i].Type == "armor" {
+			armor = &decoded.Character.Items[i]
+			break
+		}
 	}
 	if armor == nil || armor.Armor == nil || armor.Runes == nil {
 		t.Fatalf("armor calculation inputs missing: %+v", armor)
@@ -245,7 +251,9 @@ func TestDecodeExplicitAbilityAndProficiencyInputs(t *testing.T) {
 		}
 	}}`)
 	decoded, err := DecodeActor(raw)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	stats := decoded.Character.Statistics
 	if got := stats.Abilities["str"]; got.Score == nil || *got.Score != 18 || got.Modifier == nil || *got.Modifier != 4 {
 		t.Fatalf("unexpected Strength input: %+v", got)

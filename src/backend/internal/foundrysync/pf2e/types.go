@@ -45,17 +45,17 @@ type FoundryDocumentStatsDto struct {
 // represented in the persisted Actor document; prepared/calculated PF2e values
 // are deliberately not inferred here.
 type CharacterDto struct {
-	SchemaVersion int                     `json:"schemaVersion"`
-	Identity      CharacterIdentityDto    `json:"identity"`
-	Source        CharacterSourceDto      `json:"source"`
-	Progression   CharacterProgressionDto `json:"progression"`
-	Build         CharacterBuildDto       `json:"build"`
-	Attributes    CharacterAttributesDto  `json:"attributes"`
+	SchemaVersion int                         `json:"schemaVersion"`
+	Identity      CharacterIdentityDto        `json:"identity"`
+	Source        CharacterSourceDto          `json:"source"`
+	Progression   CharacterProgressionDto     `json:"progression"`
+	Build         CharacterBuildDto           `json:"build"`
+	Attributes    CharacterAttributesDto      `json:"attributes"`
 	Statistics    CharacterStatisticsInputDto `json:"statistics"`
-	Resources     CharacterResourcesDto   `json:"resources"`
-	Skills        CharacterSkillsDto      `json:"skills"`
-	Items         []CharacterItemDto      `json:"items"`
-	Biography     CharacterBiographyDto   `json:"biography"`
+	Resources     CharacterResourcesDto       `json:"resources"`
+	Skills        CharacterSkillsDto          `json:"skills"`
+	Items         []CharacterItemDto          `json:"items"`
+	Biography     CharacterBiographyDto       `json:"biography"`
 }
 
 type CharacterIdentityDto struct {
@@ -86,11 +86,11 @@ type ExperienceDto struct {
 }
 
 type CharacterBuildDto struct {
-	Ancestry   *CharacterItemReferenceDto `json:"ancestry"`
-	Heritage   *CharacterItemReferenceDto `json:"heritage"`
-	Background *CharacterItemReferenceDto `json:"background"`
-	Class      *CharacterItemReferenceDto `json:"class"`
-	KeyAbility *string                   `json:"keyAbility"`
+	Ancestry           *CharacterItemReferenceDto  `json:"ancestry"`
+	Heritage           *CharacterItemReferenceDto  `json:"heritage"`
+	Background         *CharacterItemReferenceDto  `json:"background"`
+	Class              *CharacterItemReferenceDto  `json:"class"`
+	KeyAbility         *string                     `json:"keyAbility"`
 	ClassProficiencies *ClassProficiencyProfileDto `json:"classProficiencies,omitempty"`
 }
 
@@ -144,18 +144,18 @@ type CharacterBiographyDto struct {
 	Dislikes        *string         `json:"dislikes"`
 	Catchphrases    *string         `json:"catchphrases"`
 	CampaignNotes   *string         `json:"campaignNotes"`
-	Allies           *string         `json:"allies"`
-	Enemies          *string         `json:"enemies"`
-	Organizations    *string         `json:"organizations"`
-	Age              *string         `json:"age"`
-	Height           *string         `json:"height"`
-	Weight           *string         `json:"weight"`
-	Gender           *string         `json:"gender"`
-	Ethnicity        *string         `json:"ethnicity"`
-	Nationality      *string         `json:"nationality"`
-	Languages        []string        `json:"languages"`
-	LanguageDetails  *string         `json:"languageDetails"`
-	Visibility       map[string]bool `json:"visibility,omitempty"`
+	Allies          *string         `json:"allies"`
+	Enemies         *string         `json:"enemies"`
+	Organizations   *string         `json:"organizations"`
+	Age             *string         `json:"age"`
+	Height          *string         `json:"height"`
+	Weight          *string         `json:"weight"`
+	Gender          *string         `json:"gender"`
+	Ethnicity       *string         `json:"ethnicity"`
+	Nationality     *string         `json:"nationality"`
+	Languages       []string        `json:"languages"`
+	LanguageDetails *string         `json:"languageDetails"`
+	Visibility      map[string]bool `json:"visibility,omitempty"`
 }
 
 type CharacterItemCategory string
@@ -171,18 +171,18 @@ const (
 // Type-specific source fields remain available in the Actor RawSnapshot and
 // are not copied wholesale into every normalized Item.
 type CharacterItemDto struct {
-	ID               string                  `json:"id"`
-	Name             string                  `json:"name"`
-	Type             string                  `json:"type"`
-	Slug             *string                 `json:"slug"`
-	Image            *string                 `json:"image"`
-	Category         CharacterItemCategory   `json:"category"`
-	Quantity         *int                    `json:"quantity"`
-	Level            *int                    `json:"level"`
-	Equipped         *CharacterEquippedDto   `json:"equipped"`
-	CompendiumSource *string                 `json:"compendiumSource"`
-	Armor             *ArmorItemDataDto       `json:"armor,omitempty"`
-	Runes             *ItemRuneDataDto        `json:"runes,omitempty"`
+	ID               string                `json:"id"`
+	Name             string                `json:"name"`
+	Type             string                `json:"type"`
+	Slug             *string               `json:"slug"`
+	Image            *string               `json:"image"`
+	Category         CharacterItemCategory `json:"category"`
+	Quantity         *int                  `json:"quantity"`
+	Level            *int                  `json:"level"`
+	Equipped         *CharacterEquippedDto `json:"equipped"`
+	CompendiumSource *string               `json:"compendiumSource"`
+	Armor            *ArmorItemDataDto     `json:"armor,omitempty"`
+	Runes            *ItemRuneDataDto      `json:"runes,omitempty"`
 }
 
 type CharacterEquippedDto struct {
@@ -193,9 +193,9 @@ type CharacterEquippedDto struct {
 }
 
 type DecodedItem struct {
-	Foundry       FoundryItemDto
-	Character     CharacterItemDto
-	RawSnapshot   json.RawMessage
+	Foundry     FoundryItemDto
+	Character   CharacterItemDto
+	RawSnapshot json.RawMessage
 }
 
 // DecodedActor keeps the normalized projection and one authoritative raw
@@ -205,13 +205,12 @@ type DecodedActor struct {
 	RawSnapshot json.RawMessage
 }
 
-
 // CharacterStatisticsInputDto contains normalized, explicitly persisted inputs
 // that may be used by the optional derived-stat calculator. Missing source data
 // remains nil; the decoder never reconstructs ability scores or proficiency.
 type CharacterStatisticsInputDto struct {
-	Abilities      map[string]AbilityScoreDto       `json:"abilities"`
-	Proficiencies  CharacterProficienciesDto        `json:"proficiencies"`
+	Abilities     map[string]AbilityScoreDto `json:"abilities"`
+	Proficiencies CharacterProficienciesDto  `json:"proficiencies"`
 }
 
 // AbilityScoreDto distinguishes the stored score from a stored modifier.
@@ -221,9 +220,9 @@ type AbilityScoreDto struct {
 }
 
 type CharacterProficienciesDto struct {
-	Perception *ProficiencyDto            `json:"perception"`
-	Saves      map[string]ProficiencyDto  `json:"saves"`
-	Defenses   map[string]ProficiencyDto  `json:"defenses"`
+	Perception *ProficiencyDto           `json:"perception"`
+	Saves      map[string]ProficiencyDto `json:"saves"`
+	Defenses   map[string]ProficiencyDto `json:"defenses"`
 }
 
 type ProficiencyDto struct {
@@ -235,11 +234,11 @@ type ProficiencyDto struct {
 // proof of the character's current rank. Consumers must not silently treat it
 // as an Actor-prepared proficiency value.
 type ClassProficiencyProfileDto struct {
-	PerceptionRank *int           `json:"perceptionRank"`
-	SavingThrows   map[string]int `json:"savingThrows"`
-	Defenses       map[string]int `json:"defenses"`
-	TrainedSkills  []string       `json:"trainedSkills"`
-	AdditionalSkills *int         `json:"additionalSkills"`
+	PerceptionRank   *int           `json:"perceptionRank"`
+	SavingThrows     map[string]int `json:"savingThrows"`
+	Defenses         map[string]int `json:"defenses"`
+	TrainedSkills    []string       `json:"trainedSkills"`
+	AdditionalSkills *int           `json:"additionalSkills"`
 }
 
 type ArmorItemDataDto struct {
@@ -249,27 +248,27 @@ type ArmorItemDataDto struct {
 }
 
 type ItemRuneDataDto struct {
-	Potency  *int     `json:"potency"`
-	Resilient *int    `json:"resilient"`
-	Property []string `json:"property"`
+	Potency   *int     `json:"potency"`
+	Resilient *int     `json:"resilient"`
+	Property  []string `json:"property"`
 }
 
 type ModifierKind string
 
 const (
-	ModifierItem       ModifierKind = "item"
-	ModifierPotency    ModifierKind = "potency"
-	ModifierResilient  ModifierKind = "resilient"
-	ModifierUntyped    ModifierKind = "untyped"
+	ModifierItem      ModifierKind = "item"
+	ModifierPotency   ModifierKind = "potency"
+	ModifierResilient ModifierKind = "resilient"
+	ModifierUntyped   ModifierKind = "untyped"
 )
 
 // DerivedStatDto is a calculated value plus its auditable arithmetic.
 // Value is nil unless the calculation is complete.
 type DerivedStatDto struct {
-	Value     *int                    `json:"value"`
-	Status    CalculationStatus       `json:"status"`
-	Breakdown []ModifierBreakdownDto  `json:"breakdown"`
-	Warnings  []string                `json:"warnings,omitempty"`
+	Value     *int                   `json:"value"`
+	Status    CalculationStatus      `json:"status"`
+	Breakdown []ModifierBreakdownDto `json:"breakdown"`
+	Warnings  []string               `json:"warnings,omitempty"`
 }
 
 type CalculationStatus string
