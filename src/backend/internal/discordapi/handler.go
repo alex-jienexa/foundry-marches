@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -17,20 +18,20 @@ import (
 )
 
 const (
-	RegisterPath  = "/api/internal/discord/register"
-	ActorsPath    = "/api/internal/discord/actors"
+	RegisterPath   = "/api/internal/discord/register"
+	ActorsPath     = "/api/internal/discord/actors"
 	CharactersPath = "/api/internal/discord/characters"
-	PreviewPath   = "/api/internal/discord/link/preview"
-	LinkPath      = "/api/internal/discord/link"
-	GrantRolePath = "/api/internal/discord/roles/grant"
-	MapRolePath   = "/api/internal/discord/roles/map"
+	PreviewPath    = "/api/internal/discord/link/preview"
+	LinkPath       = "/api/internal/discord/link"
+	GrantRolePath  = "/api/internal/discord/roles/grant"
+	MapRolePath    = "/api/internal/discord/roles/map"
 )
 
 type Handler struct {
-	db          *sql.DB
-	foundry     *characters.FoundryRepository
-	guildID     string
-	worldID     string
+	db           *sql.DB
+	foundry      *characters.FoundryRepository
+	guildID      string
+	worldID      string
 	adminUserIDs map[string]struct{}
 }
 
@@ -107,9 +108,9 @@ type linkRequest struct {
 }
 
 type linkPreview struct {
-	ActorUUID   string `json:"actor_uuid"`
-	ActorName   string `json:"actor_name"`
-	CharacterID string `json:"character_id"`
+	ActorUUID     string `json:"actor_uuid"`
+	ActorName     string `json:"actor_name"`
+	CharacterID   string `json:"character_id"`
 	CharacterName string `json:"character_name"`
 }
 
@@ -183,10 +184,27 @@ ON CONFLICT DO NOTHING
 		}
 	}
 	if _, err = tx.ExecContext(r.Context(), `
-INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, new_value)
-VALUES ($1, 'user', 'discord.account.registered', 'discord_account', $2,
-        jsonb_build_object('guild_id', $3, 'username', $4))
+INSERT INTO audit_log (
+    actor_user_id,
+    actor_kind,
+    action,
+    entity_type,
+    entity_id,
+    new_value
+)
+VALUES (
+    $1,
+    'user',
+    'discord.account.registered',
+    'discord_account',
+    $2,
+    jsonb_build_object(
+        'guild_id', $3::text,
+        'username', $4::text
+    )
+)
 `, userID, req.DiscordUserID, req.GuildID, req.Username); err != nil {
+		log.Printf("Discord registration audit insert failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "could not write registration audit record")
 		return
 	}
@@ -370,6 +388,7 @@ INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id
 VALUES ($1, 'user', 'rbac.role.granted', 'user', $2, jsonb_build_object('role', $3))
 `, actorID, targetID, req.RoleKey)
 	if err != nil {
+		log.Printf("Discord registration audit insert failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "could not write role grant audit record")
 		return
 	}
