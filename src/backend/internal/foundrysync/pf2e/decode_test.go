@@ -231,6 +231,9 @@ func TestDecodeEquipmentCalculationInputs(t *testing.T) {
 	if armor == nil || armor.Armor == nil || armor.Runes == nil {
 		t.Fatalf("armor calculation inputs missing: %+v", armor)
 	}
+	if armor.Armor.Category == nil || *armor.Armor.Category != "light" {
+		t.Fatalf("unexpected armor category: %+v", armor.Armor.Category)
+	}
 	if armor.Armor.ACBonus == nil || *armor.Armor.ACBonus != 2 ||
 		armor.Armor.DexCap == nil || *armor.Armor.DexCap != 3 {
 		t.Fatalf("unexpected armor values: %+v", armor.Armor)
