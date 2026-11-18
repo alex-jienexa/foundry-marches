@@ -2,9 +2,9 @@
 
 ## Текущее состояние на 2026-11-18
 
-Рабочая ветка: `feat/task-004-character-decoder`. Ветка не слита в `main`; владелец планирует открыть PR самостоятельно после проверки этих изменений. Не создавать PR и не выполнять merge.
+Рабочая ветка: `feat/task-004-character-linking`. Ветка основана на `main` merge commit `618bf862dd070e3688709cc319cf55b042e96df0`; не слита в `main`. Владелец самостоятельно выполнит локальную проверку и создаст PR. Не создавать PR и не выполнять merge.
 
-Последний подтверждённый code HEAD перед документационным checkpoint: `4ca6fa87c4b7b40e25832f7ca15400bb39f5d713`. Документационные изменения после него фиксируются отдельными commit в этой же ветке.
+Последний известный HEAD на момент обновления: `7bc4d82a39a1660e944137f4f64cd2804509fd65`. Перед дальнейшими изменениями обязательно перепроверить branch HEAD.
 
 ## Подтверждённая инфраструктура
 
@@ -34,7 +34,10 @@
 - Текущая feature branch: `feat/task-004-character-linking`, создана от main merge commit `618bf862dd070e3688709cc319cf55b042e96df0`.
 - Добавлен `FoundryRepository.LinkActor` в `src/backend/internal/characters/foundry_link.go`: транзакционная явная связь уже обнаруженного Actor типа `character` с существующим application character; проверки world/наличия/конфликтов; idempotent повтор; append-only audit. Owner и `owner_confirmed_at` не меняются.
 - Добавлены unit coverage для SQLSTATE helper и opt-in PostgreSQL integration tests на success/idempotency/duplicate links/NPC rejection.
-- HTTP endpoint намеренно не открыт: текущий API аутентифицирует только интеграционный sync token и не предоставляет user identity/session/RBAC. Нельзя использовать sync token вместо пользовательского `foundry.manage` разрешения.
+- Добавлен Discord-only auth boundary: Gateway bot передаёт Discord user/guild/member role IDs, backend проверяет guild allow-list и зарегистрированную учётную запись; bot-to-backend защищён отдельным `DISCORD_BOT_API_TOKEN`, не равным Foundry sync token.
+- Добавлены registration, hybrid RBAC (`user_roles` + `discord_role_map`), admin bootstrap через `DISCORD_ADMIN_USER_IDS`, internal endpoints для list/preview/link, Discord confirmation button и commands `/register`, `/foundry-actors`, `/characters`, `/character-link`, `/role-grant`, `/role-map`.
+- Добавлена migration `docs/database/migrations/0002_discord_bot_auth.sql`, Dockerfile и Compose service для бота, инструкция `docs/integrations/discord-bot.md` и базовые unit tests для service-token middleware/request decoder.
+- Runtime/compile/test verification этих новых файлов ещё не выполнены. Migration должна быть применена к существующей БД вручную; не удалять volume.
 
 - Go module расположен в `src/backend/`.
 - Bootstrap REST API и `GET /healthz`.
@@ -50,8 +53,8 @@
 ## Состояние этапов
 
 - TASK-002 / этап 0 — `in_progress`: Relay и sync проверены; WebDAV ETag/If-Match, Codex exports, SSE/headless session и usage/quota остаются pending.
-- TASK-003 / этап 1 — `in_progress`: bootstrap, PostgreSQL/Compose, health и CI есть; Discord OAuth, sessions, RBAC, audit, migrations, backup/restore не завершены.
-- TASK-004 / этап 2 — `in_progress`: decoder, adapter, persistence и world sync есть; явная Actor binding, approval, limits/NPC и полная обработка job/retry не реализованы.
+- TASK-003 / этап 1 — `in_progress`: bootstrap, PostgreSQL/Compose, health и CI есть; Discord bot identity/RBAC/migration реализованы в bot-only варианте; backups/restore, полный audit coverage, runtime verification и web sessions (если появятся) остаются pending.
+- TASK-004 / этап 2 — `in_progress`: decoder, adapter, persistence, world sync, explicit Actor link repository и Discord confirmation flow есть; approval/rejection, ownership confirmation, limits/NPC и полная обработка job/retry не реализованы.
 - TASK-005…TASK-013 — backlog.
 
 ## Следующий рекомендуемый шаг
@@ -74,6 +77,10 @@
 - Не делать автоматическое создание персонажей или inference ownership.
 - Не реализовывать XP write в Foundry без отдельного решения и разрешения.
 - Все исполняемые/тестируемые исходники размещать под `src/`; документация/PAD — вне `src/`.
+
+## Discord bot setup
+
+Подробный сценарий создания Discord application/bot, получения Application ID и Guild ID, настройки `.env`, применения migration, запуска Compose и проверки персонажа Андрея: `docs/integrations/discord-bot.md`. Секреты не передавать в чат и не коммитить.
 
 ## Документы
 
