@@ -150,3 +150,16 @@ ON CONFLICT (character_id, foundry_item_id) DO UPDATE SET
 	return nil
 }
 
+func nullableString(value *string) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
+
+func nullableInt(value *int) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
