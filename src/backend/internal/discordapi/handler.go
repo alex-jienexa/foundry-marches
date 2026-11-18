@@ -29,7 +29,6 @@ const (
 type Handler struct {
 	db          *sql.DB
 	foundry     *characters.FoundryRepository
-	apiToken    string
 	guildID     string
 	worldID     string
 	adminUserIDs map[string]struct{}
@@ -49,7 +48,7 @@ func NewHandler(db *sql.DB, foundry *characters.FoundryRepository, apiToken, gui
 			admins[id] = struct{}{}
 		}
 	}
-	return &Handler{db: db, foundry: foundry, apiToken: apiToken, guildID: guildID, worldID: worldID, adminUserIDs: admins}, nil
+	return &Handler{db: db, foundry: foundry, guildID: guildID, worldID: worldID, adminUserIDs: admins}, nil
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -93,14 +92,12 @@ type registerRequest struct {
 type actorView struct {
 	ActorUUID string `json:"actor_uuid"`
 	Name      string `json:"name"`
-	Level     string `json:"level,omitempty"`
 }
 
 type characterView struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
-	Owner  string `json:"owner_user_id,omitempty"`
 }
 
 type linkRequest struct {
@@ -205,12 +202,11 @@ func (h *Handler) listActors(w http.ResponseWriter, r *http.Request) {
 	if !decodeRequest(w, r, &req) {
 		return
 	}
-	userID, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage")
-	if !ok {
+	if _, ok := h.authorize(w, r.Context(), req, "foundry.manage"); !ok {
 		return
 	}
 	rows, err := h.db.QueryContext(r.Context(), `
-SELECT actor_uuid, COALESCE(snapshot->>'name', actor_uuid), COALESCE(snapshot->'system'->>'details', '')
+SELECT actor_uuid, COALESCE(snapshot->>'name', actor_uuid)
 FROM foundry_actors
 WHERE world_id = $1 AND character_id IS NULL AND snapshot->>'type' = 'character'
 ORDER BY COALESCE(snapshot->>'name', actor_uuid)
@@ -224,7 +220,7 @@ LIMIT 100
 	actors := make([]actorView, 0)
 	for rows.Next() {
 		var item actorView
-		if err := rows.Scan(&item.ActorUUID, &item.Name, &item.Level); err != nil {
+		if err := rows.Scan(&item.ActorUUID, &item.Name); err != nil {
 			writeError(w, http.StatusInternalServerError, "could not read Foundry Actor list")
 			return
 		}
@@ -234,7 +230,6 @@ LIMIT 100
 		writeError(w, http.StatusInternalServerError, "could not read Foundry Actor list")
 		return
 	}
-	_ = userID
 	writeJSON(w, http.StatusOK, map[string]any{"actors": actors})
 }
 
@@ -247,7 +242,7 @@ func (h *Handler) listCharacters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rows, err := h.db.QueryContext(r.Context(), `
-SELECT id::text, name, status, COALESCE(owner_user_id::text, '')
+SELECT id::text, name, status
 FROM characters
 WHERE status <> 'archived'
 ORDER BY name
@@ -261,7 +256,7 @@ LIMIT 200
 	items := make([]characterView, 0)
 	for rows.Next() {
 		var item characterView
-		if err := rows.Scan(&item.ID, &item.Name, &item.Status, &item.Owner); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Status); err != nil {
 			writeError(w, http.StatusInternalServerError, "could not read character list")
 			return
 		}
