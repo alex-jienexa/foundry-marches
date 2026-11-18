@@ -186,18 +186,22 @@ func equippedArmor(character pf2e.CharacterDto) (*pf2e.CharacterItemDto, string)
 func resilientItemBonus(character pf2e.CharacterDto) (int, string, []string) {
 	best := 0
 	source := ""
+	var warnings []string
 	for _, item := range character.Items {
 		if item.Type != "armor" || item.Runes == nil || item.Runes.Resilient == nil { continue }
-		if item.Equipped == nil || ((item.Equipped.InSlot == nil || !*item.Equipped.InSlot) &&
-			(item.Equipped.CarryType == nil || *item.Equipped.CarryType != "worn")) {
+		if item.Equipped == nil || (item.Equipped.InSlot == nil && item.Equipped.CarryType == nil) {
+			warnings = append(warnings, "Armor equipment state is unknown for "+item.Name+" resilient rune")
 			continue
 		}
+		worn := (item.Equipped.InSlot != nil && *item.Equipped.InSlot) ||
+			(item.Equipped.CarryType != nil && *item.Equipped.CarryType == "worn")
+		if !worn { continue }
 		if *item.Runes.Resilient > best {
 			best = *item.Runes.Resilient
 			source = "Item "+item.Name+" resilient rune"
 		}
 	}
-	return best, source, nil
+	return best, source, warnings
 }
 
 func staticItemBonus(character pf2e.CharacterDto, selector string) (int, []string, []string) {
