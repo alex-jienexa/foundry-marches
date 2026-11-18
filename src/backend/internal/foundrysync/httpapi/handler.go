@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -11,16 +12,7 @@ import (
 const SyncPath = "/api/integrations/foundry/sync"
 
 type SyncRunner interface {
-	SyncAll(rctx interfaceContext) (foundrysync.SyncReport, error)
-}
-
-// interfaceContext keeps the handler's contract identical to context.Context
-// without exposing any transport-specific implementation details.
-type interfaceContext interface {
-	Done() <-chan struct{}
-	Err() error
-	Deadline() (deadlineTime, bool)
-	Value(key any) any
+	SyncAll(context.Context) (foundrysync.SyncReport, error)
 }
 
 type Handler struct {
