@@ -3,6 +3,7 @@ package characters
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -118,6 +119,17 @@ VALUES ($1, $2, $3)
 	return characterID, actorUUID
 }
 
+func bindIntegrationActor(record *FoundrySyncRecord, worldID, characterID, actorUUID string) {
+	record.WorldID = worldID
+	record.CharacterID = characterID
+	record.ActorUUID = actorUUID
+	record.Character.ID = characterID
+	actorID := strings.TrimPrefix(actorUUID, "Actor.")
+	record.ActorSnapshot = []byte(fmt.Sprintf(`{"_id":%q,"name":%q}`, actorID, record.Character.Name))
+	hash := sha256.Sum256(record.ActorSnapshot)
+	record.SnapshotHash = hex.EncodeToString(hash[:])
+}
+
 func TestFoundryRepositorySyncActorPostgresIntegration(t *testing.T) {
 	db := openFoundryIntegrationDB(t)
 	ctx := context.Background()
@@ -149,10 +161,7 @@ VALUES ($1, $2, 'item-1', 'Old name', 1, '{}'::jsonb),
 	}
 
 	record := testSyncRecord(t)
-	record.WorldID = worldID
-	record.CharacterID = characterID
-	record.ActorUUID = actorUUID
-	record.Character.ID = characterID
+	bindIntegrationActor(&record, worldID, characterID, actorUUID)
 	quantity := 3
 	record.Inventory[0].Quantity = &quantity
 	record.Inventory[0].State = []byte(`{"id":"item-1","name":"Longsword","quantity":3}`)
@@ -242,10 +251,7 @@ func TestFoundryRepositoryPostgresIntegrationRollsBackUnlinkedActor(t *testing.T
 	characterID := integrationUUID(t)
 
 	record := testSyncRecord(t)
-	record.WorldID = worldID
-	record.CharacterID = characterID
-	record.Character.ID = characterID
-	record.ActorUUID = "Actor.unlinked-" + integrationUUID(t)
+	bindIntegrationActor(&record, worldID, characterID, "Actor.unlinked-"+integrationUUID(t))
 
 	repo, err := NewFoundryRepository(db)
 	if err != nil {
