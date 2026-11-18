@@ -11,7 +11,11 @@ go vet ./...
 
 Shared documentation and Foundry JSON fixtures remain in the repository-level `docs/` tree; tests resolve fixtures relative to their source file, not the process working directory.
 
-Run the initial Foundry integration API (configuration and endpoint contract are documented in `docs/integrations/foundry-world-sync-api.md`):
+## Run the Foundry integration API
+
+For the complete local stack (PostgreSQL + API), use Docker Compose from the repository root. See [the integration guide](../../docs/integrations/foundry-world-sync-api.md).
+
+To run only the API process manually, first configure the environment described in that guide, then run:
 
 ```sh
 go run ./cmd/foundry-api
