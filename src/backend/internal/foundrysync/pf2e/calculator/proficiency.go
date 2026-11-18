@@ -8,26 +8,10 @@ import (
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
 )
 
-// RankValue is the effective proficiency rank known to this calculator.
-// Sources records every supported source that established or matched the rank.
-type RankValue struct {
-	Rank    int
-	Sources []string
-}
-
-// ProficiencyRanks is a deliberately limited view of PF2e proficiency.
-// It does not represent prepared roll modifiers or situational bonuses.
-type ProficiencyRanks struct {
-	Perception   *RankValue
-	Saves        map[string]RankValue
-	Defenses     map[string]RankValue
-	Attacks      map[string]RankValue
-	Spellcasting *RankValue
-	SpellcastingTraditions map[string]RankValue
-	Skills       map[string]RankValue
-	Warnings     []string
-	Complete     bool
-}
+// RankValue and ProficiencyRanks are public DTOs from the PF2e boundary
+// package; this calculator only populates their effective, auditable values.
+type RankValue = pf2e.CalculatedProficiencyRankDto
+type ProficiencyRanks = pf2e.CharacterProficiencyRanksDto
 
 // ResolveProficiencyRanks starts from the class progression baseline, overlays
 // explicitly stored Actor ranks, and applies only simple, static
