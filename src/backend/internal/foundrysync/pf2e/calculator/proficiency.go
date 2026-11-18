@@ -3,7 +3,6 @@ package calculator
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
@@ -206,7 +205,9 @@ func applyRules(result *ProficiencyRanks, rules []pf2e.RuleElementDto, source st
 			result.Warnings = append(result.Warnings, source+": proficiency rank outside 0..4 for "+path)
 			continue
 		}
-		applyRankPath(result, path, rank, source+" ActiveEffectLike")
+		if !applyRankPath(result, path, rank, source+" ActiveEffectLike") {
+			result.Warnings = append(result.Warnings, source+": unsupported proficiency path "+path)
+		}
 	}
 }
 
@@ -229,7 +230,11 @@ func resolvePath(path string, choices map[string]string) (string, bool) {
 }
 
 func hasPredicate(raw json.RawMessage) bool {
-	if len(raw) == 0 || string(raw) == "null" || string(raw) == "[]" {
+	if len(raw) == 0 || string(raw) == "null" {
+		return false
+	}
+	var values []json.RawMessage
+	if json.Unmarshal(raw, &values) == nil && len(values) == 0 {
 		return false
 	}
 	return true
@@ -260,10 +265,10 @@ func rankValueForLevel(raw json.RawMessage, level int) (int, bool) {
 	return 0, false
 }
 
-func applyRankPath(result *ProficiencyRanks, path string, rank int, source string) {
+func applyRankPath(result *ProficiencyRanks, path string, rank int, source string) bool {
 	parts := strings.Split(path, ".")
 	if len(parts) < 4 || parts[len(parts)-1] != "rank" {
-		return
+		return false
 	}
 	switch {
 	case path == "system.attributes.perception.rank":
@@ -278,16 +283,9 @@ func applyRankPath(result *ProficiencyRanks, path string, rank int, source strin
 		upgradeMap(result.Attacks, parts[3], rank, source)
 	case strings.HasPrefix(path, "system.proficiencies.spellcasting.") || path == "system.proficiencies.spellcasting.rank":
 		upgrade(&result.Spellcasting, rank, source)
+	default:
+		return false
 	}
+	return true
 }
 
-// ParseNumericRank is exported for tests and adapters that need to validate a
-// simple rank value without evaluating PF2e roll expressions.
-func ParseNumericRank(raw json.RawMessage) (int, bool) {
-	value, ok := rankValueForLevel(raw, 1)
-	if !ok { return 0, false }
-	if _, err := strconv.Atoi(strings.TrimSpace(string(raw))); err == nil {
-		return value, true
-	}
-	return value, false
-}
