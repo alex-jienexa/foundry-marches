@@ -128,13 +128,24 @@ func TestFoundryRepositorySyncActorPostgresIntegration(t *testing.T) {
 	// Foundry row is removed, while an app/catalog-owned row (NULL source ID)
 	// must survive reconciliation.
 	preservedItemID := integrationUUID(t)
-	if _, err := db.ExecContext(ctx, `
+	seedTx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("begin inventory fixture transaction: %v", err)
+	}
+	defer func() { _ = seedTx.Rollback() }()
+	if _, err := seedTx.ExecContext(ctx, "SET LOCAL app.writer = 'foundry_sync'"); err != nil {
+		t.Fatalf("set fixture writer: %v", err)
+	}
+	if _, err := seedTx.ExecContext(ctx, `
 INSERT INTO inventory_items (id, character_id, foundry_item_id, name, quantity, state)
 VALUES ($1, $2, 'item-1', 'Old name', 1, '{}'::jsonb),
        ($3, $2, 'stale-item', 'Stale Foundry item', 1, '{}'::jsonb),
        ($4, $2, NULL, 'App-owned catalog item', 7, '{"origin":"app"}'::jsonb)
 `, preservedItemID, characterID, integrationUUID(t), integrationUUID(t)); err != nil {
 		t.Fatalf("seed inventory rows: %v", err)
+	}
+	if err := seedTx.Commit(); err != nil {
+		t.Fatalf("commit inventory fixture transaction: %v", err)
 	}
 
 	record := testSyncRecord(t)
