@@ -79,7 +79,7 @@ func TestGetDocumentEncodesUUIDAndRejectsHTTPError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := NewClient(Config{BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+	client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
