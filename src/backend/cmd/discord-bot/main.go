@@ -153,11 +153,9 @@ func (b *bot) handleButton(s *discordgo.Session,i *discordgo.InteractionCreate) 
 	if !ok || time.Now().After(p.expiresAt) || p.discordID!=u.ID || p.guildID!=i.GuildID {
 		b.reply(s,i,"Подтверждение недействительно, истекло или принадлежит другому участнику. Повторите /character-link.",nil); return
 	}
-	if err:=s.InteractionRespond(i.Interaction,&discordgo.InteractionResponse{Type:discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		Data:&discordgo.InteractionResponseData{Flags:discordgo.MessageFlagsEphemeral}}); err!=nil { return }
+	if err:=s.InteractionRespond(i.Interaction,&discordgo.InteractionResponse{Type:discordgo.InteractionResponseDeferredMessageUpdate}); err!=nil { return }
 	err:=b.post(LinkPath,linkPayload{identity:b.identity(i,u),ActorUUID:p.actorUUID,CharacterID:p.characterID},nil)
-	if err!=nil { b.edit(s,i,"Привязка не выполнена: "+err.Error(),nil) } else { b.edit(s,i,"Привязка выполнена. Владение персонажем не менялось.",nil) }
-	if i.Message!=nil { empty:=[]discordgo.MessageComponent{}; _,_=s.InteractionResponseEdit(i.Interaction,&discordgo.WebhookEdit{Components:&empty}) }
+	if err!=nil { b.edit(s,i,"Привязка не выполнена: "+err.Error(),[]discordgo.MessageComponent{}) } else { b.edit(s,i,"Привязка выполнена. Владение персонажем не менялось.",[]discordgo.MessageComponent{}) }
 }
 
 func (b *bot) identity(i *discordgo.InteractionCreate,u *discordgo.User) identity {
