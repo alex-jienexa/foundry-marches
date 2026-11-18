@@ -2,6 +2,7 @@ package foundrysync
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -19,7 +20,7 @@ type ActorGateway interface {
 }
 
 type ActorSnapshotSink interface {
-	SyncDiscoveredActor(context.Context, string, string, []byte) (characters.FoundryDiscoveryDisposition, error)
+	SyncDiscoveredActor(context.Context, string, string, json.RawMessage) (characters.FoundryDiscoveryDisposition, error)
 }
 
 type ActorSyncResult struct {
