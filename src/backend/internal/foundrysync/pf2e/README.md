@@ -91,3 +91,8 @@ level has been reached but whose compendium document is not present among Actor
 Items are reported as warnings. A warning makes the rank result incomplete.
 
 Run tests from `src/backend` with `go test ./...` and `go vet ./...`.
+
+
+The calculator's `CalculateDerivedStats` currently supports Perception, AC, Fortitude, Reflex, Will and skills present in the normalized rank set. It uses PF2e proficiency bonuses (untrained 0; trained `level+2`; each subsequent rank adds 2), the stored ability modifier (or a modifier derived from an explicitly stored ability score), armor category/AC bonus/Dexterity cap, armor potency rune and resilient rune. It also accepts simple, unconditional `FlatModifier` item bonuses with a numeric value and `type: item`.
+
+Item bonuses of the same type do not stack: only the highest supported item bonus is applied. Unsupported predicates, formulas, missing equipment state, unresolved class-feature documents and missing ability/rank/level inputs yield incomplete or unavailable results rather than fabricated totals. This first calculator version intentionally does not implement circumstance/status bonuses, conditions, temporary effects, spell effects, attacks, DCs, shield AC, or the complete Rule Element engine.
