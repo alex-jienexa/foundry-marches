@@ -120,3 +120,21 @@ A discovery-level Relay error returns HTTP 502. A second concurrent sync for the
 - Actors removed from Foundry are not yet pruned from `foundry_actors`; deletion reconciliation is a separate, explicit policy.
 - NPC and other non-character Actor snapshots are persisted, but their system-specific projections are not yet decoded into dedicated application entities.
 - The initial bootstrap is a dedicated integration service, not yet the full application API. It does not implement user sessions, role checks or per-user access control; the Bearer token grants access to the single administrative sync operation.
+
+
+## Verified runtime result — 2026-11-18
+
+The project owner confirmed a successful full world synchronization after synchronizing the Foundry world following the PF2e system update.
+
+- 11 world Actors were discovered and persisted as snapshots in `foundry_actors`.
+- The internal application `world_id` is UUID `00000000-0000-4000-8000-000000000001`.
+- All 11 rows currently have `character_id IS NULL`; therefore they remain `snapshot_only`.
+- This is intentional until an explicit Actor-to-existing-character link is created. It is not a decoder failure.
+- The Relay's `westmarches` world identifier is not the application's WorldID.
+- No Foundry Actor was modified by this synchronization.
+
+The Docker Compose PostgreSQL/API stack was started by the owner; `GET /healthz` returned HTTP 200. The API is bound to host loopback at `127.0.0.1:8080`; PostgreSQL has no published host port.
+
+## Next implementation boundary
+
+The next character integration feature is an explicit link operation between an existing application character and a Foundry Actor. It must validate at least: Actor type is `character`, Actor belongs to the configured world, neither side is already linked elsewhere, and the caller is authorized. It must not create a character, infer ownership, or write to Foundry. Approval and user-facing authorization remain separate work.
