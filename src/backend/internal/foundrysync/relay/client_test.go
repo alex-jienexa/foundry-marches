@@ -32,7 +32,7 @@ func TestGetActorSnapshotUnwrapsAndValidatesRelayEnvelope(t *testing.T) {
 	defer server.Close()
 
 	client, err := NewClient(Config{
-		BaseURL: server.URL, ClientID: "relay-client", APIKey: "test-secret",
+		WorldID: "world", BaseURL: server.URL, ClientID: "relay-client", APIKey: "test-secret",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -123,12 +123,27 @@ func TestGetActorSnapshotRejectsDifferentActor(t *testing.T) {
 	}
 }
 
+
+func TestGetActorSnapshotRejectsDifferentConfiguredWorld(t *testing.T) {
+	client, err := NewClient(Config{
+		WorldID: "configured-world", BaseURL: "https://relay.example.test",
+		ClientID: "client", APIKey: "secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.GetActorSnapshot(context.Background(), "another-world", "Actor.test")
+	if !errors.Is(err, ErrWorldMismatch) {
+		t.Fatalf("got %v, want ErrWorldMismatch", err)
+	}
+}
+
 func TestNewClientRejectsUnsafeOrIncompleteConfiguration(t *testing.T) {
 	tests := []Config{
-		{BaseURL: "https://relay.example.test", ClientID: "client"},
-		{BaseURL: "ftp://relay.example.test", ClientID: "client", APIKey: "secret"},
-		{BaseURL: "https://user:pass@relay.example.test", ClientID: "client", APIKey: "secret"},
-		{BaseURL: "https://relay.example.test?x=1", ClientID: "client", APIKey: "secret"},
+		{WorldID: "world", BaseURL: "https://relay.example.test", ClientID: "client"},
+		{WorldID: "world", BaseURL: "ftp://relay.example.test", ClientID: "client", APIKey: "secret"},
+		{WorldID: "world", BaseURL: "https://user:pass@relay.example.test", ClientID: "client", APIKey: "secret"},
+		{WorldID: "world", BaseURL: "https://relay.example.test?x=1", ClientID: "client", APIKey: "secret"},
 	}
 	for i, config := range tests {
 		if _, err := NewClient(config); !errors.Is(err, ErrInvalidConfig) {
@@ -147,7 +162,7 @@ func TestGetDocumentUsesConfiguredBasePath(t *testing.T) {
 	defer server.Close()
 
 	client, err := NewClient(Config{
-		BaseURL: server.URL + "/relay/", ClientID: "client", APIKey: "secret",
+		WorldID: "world", BaseURL: server.URL + "/relay/", ClientID: "client", APIKey: "secret",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -170,7 +185,7 @@ func TestClientDoesNotFollowRedirectsWithAPIKey(t *testing.T) {
 	}))
 	defer redirect.Close()
 
-	client, err := NewClient(Config{BaseURL: redirect.URL, ClientID: "client", APIKey: "secret"})
+	client, err := NewClient(Config{WorldID: "world", BaseURL: redirect.URL, ClientID: "client", APIKey: "secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
