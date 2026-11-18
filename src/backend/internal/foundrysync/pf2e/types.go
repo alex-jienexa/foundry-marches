@@ -181,6 +181,7 @@ type CharacterItemDto struct {
 	Level            *int                  `json:"level"`
 	Equipped         *CharacterEquippedDto `json:"equipped"`
 	CompendiumSource *string               `json:"compendiumSource"`
+	RuleElements     []RuleElementDto      `json:"ruleElements,omitempty"`
 	Armor            *ArmorItemDataDto     `json:"armor,omitempty"`
 	Runes            *ItemRuneDataDto      `json:"runes,omitempty"`
 }
@@ -234,11 +235,37 @@ type ProficiencyDto struct {
 // proof of the character's current rank. Consumers must not silently treat it
 // as an Actor-prepared proficiency value.
 type ClassProficiencyProfileDto struct {
-	PerceptionRank   *int           `json:"perceptionRank"`
-	SavingThrows     map[string]int `json:"savingThrows"`
-	Defenses         map[string]int `json:"defenses"`
-	TrainedSkills    []string       `json:"trainedSkills"`
-	AdditionalSkills *int           `json:"additionalSkills"`
+	PerceptionRank   *int                      `json:"perceptionRank"`
+	SavingThrows     map[string]int            `json:"savingThrows"`
+	Defenses         map[string]int            `json:"defenses"`
+	Attacks          map[string]int            `json:"attacks"`
+	SpellcastingRank *int                      `json:"spellcastingRank"`
+	TrainedSkills    []string                  `json:"trainedSkills"`
+	AdditionalSkills *int                      `json:"additionalSkills"`
+	Features         []ClassFeatureReferenceDto `json:"features"`
+	RuleElements     []RuleElementDto          `json:"ruleElements,omitempty"`
+}
+
+// ClassFeatureReferenceDto identifies a feature listed in the class item's
+// progression table. It is a compendium reference, not a resolved feature.
+type ClassFeatureReferenceDto struct {
+	UUID  string  `json:"uuid"`
+	Name  string  `json:"name"`
+	Level *int    `json:"level"`
+	Image *string `json:"image,omitempty"`
+}
+
+// RuleElementDto preserves the declarative rule element fields needed for
+// later, explicitly supported interpretation. It is never executed by decoder.
+type RuleElementDto struct {
+	Key       string          `json:"key"`
+	Mode      string          `json:"mode,omitempty"`
+	Path      string          `json:"path,omitempty"`
+	Value     json.RawMessage `json:"value,omitempty"`
+	Flag      string          `json:"flag,omitempty"`
+	Selection json.RawMessage `json:"selection,omitempty"`
+	Predicate json.RawMessage `json:"predicate,omitempty"`
+	Raw       json.RawMessage `json:"raw"`
 }
 
 type ArmorItemDataDto struct {
