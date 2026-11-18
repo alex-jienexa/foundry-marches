@@ -18,6 +18,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const (
+	RegisterPath = "/api/internal/discord/register"
+	ActorsPath = "/api/internal/discord/actors"
+	CharactersPath = "/api/internal/discord/characters"
+	PreviewPath = "/api/internal/discord/link/preview"
+	LinkPath = "/api/internal/discord/link"
+	GrantRolePath = "/api/internal/discord/roles/grant"
+	MapRolePath = "/api/internal/discord/roles/map"
+)
+
 type bot struct {
 	apiURL, apiToken, guildID string
 	client *http.Client
