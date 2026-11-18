@@ -147,7 +147,7 @@ func TestResolverLoadsClassFeatureByCompendiumUUID(t *testing.T) {
 		},
 	}
 	resolver := fakeCompendiumResolver{
-		featureUUID: []byte(`{"_id":"feature1","name":"Perception Mastery","type":"feat","system":{"rules":[{"key":"ActiveEffectLike","mode":"upgrade","path":"system.attributes.perception.rank","value":2}]}}`),
+		featureUUID: []byte(`{"type":"entity-result","data":{"_id":"feature1","name":"Perception Mastery","type":"feat","system":{"rules":[{"key":"ActiveEffectLike","mode":"upgrade","path":"system.attributes.perception.rank","value":2}]}}}`),
 	}
 	got := CalculateDerivedStatsWithResolver(context.Background(), character, resolver)
 	if got.Proficiencies.Perception == nil || got.Proficiencies.Perception.Rank != 2 || !got.Proficiencies.Complete {
