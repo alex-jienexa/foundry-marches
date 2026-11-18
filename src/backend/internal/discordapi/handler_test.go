@@ -1,0 +1,79 @@
+package discordapi
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestServiceTokenMiddleware(t *testing.T) {
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+	handler := ServiceTokenMiddleware("a-very-long-test-service-token-value-123456", next)
+
+	t.Run("rejects missing token", func(t *testing.T) {
+		called = false
+		req := httptest.NewRequest(http.MethodPost, RegisterPath, nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized || called {
+			t.Fatalf("status=%d called=%v, want 401 and next not called", rec.Code, called)
+		}
+	})
+
+	t.Run("rejects wrong token", func(t *testing.T) {
+		called = false
+		req := httptest.NewRequest(http.MethodPost, RegisterPath, nil)
+		req.Header.Set("Authorization", "Bearer wrong-token")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized || called {
+			t.Fatalf("status=%d called=%v, want 401 and next not called", rec.Code, called)
+		}
+	})
+
+	t.Run("accepts exact token", func(t *testing.T) {
+		called = false
+		req := httptest.NewRequest(http.MethodPost, RegisterPath, nil)
+		req.Header.Set("Authorization", "Bearer a-very-long-test-service-token-value-123456")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusNoContent || !called {
+			t.Fatalf("status=%d called=%v, want 204 and next called", rec.Code, called)
+		}
+	})
+}
+
+func TestDecodeRequestRejectsUnknownFieldsAndTrailingJSON(t *testing.T) {
+	type request struct {
+		Name string `json:"name"`
+	}
+
+	t.Run("unknown field", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":"x","admin":true}`))
+		rec := httptest.NewRecorder()
+		var decoded request
+		if decodeRequest(rec, req, &decoded) {
+			t.Fatal("decodeRequest accepted an unknown field")
+		}
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status=%d, want 400", rec.Code)
+		}
+	})
+
+	t.Run("trailing JSON value", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":"x"} {"name":"y"}`))
+		rec := httptest.NewRecorder()
+		var decoded request
+		if decodeRequest(rec, req, &decoded) {
+			t.Fatal("decodeRequest accepted multiple JSON values")
+		}
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status=%d, want 400", rec.Code)
+		}
+	})
+}
