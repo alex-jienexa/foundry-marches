@@ -58,3 +58,16 @@ The raw Actor snapshot remains authoritative for all unrecognized fields.
 `CharacterDerivedStatsDto` defines the future calculator output contract: each statistic has an optional value, a status (`complete`, `incomplete`, `unavailable`), a breakdown and warnings. A missing input must never be replaced with zero. The calculation version is explicit so future algorithm changes can be distinguished.
 
 The current decoder only prepares these DTOs; it does not yet calculate AC, Perception, saves or skill totals. Temporary effects, situational modifiers, Rule Elements and other runtime-prepared values are outside this contract.
+
+
+## Class progression and Rule Elements
+
+`CharacterBuildDto.ClassProficiencies` now captures the class baseline from the class Item: perception, all saving throws, defense categories, attack categories, spellcasting rank, trained skills and additional skill count.
+
+The class Item's `system.items` map is decoded as `ClassFeatureReferenceDto` entries (UUID, name, level and image). These are references to compendium documents, not embedded Actor Items. The decoder does not pretend that a reference contains its Rule Elements: the referenced document must be resolved separately before its rules can be interpreted.
+
+Rule Elements present on the class Item and owned Actor Items are projected into `RuleElementDto`. The original rule JSON is retained in `Raw`, including unsupported fields. This is declarative data only: no predicates, formulas, grants, selectors, or other Rule Element behavior are executed by the decoder.
+
+PF2e `ActiveEffectLike` can upgrade proficiency ranks, including through a `ChoiceSet`-selected path. The eventual calculator may support a deliberately narrow, documented subset (static numeric `upgrade` values and simple level brackets). Unsupported expressions, predicates, conditional rules and unresolved compendium references must produce warnings/incomplete results, never guessed ranks. This is necessary because Rule Elements can depend on selections, predicates, actor level and data-preparation phases.
+
+Fighter fixture expectations: perception 2; Fortitude 2, Reflex 2, Will 1; defenses Heavy/Light/Medium/Unarmored 1; attacks Advanced 1, Martial 2, Simple 2, Unarmed 2; spellcasting 0. Its class progression table contains 15 feature references, two at level 1. The `fighterSkill` ChoiceSet and its ActiveEffectLike are preserved as source rules.
