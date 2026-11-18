@@ -84,11 +84,7 @@ func TestFoundryRepositorySyncActorUsesOneTransaction(t *testing.T) {
 
 	state.mu.Lock()
 	defer state.mu.Unlock()
-	if !state.committed || !state.rolledBack {
-		// database/sql calls Rollback after a successful Commit to release the Tx;
-		// the committed flag is the authoritative outcome.
-		if !state.committed { t.Fatal("transaction was not committed") }
-	}
+	if !state.committed { t.Fatal("transaction was not committed") }
 	joined := strings.Join(state.queries, "\n")
 	for _, expected := range []string{"set_config('app.writer', 'foundry_sync', true)", "INSERT INTO characters", "UPDATE foundry_actors", "DELETE FROM inventory_items", "INSERT INTO inventory_items"} {
 		if !strings.Contains(joined, expected) { t.Fatalf("expected SQL %q in transaction queries:\n%s", expected, joined) }
@@ -109,4 +105,5 @@ func TestFoundryRepositoryRejectsUnlinkedActorAndRollsBack(t *testing.T) {
 	state.mu.Lock()
 	defer state.mu.Unlock()
 	if state.committed { t.Fatal("transaction with an unlinked Actor must not commit") }
+	if !state.rolledBack { t.Fatal("transaction with an unlinked Actor must roll back") }
 }
