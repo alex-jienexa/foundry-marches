@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
+	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e/calculator"
 )
 
 const defaultMaxResponseBytes int64 = 16 << 20
@@ -20,11 +21,13 @@ var (
 	ErrResponseTooLarge  = errors.New("Foundry Relay response exceeds configured size limit")
 	ErrUnexpectedStatus  = errors.New("Foundry Relay returned an unsuccessful HTTP status")
 	ErrDocumentMismatch  = errors.New("Foundry Relay returned a different document than requested")
+	ErrWorldMismatch     = errors.New("Foundry Relay client is configured for a different world")
 )
 
 // Config contains the connection details for one trusted, administrator-configured
 // Relay instance. API keys must be loaded from a secret store by the composition root.
 type Config struct {
+	WorldID          string
 	BaseURL          string
 	ClientID         string
 	APIKey           string
@@ -34,6 +37,7 @@ type Config struct {
 
 // Client is a read-only HTTP adapter for the self-hosted Foundry REST API Relay.
 type Client struct {
+	worldID          string
 	baseURL          *url.URL
 	clientID         string
 	apiKey           string
@@ -42,7 +46,8 @@ type Client struct {
 }
 
 func NewClient(config Config) (*Client, error) {
-	if strings.TrimSpace(config.BaseURL) == "" ||
+	if strings.TrimSpace(config.WorldID) == "" ||
+		strings.TrimSpace(config.BaseURL) == "" ||
 		strings.TrimSpace(config.ClientID) == "" ||
 		strings.TrimSpace(config.APIKey) == "" {
 		return nil, ErrInvalidConfig
@@ -71,7 +76,7 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	return &Client{
-		baseURL: baseURL, clientID: config.ClientID, apiKey: config.APIKey,
+		worldID: config.WorldID, baseURL: baseURL, clientID: config.ClientID, apiKey: config.APIKey,
 		httpClient: httpClient, maxResponseBytes: maxResponseBytes,
 	}, nil
 }
@@ -81,6 +86,9 @@ func NewClient(config Config) (*Client, error) {
 func (c *Client) GetActorSnapshot(ctx context.Context, worldID, actorUUID string) ([]byte, error) {
 	if strings.TrimSpace(worldID) == "" || strings.TrimSpace(actorUUID) == "" {
 		return nil, errors.New("world ID and Actor UUID are required")
+	}
+	if worldID != c.worldID {
+		return nil, fmt.Errorf("%w: client world %q, requested world %q", ErrWorldMismatch, c.worldID, worldID)
 	}
 	payload, err := c.getDocument(ctx, actorUUID)
 	if err != nil {
@@ -146,3 +154,5 @@ func (c *Client) getDocument(ctx context.Context, uuid string) ([]byte, error) {
 	}
 	return body, nil
 }
+
+var _ calculator.CompendiumItemResolver = (*Client)(nil)
