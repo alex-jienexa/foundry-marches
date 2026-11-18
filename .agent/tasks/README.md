@@ -19,9 +19,9 @@ Copy `TASK_TEMPLATE.md` for new work. Use `created_at`, `updated_at`, `depends_o
 
 | Этап | Задача | Состояние | Зависит от |
 |---|---|---|---|
-| 0. Спайк (1–2 дня) | [TASK-002](TASK-002.md) | ready | TASK-001 |
-| 1. Основа | [TASK-003](TASK-003.md) | ready | TASK-001 |
-| 2. Персонажи и Foundry | [TASK-004](TASK-004.md) | backlog | TASK-002, TASK-003 |
+| 0. Спайк (1–2 дня) | [TASK-002](TASK-002.md) | in_progress | TASK-001 |
+| 1. Основа | [TASK-003](TASK-003.md) | in_progress | TASK-001 |
+| 2. Персонажи и Foundry | [TASK-004](TASK-004.md) | in_progress | TASK-002, TASK-003 |
 | 3. Приключения | [TASK-005](TASK-005.md) | backlog | TASK-004 |
 | 4. Награды и экономика | [TASK-006](TASK-006.md) | backlog | TASK-005 |
 | 5. Wiki, Obsidian, Campaign Codex | [TASK-007](TASK-007.md) | backlog | TASK-006 |
