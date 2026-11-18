@@ -68,10 +68,9 @@ func (s *SyncService) SyncAll(ctx context.Context) (SyncReport, error) {
 	defer s.mu.Unlock()
 
 	report := SyncReport{WorldID: s.worldID, StartedAt: time.Now().UTC()}
-	defer func() { report.FinishedAt = time.Now().UTC() }()
-
 	actors, err := s.gateway.ListActors(ctx, s.worldID)
 	if err != nil {
+		report.FinishedAt = time.Now().UTC()
 		return report, fmt.Errorf("discover Foundry world Actors: %w", err)
 	}
 	report.Discovered = len(actors)
