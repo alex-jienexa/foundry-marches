@@ -196,7 +196,7 @@ func applyRules(result *ProficiencyRanks, rules []pf2e.RuleElementDto, source st
 		}
 	}
 	for _, rule := range rules {
-		if rule.Key != "ActiveEffectLike" {
+		if rule.Key != "ActiveEffectLike" || !strings.Contains(rule.Path, ".rank") {
 			continue
 		}
 		if rule.Mode != "upgrade" {
@@ -259,7 +259,7 @@ func hasPredicate(raw json.RawMessage) bool {
 }
 
 func rankValueForLevel(raw json.RawMessage, level int) (int, bool) {
-	if len(raw) == 0 { return 0, false }
+	if len(raw) == 0 || strings.TrimSpace(string(raw)) == "null" { return 0, false }
 	var number int
 	if json.Unmarshal(raw, &number) == nil { return number, true }
 	var bracketSet struct {
