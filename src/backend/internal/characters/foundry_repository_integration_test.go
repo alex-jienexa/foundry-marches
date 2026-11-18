@@ -338,7 +338,6 @@ func TestFoundryRepositoryLinkActorPostgresIntegration(t *testing.T) {
 	if _, err := db.ExecContext(ctx, "INSERT INTO users (id, display_name) VALUES ($1, 'Link reviewer')", userID); err != nil {
 		t.Fatalf("insert linking user: %v", err)
 	}
-	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID) })
 	if _, err := db.ExecContext(ctx, "INSERT INTO characters (id, name) VALUES ($1, 'Existing application character')", characterID); err != nil {
 		t.Fatalf("insert existing application character: %v", err)
 	}
@@ -419,7 +418,6 @@ func TestFoundryRepositoryLinkActorRejectsNonCharacterPostgresIntegration(t *tes
 	if _, err := db.ExecContext(ctx, "INSERT INTO users (id, display_name) VALUES ($1, 'Link reviewer')", userID); err != nil {
 		t.Fatalf("insert linking user: %v", err)
 	}
-	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID) })
 	if _, err := db.ExecContext(ctx, "INSERT INTO characters (id, name) VALUES ($1, 'Existing character')", characterID); err != nil {
 		t.Fatalf("insert application character: %v", err)
 	}
