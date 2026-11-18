@@ -55,3 +55,56 @@ PASS: DBML-парсер принял 115 таблиц, 1030 колонок и 23
 ## Перенос в Git
 
 Пакет подготовлен относительно commit `3032d2da61c090bde83887f564f9487d1e99e27e`. Проверка `git apply --check` и фактическое применение patch выполнены на отдельной чистой копии этого snapshot; файлы сверены с подготовленным overlay. Коммит, push и deploy не выполнялись.
+
+
+---
+
+# Runtime и Foundry integration — 2026-11-18
+
+Этот раздел дополняет историческую проверку переноса от 2026-11-17. Результаты ниже относятся к текущей реализации ветки `feat/task-004-character-decoder` и окружению владельца; они не означают завершение всех этапов продукта.
+
+## Подтверждённая инфраструктура
+
+- Foundry VTT 14 build 367 и PF2e 8.7.0.
+- Self-hosted ThreeHats Foundry REST API Relay 3.4.1; Pairing с Foundry подтверждён.
+- Relay опубликован через Caddy по HTTPS на `relay.jiene.ru`; Foundry доступен через `foundry.jiene.ru`.
+- Docker Compose запускает PostgreSQL 18 Alpine и Go API. API доступен на host loopback `127.0.0.1:8080`; PostgreSQL не публикует host port.
+- `GET /healthz` вернул HTTP 200 после запуска стека.
+- Секреты находятся вне Git. Значения API key, Bearer token и паролей в документацию не включать.
+
+## Foundry world sync
+
+Владелец подтвердил успешное завершение синхронизации после синхронизации мира Foundry вслед за обновлением PF2e.
+
+- Найдено и сохранено 11 Actor.
+- Исходные снимки Actor сохранены в `foundry_actors`.
+- Для всех 11 записей внутренний `world_id` — UUID `00000000-0000-4000-8000-000000000001`; `character_id` пока NULL.
+- Следовательно, эти записи имеют disposition `snapshot_only`. Это ожидаемое поведение: Actor не создаются как персонажи приложения автоматически и не получают владельца по косвенным признакам.
+- Внутренний WorldID приложения остаётся UUID. Relay world identifier `westmarches` не используется вместо него.
+- Синхронизация read-only относительно Foundry: используются операции Relay search/get; Actor в Foundry не изменяются.
+
+## Реализованные проверки и тесты в репозитории
+
+- Go backend содержит REST bootstrap API, Relay HTTP adapter, PF2e decoder/calculator и слой persistence для персонажей, Actor snapshots и inventory.
+- Добавлены unit/HTTP tests и opt-in PostgreSQL integration tests для persistence adapter.
+- CI workflow содержит jobs `documentation`, `database` (PostgreSQL 15/16, schema tests, race tests и opt-in Go integration suite) и `backend` (gofmt, `go test ./...`, `go vet ./...`).
+- На момент фиксации этого отчёта GitHub Actions не показывал workflow runs для данной ветки. Наличие workflow — не доказательство успешного удалённого прогона. Требуется проверить run после открытия PR в `main`.
+- Локальные команды Go и PostgreSQL запускались владельцем в ходе разработки; этот документ не утверждает, что все проверки повторно запускались на каждом последнем commit.
+
+## Ограничения
+
+- Все 11 Actor пока не привязаны к персонажам приложения.
+- Нет полноценного Discord OAuth, пользовательских сессий и RBAC.
+- Нет полного пользовательского API, frontend и Discord bot.
+- Синхронизация выполняется синхронным bootstrap endpoint с отдельным Bearer token; это временная административная модель.
+- Не реализованы миграции поверх уже инициализированной БД, job queue, удаление stale Actor policy и полноценная production observability.
+- Не подтверждены WebDAV ETag/If-Match, Campaign Codex exports, SSE/headless session и Relay usage/quota.
+- Запись XP/уровня в Foundry не входит в текущую read-only интеграционную модель и не должна реализовываться без отдельного пересмотра архитектуры и разрешения владельца.
+
+## Важное различие статусов
+
+- **PASS** — проверка фактически выполнена и результат подтверждён.
+- **Implemented, not fully verified** — код существует, но полный acceptance contract или live-проверка ещё не закрыты.
+- **Pending** — реализация или проверка ещё впереди.
+
+Исторические результаты PostgreSQL 15/16 и переносимых артефактов выше сохраняются без изменений.
