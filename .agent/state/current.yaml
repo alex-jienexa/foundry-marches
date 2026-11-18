@@ -5,7 +5,7 @@ updated_at: '2026-11-18'
 current_focus: Discord bot-only identity/RBAC and confirmed Foundry Actor linking; next verification, approval and ownership flow
 active_task: TASK-004
 active_branch: feat/task-004-character-linking
-last_checkpoint: '2026-11-18: feat/task-004-character-linking adds Discord Gateway bot, internal bot API, hybrid RBAC, migration and confirmed Actor linking; runtime verification pending'
+last_checkpoint: '2026-11-18: Discord Gateway bot, internal bot API, hybrid RBAC, migration, transactional role/audit writes and confirmed Actor linking committed; runtime verification pending'
 last_verified_commit: 618bf862dd070e3688709cc319cf55b042e96df0
 open_blockers:
 - Отсутствует исходное ТЗ v1.0 и два дополнения; не реконструировать требования по догадкам
@@ -22,7 +22,6 @@ next_actions:
 - Создать Discord application/bot, настроить IDs/secrets и запустить discord-bot service по docs/integrations/discord-bot.md
 - Проверить /register, owner bootstrap, role grant/map и Actor link flow на Андрее
 - Затем реализовать approval/review, ownership confirmation, limits/NPC и устойчивый sync lifecycle
-- После link завершить approval, лимиты/NPC и устойчивый sync lifecycle
 - Продолжить незавершённые проверки этапа 0 и этапа 1 без изменения production/Foundry данных без отдельного разрешения
 - CI: после открытия PR владельцем проверить фактический GitHub Actions run; CD пока не проектировать в коде до отдельного одобрения
 recent_changes:
