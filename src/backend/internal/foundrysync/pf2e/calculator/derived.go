@@ -238,16 +238,24 @@ func staticItemBonus(character pf2e.CharacterDto, selector string) (int, []strin
 func selectorMatches(raw json.RawMessage, selector string) bool {
 	var single string
 	if json.Unmarshal(raw, &single) == nil {
-		return single == selector || (selector == "fortitude" || selector == "reflex" || selector == "will") && single == "saving-throw"
+		return selectorMatchesValue(single, selector)
 	}
 	var values []string
 	if json.Unmarshal(raw, &values) != nil { return false }
 	for _, value := range values {
-		if value == selector || (selector == "fortitude" || selector == "reflex" || selector == "will") && value == "saving-throw" {
+		if selectorMatchesValue(value, selector) {
 			return true
 		}
 	}
 	return false
+}
+
+func selectorMatchesValue(value, selector string) bool {
+	if value == selector { return true }
+	if (selector == "fortitude" || selector == "reflex" || selector == "will") && value == "saving-throw" {
+		return true
+	}
+	return skillAbility(selector) != "" && value == "skill-check"
 }
 
 func alwaysActiveItem(itemType string) bool {
