@@ -1,6 +1,8 @@
 package calculator
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -116,5 +118,42 @@ func TestResolveProficiencyFromResolvedClassFeatureReference(t *testing.T) {
 	got := ResolveProficiencyRanksWithFeatureRules(character, resolved)
 	if got.Perception == nil || got.Perception.Rank != 2 || !got.Complete || len(got.Warnings) != 0 {
 		t.Fatalf("resolved feature did not upgrade perception: %+v", got)
+	}
+}
+
+
+type fakeCompendiumResolver map[string][]byte
+
+func (f fakeCompendiumResolver) ResolveCompendiumItem(_ context.Context, uuid string) ([]byte, error) {
+	payload, ok := f[uuid]
+	if !ok { return nil, fmt.Errorf("not found: %s", uuid) }
+	return payload, nil
+}
+
+func TestResolverLoadsClassFeatureByCompendiumUUID(t *testing.T) {
+	const featureUUID = "Compendium.pf2e.classfeatures.Item.feature1"
+	character := pf2e.CharacterDto{
+		Progression: pf2e.CharacterProgressionDto{Level: intPointer(3)},
+		Statistics: pf2e.CharacterStatisticsInputDto{
+			Abilities: map[string]pf2e.AbilityScoreDto{"wis": {Modifier: intPointer(1)}},
+		},
+		Build: pf2e.CharacterBuildDto{
+			ClassProficiencies: &pf2e.ClassProficiencyProfileDto{
+				PerceptionRank: intPointer(1),
+				Features: []pf2e.ClassFeatureReferenceDto{{
+					UUID: featureUUID, Name: "Perception Mastery", Level: intPointer(3),
+				}},
+			},
+		},
+	}
+	resolver := fakeCompendiumResolver{
+		featureUUID: []byte(`{"_id":"feature1","name":"Perception Mastery","type":"feat","system":{"rules":[{"key":"ActiveEffectLike","mode":"upgrade","path":"system.attributes.perception.rank","value":2}]}}`),
+	}
+	got := CalculateDerivedStatsWithResolver(context.Background(), character, resolver)
+	if got.Proficiencies.Perception == nil || got.Proficiencies.Perception.Rank != 2 || !got.Proficiencies.Complete {
+		t.Fatalf("resolved class feature rank missing: %+v", got.Proficiencies)
+	}
+	if got.Perception.Value == nil || *got.Perception.Value != 8 {
+		t.Fatalf("derived Perception should include resolved Expert rank: %+v", got.Perception)
 	}
 }
