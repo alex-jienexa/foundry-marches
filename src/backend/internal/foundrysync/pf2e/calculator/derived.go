@@ -21,6 +21,7 @@ func CalculateDerivedStats(character pf2e.CharacterDto) pf2e.CharacterDerivedSta
 func CalculateDerivedStatsWithFeatureRules(character pf2e.CharacterDto, featureRules map[string][]pf2e.RuleElementDto) pf2e.CharacterDerivedStatsDto {
 	ranks := ResolveProficiencyRanksWithFeatureRules(character, featureRules)
 	result := pf2e.CharacterDerivedStatsDto{
+		Proficiencies: ranks,
 		Saves: make(map[string]pf2e.DerivedStatDto),
 		Skills: make(map[string]pf2e.DerivedStatDto),
 		Version: DerivedCalculationVersion,
