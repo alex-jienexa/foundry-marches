@@ -493,9 +493,15 @@ func decodeClassFeatureReferences(raw map[string]json.RawMessage) []ClassFeature
 		})
 	}
 	sort.Slice(features, func(i, j int) bool {
-		if features[i].Level == nil { return false }
-		if features[j].Level == nil { return true }
-		if *features[i].Level != *features[j].Level { return *features[i].Level < *features[j].Level }
+		if features[i].Level == nil {
+			return false
+		}
+		if features[j].Level == nil {
+			return true
+		}
+		if *features[i].Level != *features[j].Level {
+			return *features[i].Level < *features[j].Level
+		}
 		return features[i].UUID < features[j].UUID
 	})
 	return features
@@ -523,12 +529,12 @@ func decodeRuleElements(system, flags map[string]json.RawMessage) []RuleElementD
 			selection = ruleSelection(flags, flag)
 		}
 		rule := RuleElementDto{
-			Key:       stringValue(entry, "key"),
-			Mode:      stringValue(entry, "mode"),
-			Path:      stringValue(entry, "path"),
-			Flag:      stringValue(entry, "flag"),
-			Value:     cloneRaw(entry["value"]),
-			Selection: selection,
+			Key:          stringValue(entry, "key"),
+			Mode:         stringValue(entry, "mode"),
+			Path:         stringValue(entry, "path"),
+			Flag:         stringValue(entry, "flag"),
+			Value:        cloneRaw(entry["value"]),
+			Selection:    selection,
 			Predicate:    cloneRaw(entry["predicate"]),
 			Selector:     cloneRaw(entry["selector"]),
 			ModifierType: stringValue(entry, "type"),
@@ -553,7 +559,9 @@ func ruleSelection(flags map[string]json.RawMessage, flag string) json.RawMessag
 
 func stringValue(raw map[string]json.RawMessage, key string) string {
 	value := stringAt(raw, key)
-	if value == nil { return "" }
+	if value == nil {
+		return ""
+	}
 	return *value
 }
 

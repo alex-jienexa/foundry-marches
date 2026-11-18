@@ -235,15 +235,15 @@ type ProficiencyDto struct {
 // proof of the character's current rank. Consumers must not silently treat it
 // as an Actor-prepared proficiency value.
 type ClassProficiencyProfileDto struct {
-	PerceptionRank   *int                      `json:"perceptionRank"`
-	SavingThrows     map[string]int            `json:"savingThrows"`
-	Defenses         map[string]int            `json:"defenses"`
-	Attacks          map[string]int            `json:"attacks"`
-	SpellcastingRank *int                      `json:"spellcastingRank"`
-	TrainedSkills    []string                  `json:"trainedSkills"`
-	AdditionalSkills *int                      `json:"additionalSkills"`
+	PerceptionRank   *int                       `json:"perceptionRank"`
+	SavingThrows     map[string]int             `json:"savingThrows"`
+	Defenses         map[string]int             `json:"defenses"`
+	Attacks          map[string]int             `json:"attacks"`
+	SpellcastingRank *int                       `json:"spellcastingRank"`
+	TrainedSkills    []string                   `json:"trainedSkills"`
+	AdditionalSkills *int                       `json:"additionalSkills"`
 	Features         []ClassFeatureReferenceDto `json:"features"`
-	RuleElements     []RuleElementDto          `json:"ruleElements,omitempty"`
+	RuleElements     []RuleElementDto           `json:"ruleElements,omitempty"`
 }
 
 // ClassFeatureReferenceDto identifies a feature listed in the class item's
@@ -258,12 +258,12 @@ type ClassFeatureReferenceDto struct {
 // RuleElementDto preserves the declarative rule element fields needed for
 // later, explicitly supported interpretation. It is never executed by decoder.
 type RuleElementDto struct {
-	Key       string          `json:"key"`
-	Mode      string          `json:"mode,omitempty"`
-	Path      string          `json:"path,omitempty"`
-	Value     json.RawMessage `json:"value,omitempty"`
-	Flag      string          `json:"flag,omitempty"`
-	Selection json.RawMessage `json:"selection,omitempty"`
+	Key          string          `json:"key"`
+	Mode         string          `json:"mode,omitempty"`
+	Path         string          `json:"path,omitempty"`
+	Value        json.RawMessage `json:"value,omitempty"`
+	Flag         string          `json:"flag,omitempty"`
+	Selection    json.RawMessage `json:"selection,omitempty"`
 	Predicate    json.RawMessage `json:"predicate,omitempty"`
 	Selector     json.RawMessage `json:"selector,omitempty"`
 	ModifierType string          `json:"modifierType,omitempty"`
@@ -286,15 +286,15 @@ type ItemRuneDataDto struct {
 type ModifierKind string
 
 const (
-	ModifierItem      ModifierKind = "item"
-	ModifierPotency   ModifierKind = "potency"
-	ModifierResilient ModifierKind = "resilient"
-	ModifierUntyped   ModifierKind = "untyped"
-	ModifierBase      ModifierKind = "base"
-	ModifierAbility   ModifierKind = "ability"
+	ModifierItem        ModifierKind = "item"
+	ModifierPotency     ModifierKind = "potency"
+	ModifierResilient   ModifierKind = "resilient"
+	ModifierUntyped     ModifierKind = "untyped"
+	ModifierBase        ModifierKind = "base"
+	ModifierAbility     ModifierKind = "ability"
 	ModifierProficiency ModifierKind = "proficiency"
-	ModifierArmor     ModifierKind = "armor"
-	ModifierRune      ModifierKind = "rune"
+	ModifierArmor       ModifierKind = "armor"
+	ModifierRune        ModifierKind = "rune"
 )
 
 // DerivedStatDto is a calculated value plus its auditable arithmetic.
@@ -326,15 +326,15 @@ type CalculatedProficiencyRankDto struct {
 }
 
 type CharacterProficiencyRanksDto struct {
-	Perception             *CalculatedProficiencyRankDto            `json:"perception,omitempty"`
-	Saves                  map[string]CalculatedProficiencyRankDto  `json:"saves"`
-	Defenses               map[string]CalculatedProficiencyRankDto  `json:"defenses"`
-	Attacks                map[string]CalculatedProficiencyRankDto  `json:"attacks"`
-	Spellcasting           *CalculatedProficiencyRankDto            `json:"spellcasting,omitempty"`
-	SpellcastingTraditions map[string]CalculatedProficiencyRankDto  `json:"spellcastingTraditions"`
-	Skills                 map[string]CalculatedProficiencyRankDto  `json:"skills"`
-	Warnings               []string                                 `json:"warnings,omitempty"`
-	Complete               bool                                     `json:"complete"`
+	Perception             *CalculatedProficiencyRankDto           `json:"perception,omitempty"`
+	Saves                  map[string]CalculatedProficiencyRankDto `json:"saves"`
+	Defenses               map[string]CalculatedProficiencyRankDto `json:"defenses"`
+	Attacks                map[string]CalculatedProficiencyRankDto `json:"attacks"`
+	Spellcasting           *CalculatedProficiencyRankDto           `json:"spellcasting,omitempty"`
+	SpellcastingTraditions map[string]CalculatedProficiencyRankDto `json:"spellcastingTraditions"`
+	Skills                 map[string]CalculatedProficiencyRankDto `json:"skills"`
+	Warnings               []string                                `json:"warnings,omitempty"`
+	Complete               bool                                    `json:"complete"`
 }
 
 type CharacterDerivedStatsDto struct {

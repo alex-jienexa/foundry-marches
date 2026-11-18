@@ -14,16 +14,22 @@ import (
 func loadActorFixture(t *testing.T) []byte {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)
-	if !ok { t.Fatal("runtime.Caller failed") }
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
 	path := filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "..", "..", "docs", "foundry", "mxgc0DRWC8bA9ruI-20261118T073146Z-actor.json")
 	data, err := os.ReadFile(path)
-	if err != nil { t.Fatalf("read Actor fixture: %v", err) }
+	if err != nil {
+		t.Fatalf("read Actor fixture: %v", err)
+	}
 	return data
 }
 
 func TestResolveFighterClassBaselineAndSelectedSkill(t *testing.T) {
 	decoded, err := pf2e.DecodeActor(loadActorFixture(t))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	got := ResolveProficiencyRanks(decoded.Character)
 	if got.Perception == nil || got.Perception.Rank != 2 {
 		t.Fatalf("perception rank = %+v, want 2", got.Perception)
@@ -63,16 +69,24 @@ func TestResolveOnlySupportedStaticAndBracketedUpgrades(t *testing.T) {
 				RuleElements: []pf2e.RuleElementDto{
 					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.attributes.perception.rank", Value: []byte("2")},
 					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.saves.will.rank", Value: []byte(`{"brackets":[{"start":1,"end":6,"value":2},{"start":7,"value":3}]}`)},
-				{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.proficiencies.spellcasting.arcane.rank", Value: []byte("2")},
+					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.proficiencies.spellcasting.arcane.rank", Value: []byte("2")},
 				},
 			},
 		},
 	}
 	got := ResolveProficiencyRanks(character)
-	if got.Perception == nil || got.Perception.Rank != 2 { t.Fatalf("perception upgrade not applied: %+v", got.Perception) }
-	if got.Saves["will"].Rank != 3 { t.Fatalf("level bracket not applied: %+v", got.Saves["will"]) }
-	if got.SpellcastingTraditions["arcane"].Rank != 2 { t.Fatalf("tradition spellcasting rank not applied: %+v", got.SpellcastingTraditions) }
-	if len(got.Warnings) != 0 { t.Fatalf("unexpected warnings: %v", got.Warnings) }
+	if got.Perception == nil || got.Perception.Rank != 2 {
+		t.Fatalf("perception upgrade not applied: %+v", got.Perception)
+	}
+	if got.Saves["will"].Rank != 3 {
+		t.Fatalf("level bracket not applied: %+v", got.Saves["will"])
+	}
+	if got.SpellcastingTraditions["arcane"].Rank != 2 {
+		t.Fatalf("tradition spellcasting rank not applied: %+v", got.SpellcastingTraditions)
+	}
+	if len(got.Warnings) != 0 {
+		t.Fatalf("unexpected warnings: %v", got.Warnings)
+	}
 }
 
 func TestResolveConditionalRuleIsReportedNotExecuted(t *testing.T) {
@@ -86,11 +100,13 @@ func TestResolveConditionalRuleIsReportedNotExecuted(t *testing.T) {
 		}},
 	}
 	got := ResolveProficiencyRanks(character)
-	if got.Saves["will"].Rank != 1 { t.Fatalf("conditional upgrade should not be applied: %+v", got.Saves["will"]) }
-	if got.Complete || len(got.Warnings) == 0 { t.Fatalf("conditional rule should mark result incomplete: %+v", got) }
+	if got.Saves["will"].Rank != 1 {
+		t.Fatalf("conditional upgrade should not be applied: %+v", got.Saves["will"])
+	}
+	if got.Complete || len(got.Warnings) == 0 {
+		t.Fatalf("conditional rule should mark result incomplete: %+v", got)
+	}
 }
-
-
 
 func TestResolveProficiencyFromResolvedClassFeatureReference(t *testing.T) {
 	character := pf2e.CharacterDto{
@@ -121,12 +137,13 @@ func TestResolveProficiencyFromResolvedClassFeatureReference(t *testing.T) {
 	}
 }
 
-
 type fakeCompendiumResolver map[string][]byte
 
 func (f fakeCompendiumResolver) ResolveCompendiumItem(_ context.Context, uuid string) ([]byte, error) {
 	payload, ok := f[uuid]
-	if !ok { return nil, fmt.Errorf("not found: %s", uuid) }
+	if !ok {
+		return nil, fmt.Errorf("not found: %s", uuid)
+	}
 	return payload, nil
 }
 

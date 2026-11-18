@@ -8,7 +8,9 @@ import (
 
 func TestCalculateFighterDerivedStatsFromPersistentInputs(t *testing.T) {
 	decoded, err := pf2e.DecodeActor(loadActorFixture(t))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	decoded.Character.Statistics.Abilities = map[string]pf2e.AbilityScoreDto{
 		"str": {Modifier: intPointer(4)},
 		"dex": {Modifier: intPointer(4)},
@@ -28,12 +30,16 @@ func TestCalculateFighterDerivedStatsFromPersistentInputs(t *testing.T) {
 	if got.Proficiencies.Spellcasting == nil || got.Proficiencies.Spellcasting.Rank != 0 {
 		t.Fatalf("effective proficiency DTO missing spellcasting baseline: %+v", got.Proficiencies)
 	}
-	if got.Version != DerivedCalculationVersion { t.Fatalf("calculation version = %q", got.Version) }
+	if got.Version != DerivedCalculationVersion {
+		t.Fatalf("calculation version = %q", got.Version)
+	}
 }
 
 func TestCalculateDerivedStatsDoesNotInventMissingAbilityScores(t *testing.T) {
 	decoded, err := pf2e.DecodeActor(loadActorFixture(t))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	got := CalculateDerivedStats(decoded.Character)
 	if got.Perception.Value != nil || got.Perception.Status != pf2e.CalculationIncomplete {
 		t.Fatalf("Perception should remain incomplete without Wisdom: %+v", got.Perception)
@@ -48,7 +54,9 @@ func TestCalculateDerivedStatsDoesNotInventMissingAbilityScores(t *testing.T) {
 
 func TestCalculateIncludesOnlyStaticItemTypeBonuses(t *testing.T) {
 	decoded, err := pf2e.DecodeActor(loadActorFixture(t))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	decoded.Character.Statistics.Abilities = map[string]pf2e.AbilityScoreDto{
 		"wis": {Modifier: intPointer(1)},
 	}
@@ -70,10 +78,11 @@ func assertValue(t *testing.T, name string, stat pf2e.DerivedStatDto, want int) 
 	}
 }
 
-
 func TestItemBonusesOfSameTypeDoNotStack(t *testing.T) {
 	decoded, err := pf2e.DecodeActor(loadActorFixture(t))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	decoded.Character.Statistics.Abilities = map[string]pf2e.AbilityScoreDto{
 		"str": {Modifier: intPointer(4)},
 		"dex": {Modifier: intPointer(4)},

@@ -32,20 +32,22 @@ func CalculateDerivedStatsWithResolver(ctx context.Context, character pf2e.Chara
 func calculateDerivedStats(character pf2e.CharacterDto, ranks ProficiencyRanks) pf2e.CharacterDerivedStatsDto {
 	result := pf2e.CharacterDerivedStatsDto{
 		Proficiencies: ranks,
-		Saves: make(map[string]pf2e.DerivedStatDto),
-		Skills: make(map[string]pf2e.DerivedStatDto),
-		Version: DerivedCalculationVersion,
+		Saves:         make(map[string]pf2e.DerivedStatDto),
+		Skills:        make(map[string]pf2e.DerivedStatDto),
+		Version:       DerivedCalculationVersion,
 	}
 
 	result.Perception = calculateCheck(character, "perception", "wis", ranks.Perception, ranks, true)
 	for save, ability := range map[string]string{
 		"fortitude": "con",
-		"reflex": "dex",
-		"will": "wis",
+		"reflex":    "dex",
+		"will":      "wis",
 	} {
 		rank, ok := ranks.Saves[save]
 		var rankPtr *RankValue
-		if ok { rankPtr = &rank }
+		if ok {
+			rankPtr = &rank
+		}
 		result.Saves[save] = calculateSave(character, save, ability, rankPtr, ranks)
 	}
 	result.AC = calculateAC(character, ranks)
@@ -59,14 +61,14 @@ func calculateDerivedStats(character pf2e.CharacterDto, ranks ProficiencyRanks) 
 
 func calculateCheck(character pf2e.CharacterDto, name, ability string, rank *RankValue, ranks ProficiencyRanks, includeItemBonus bool) pf2e.DerivedStatDto {
 	if ability == "" {
-		return unavailable("No ability mapping is defined for "+name)
+		return unavailable("No ability mapping is defined for " + name)
 	}
 	abilityMod, ok := abilityModifier(character, ability)
 	if !ok {
-		return incomplete("Missing "+strings.ToUpper(ability)+" ability modifier")
+		return incomplete("Missing " + strings.ToUpper(ability) + " ability modifier")
 	}
 	if rank == nil {
-		return incomplete("Missing proficiency rank for "+name)
+		return incomplete("Missing proficiency rank for " + name)
 	}
 	level, ok := characterLevel(character)
 	if rank.Rank > 0 && !ok {
@@ -74,7 +76,7 @@ func calculateCheck(character pf2e.CharacterDto, name, ability string, rank *Ran
 	}
 	proficiency := proficiencyBonus(level, rank.Rank)
 	breakdown := []pf2e.ModifierBreakdownDto{
-		{Source: "ability."+ability, Kind: pf2e.ModifierAbility, Value: abilityMod},
+		{Source: "ability." + ability, Kind: pf2e.ModifierAbility, Value: abilityMod},
 		{Source: strings.Join(rank.Sources, ", "), Kind: pf2e.ModifierProficiency, Value: proficiency},
 	}
 	bonus := 0
@@ -90,7 +92,7 @@ func calculateCheck(character pf2e.CharacterDto, name, ability string, rank *Ran
 
 func calculateSave(character pf2e.CharacterDto, save, ability string, rank *RankValue, ranks ProficiencyRanks) pf2e.DerivedStatDto {
 	if rank == nil {
-		return incomplete("Missing "+save+" proficiency rank")
+		return incomplete("Missing " + save + " proficiency rank")
 	}
 	stat := calculateCheck(character, save, ability, rank, ranks, false)
 	if stat.Status != pf2e.CalculationComplete {
@@ -147,7 +149,7 @@ func calculateAC(character pf2e.CharacterDto, ranks ProficiencyRanks) pf2e.Deriv
 		return incompleteWithWarnings("Missing character level for armor proficiency", warnings)
 	}
 	proficiency := proficiencyBonus(level, rank.Rank)
-	breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "class.defenses."+defenseKey, Kind: pf2e.ModifierProficiency, Value: proficiency})
+	breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "class.defenses." + defenseKey, Kind: pf2e.ModifierProficiency, Value: proficiency})
 	dex, dexOK := abilityModifier(character, "dex")
 	if !dexOK {
 		return incompleteWithWarnings("Missing DEX ability modifier", warnings)
@@ -163,9 +165,9 @@ func calculateAC(character pf2e.CharacterDto, ranks ProficiencyRanks) pf2e.Deriv
 		selectedItemBonus = itemBonus
 		breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: strings.Join(sources, ", "), Kind: pf2e.ModifierItem, Value: itemBonus})
 	} else if armor != nil {
-		breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item "+armor.Name+" armor", Kind: pf2e.ModifierArmor, Value: baseArmorBonus})
+		breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item " + armor.Name + " armor", Kind: pf2e.ModifierArmor, Value: baseArmorBonus})
 		if potency != 0 {
-			breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item "+armor.Name+" potency rune", Kind: pf2e.ModifierRune, Value: potency})
+			breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item " + armor.Name + " potency rune", Kind: pf2e.ModifierRune, Value: potency})
 		}
 	}
 	value := 10 + selectedItemBonus + proficiency + dex
@@ -177,14 +179,20 @@ func equippedArmor(character pf2e.CharacterDto) (*pf2e.CharacterItemDto, string)
 	var equipped *pf2e.CharacterItemDto
 	for i := range character.Items {
 		item := &character.Items[i]
-		if item.Type != "armor" { continue }
+		if item.Type != "armor" {
+			continue
+		}
 		if item.Equipped == nil || (item.Equipped.InSlot == nil && item.Equipped.CarryType == nil) {
-			return nil, "Armor equipment state is unknown for "+item.Name
+			return nil, "Armor equipment state is unknown for " + item.Name
 		}
 		worn := (item.Equipped.InSlot != nil && *item.Equipped.InSlot) ||
 			(item.Equipped.CarryType != nil && *item.Equipped.CarryType == "worn")
-		if !worn { continue }
-		if equipped != nil { return nil, "More than one armor item is marked as worn" }
+		if !worn {
+			continue
+		}
+		if equipped != nil {
+			return nil, "More than one armor item is marked as worn"
+		}
 		equipped = item
 	}
 	return equipped, ""
@@ -195,17 +203,21 @@ func resilientItemBonus(character pf2e.CharacterDto) (int, string, []string) {
 	source := ""
 	var warnings []string
 	for _, item := range character.Items {
-		if item.Type != "armor" || item.Runes == nil || item.Runes.Resilient == nil { continue }
+		if item.Type != "armor" || item.Runes == nil || item.Runes.Resilient == nil {
+			continue
+		}
 		if item.Equipped == nil || (item.Equipped.InSlot == nil && item.Equipped.CarryType == nil) {
 			warnings = append(warnings, "Armor equipment state is unknown for "+item.Name+" resilient rune")
 			continue
 		}
 		worn := (item.Equipped.InSlot != nil && *item.Equipped.InSlot) ||
 			(item.Equipped.CarryType != nil && *item.Equipped.CarryType == "worn")
-		if !worn { continue }
+		if !worn {
+			continue
+		}
 		if *item.Runes.Resilient > best {
 			best = *item.Runes.Resilient
-			source = "Item "+item.Name+" resilient rune"
+			source = "Item " + item.Name + " resilient rune"
 		}
 	}
 	return best, source, warnings
@@ -236,7 +248,7 @@ func staticItemBonus(character pf2e.CharacterDto, selector string) (int, []strin
 			}
 			if value > best {
 				best = value
-				sources = []string{"Item "+item.Name}
+				sources = []string{"Item " + item.Name}
 			} else if value == best && value > 0 {
 				sources = append(sources, "Item "+item.Name)
 			}
@@ -251,7 +263,9 @@ func selectorMatches(raw json.RawMessage, selector string) bool {
 		return selectorMatchesValue(single, selector)
 	}
 	var values []string
-	if json.Unmarshal(raw, &values) != nil { return false }
+	if json.Unmarshal(raw, &values) != nil {
+		return false
+	}
 	for _, value := range values {
 		if selectorMatchesValue(value, selector) {
 			return true
@@ -261,7 +275,9 @@ func selectorMatches(raw json.RawMessage, selector string) bool {
 }
 
 func selectorMatchesValue(value, selector string) bool {
-	if value == selector { return true }
+	if value == selector {
+		return true
+	}
 	if (selector == "fortitude" || selector == "reflex" || selector == "will") && value == "saving-throw" {
 		return true
 	}
@@ -278,13 +294,17 @@ func alwaysActiveItem(itemType string) bool {
 }
 
 func itemEquipped(item pf2e.CharacterItemDto) bool {
-	if item.Equipped == nil { return false }
+	if item.Equipped == nil {
+		return false
+	}
 	return (item.Equipped.InSlot != nil && *item.Equipped.InSlot) ||
 		(item.Equipped.CarryType != nil && (*item.Equipped.CarryType == "worn" || *item.Equipped.CarryType == "held"))
 }
 
 func skillAbility(skill string) string {
-	if strings.HasPrefix(skill, "lore-") || strings.HasSuffix(skill, "-lore") { return "int" }
+	if strings.HasPrefix(skill, "lore-") || strings.HasSuffix(skill, "-lore") {
+		return "int"
+	}
 	abilities := map[string]string{
 		"acrobatics": "dex", "arcana": "int", "athletics": "str", "crafting": "int",
 		"deception": "cha", "diplomacy": "cha", "intimidation": "cha", "medicine": "wis",
@@ -296,30 +316,42 @@ func skillAbility(skill string) string {
 
 func abilityModifier(character pf2e.CharacterDto, ability string) (int, bool) {
 	entry, ok := character.Statistics.Abilities[ability]
-	if !ok { return 0, false }
-	if entry.Modifier != nil { return *entry.Modifier, true }
+	if !ok {
+		return 0, false
+	}
+	if entry.Modifier != nil {
+		return *entry.Modifier, true
+	}
 	if entry.Score != nil {
 		delta := *entry.Score - 10
 		modifier := delta / 2
-		if delta < 0 && delta%2 != 0 { modifier-- }
+		if delta < 0 && delta%2 != 0 {
+			modifier--
+		}
 		return modifier, true
 	}
 	return 0, false
 }
 
 func characterLevel(character pf2e.CharacterDto) (int, bool) {
-	if character.Progression.Level == nil { return 0, false }
+	if character.Progression.Level == nil {
+		return 0, false
+	}
 	return *character.Progression.Level, true
 }
 
 func proficiencyBonus(level, rank int) int {
-	if rank <= 0 { return 0 }
+	if rank <= 0 {
+		return 0
+	}
 	return level + 2 + (rank-1)*2
 }
 
 func totalStat(value int, breakdown []pf2e.ModifierBreakdownDto, warnings []string) pf2e.DerivedStatDto {
 	status := pf2e.CalculationComplete
-	if len(warnings) > 0 { status = pf2e.CalculationIncomplete }
+	if len(warnings) > 0 {
+		status = pf2e.CalculationIncomplete
+	}
 	if status != pf2e.CalculationComplete {
 		return pf2e.DerivedStatDto{Status: status, Breakdown: breakdown, Warnings: warnings}
 	}
@@ -342,14 +374,22 @@ func mergeWarnings(groups ...[]string) []string {
 	var result []string
 	for _, group := range groups {
 		for _, warning := range group {
-			if warning == "" { continue }
+			if warning == "" {
+				continue
+			}
 			found := false
-			for _, existing := range result { if existing == warning { found = true; break } }
-			if !found { result = append(result, warning) }
+			for _, existing := range result {
+				if existing == warning {
+					found = true
+					break
+				}
+			}
+			if !found {
+				result = append(result, warning)
+			}
 		}
 	}
 	return result
 }
 
 func intPointer(value int) *int { return &value }
-

@@ -92,7 +92,7 @@ func ResolveProficiencyRanksWithFeatureRules(character pf2e.CharacterDto, featur
 	result := ProficiencyRanks{
 		Saves: make(map[string]RankValue), Defenses: make(map[string]RankValue),
 		Attacks: make(map[string]RankValue), SpellcastingTraditions: make(map[string]RankValue),
-		Skills: make(map[string]RankValue),
+		Skills:   make(map[string]RankValue),
 		Complete: true,
 	}
 	level := 0
@@ -185,7 +185,9 @@ func sourceClass(character pf2e.CharacterDto, field string) string {
 }
 
 func nonEmpty(value, fallback string) string {
-	if value != "" { return value }
+	if value != "" {
+		return value
+	}
 	return fallback
 }
 
@@ -226,7 +228,9 @@ func upgradeMap(target map[string]RankValue, key string, rank int, source string
 
 func appendUnique(values []string, value string) []string {
 	for _, existing := range values {
-		if existing == value { return values }
+		if existing == value {
+			return values
+		}
 	}
 	return append(values, value)
 }
@@ -280,7 +284,9 @@ func resolvePath(path string, choices map[string]string) (string, bool) {
 	for strings.Contains(path, "{item|flags.") {
 		start := strings.Index(path, "{item|flags.")
 		endOffset := strings.Index(path[start:], "}")
-		if endOffset < 0 { return "", false }
+		if endOffset < 0 {
+			return "", false
+		}
 		end := start + endOffset
 		token := path[start+len("{item|flags.") : end]
 		parts := strings.Split(token, ".")
@@ -288,7 +294,9 @@ func resolvePath(path string, choices map[string]string) (string, bool) {
 			return "", false
 		}
 		selection, ok := choices[parts[len(parts)-1]]
-		if !ok { return "", false }
+		if !ok {
+			return "", false
+		}
 		path = path[:start] + selection + path[end+1:]
 	}
 	return path, true
@@ -306,9 +314,13 @@ func hasPredicate(raw json.RawMessage) bool {
 }
 
 func rankValueForLevel(raw json.RawMessage, level int) (int, bool) {
-	if len(raw) == 0 || strings.TrimSpace(string(raw)) == "null" { return 0, false }
+	if len(raw) == 0 || strings.TrimSpace(string(raw)) == "null" {
+		return 0, false
+	}
 	var number int
-	if json.Unmarshal(raw, &number) == nil { return number, true }
+	if json.Unmarshal(raw, &number) == nil {
+		return number, true
+	}
 	var bracketSet struct {
 		Brackets []struct {
 			Start *int `json:"start"`
@@ -321,7 +333,9 @@ func rankValueForLevel(raw json.RawMessage, level int) (int, bool) {
 	}
 	for _, bracket := range bracketSet.Brackets {
 		start := 1
-		if bracket.Start != nil { start = *bracket.Start }
+		if bracket.Start != nil {
+			start = *bracket.Start
+		}
 		if level < start || (bracket.End != nil && level > *bracket.End) || bracket.Value == nil {
 			continue
 		}
@@ -355,4 +369,3 @@ func applyRankPath(result *ProficiencyRanks, path string, rank int, source strin
 	}
 	return true
 }
-
