@@ -102,12 +102,14 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 			},
 		},
 		Attributes: CharacterAttributesDto{HP: decodeHP(hp)},
+		Statistics: decodeStatistics(system),
 		Resources: CharacterResourcesDto{HeroPoints: decodeResource(hero)},
 		Skills: decodeSkills(system["skills"]),
 		Items: normalizedItems,
 		Biography: decodeBiography(bio, objectAt(details, "languages"), details),
 	}
 	character.Build = buildReferences(normalizedItems)
+	character.Build.ClassProficiencies = decodeClassProficiencies(actor.Items)
 	character.Build.KeyAbility = stringAt(objectAt(details, "keyability"), "value")
 
 	return &DecodedActor{
@@ -139,6 +141,8 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 		Quantity: intAt(system, "quantity"),
 		Level: firstInt(intAt(system, "level", "value"), intAt(system, "level")),
 		Equipped: decodeEquipped(objectAt(system, "equipped")),
+		Armor: decodeArmorData(system),
+		Runes: decodeItemRunes(system),
 		CompendiumSource: stringAt(objectAt(root, "_stats"), "compendiumSource"),
 	}
 	return &DecodedItem{
@@ -352,4 +356,96 @@ func cloneRaw(value []byte) json.RawMessage {
 		return nil
 	}
 	return append(json.RawMessage(nil), value...)
+}
+
+
+// decodeStatistics reads only explicit Actor-level values. In particular, it
+// does not infer abilities from boosts or current ranks from class progression.
+func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInputDto {
+	abilities := make(map[string]AbilityScoreDto)
+	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
+		entry := objectAt(objectAt(system, "abilities"), key)
+		if entry == nil { continue }
+		score := firstInt(intAt(entry, "value"), intAt(entry, "score"))
+		modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier"))
+		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
+	}
+	proficiencies := objectAt(system, "proficiencies")
+	perception := proficiencyAt(objectAt(proficiencies, "perception"), "actor.proficiencies.perception")
+	savesRaw := objectAt(proficiencies, "savingThrows")
+	if savesRaw == nil { savesRaw = objectAt(proficiencies, "saves") }
+	defensesRaw := objectAt(proficiencies, "defenses")
+	return CharacterStatisticsInputDto{
+		Abilities: abilities,
+		Proficiencies: CharacterProficienciesDto{
+			Perception: perception,
+			Saves: proficiencyMap(savesRaw, "actor.proficiencies.savingThrows"),
+			Defenses: proficiencyMap(defensesRaw, "actor.proficiencies.defenses"),
+		},
+	}
+}
+
+func proficiencyAt(raw map[string]json.RawMessage, source string) *ProficiencyDto {
+	if raw == nil { return nil }
+	rank := intAt(raw, "rank")
+	if rank == nil { return nil }
+	return &ProficiencyDto{Rank: rank, Source: source}
+}
+
+func proficiencyMap(raw map[string]json.RawMessage, source string) map[string]ProficiencyDto {
+	result := make(map[string]ProficiencyDto)
+	for key, value := range raw {
+		var entry map[string]json.RawMessage
+		if json.Unmarshal(value, &entry) != nil { continue }
+		if rank := intAt(entry, "rank"); rank != nil {
+			result[key] = ProficiencyDto{Rank: rank, Source: source + "." + key}
+		}
+	}
+	return result
+}
+
+func decodeClassProficiencies(items []FoundryItemDto) *ClassProficiencyProfileDto {
+	for _, item := range items {
+		if item.Type != "class" { continue }
+		perception := intAt(item.System, "perception")
+		saves := intMapAt(objectAt(item.System, "savingThrows"))
+		defenses := intMapAt(objectAt(item.System, "defenses"))
+		trained := stringsAt(objectAt(item.System, "trainedSkills"), "value")
+		return &ClassProficiencyProfileDto{
+			PerceptionRank: perception,
+			SavingThrows: saves,
+			Defenses: defenses,
+			TrainedSkills: trained,
+			AdditionalSkills: intAt(objectAt(item.System, "trainedSkills"), "additional"),
+		}
+	}
+	return nil
+}
+
+func intMapAt(raw map[string]json.RawMessage) map[string]int {
+	result := make(map[string]int)
+	for key, value := range raw {
+		var number int
+		if json.Unmarshal(value, &number) == nil { result[key] = number }
+	}
+	return result
+}
+
+func decodeArmorData(system map[string]json.RawMessage) *ArmorItemDataDto {
+	if system == nil { return nil }
+	ac := intAt(system, "acBonus")
+	dexCap := intAt(system, "dexCap")
+	strength := intAt(system, "strength")
+	if ac == nil && dexCap == nil && strength == nil { return nil }
+	return &ArmorItemDataDto{ACBonus: ac, DexCap: dexCap, Strength: strength}
+}
+
+func decodeItemRunes(system map[string]json.RawMessage) *ItemRuneDataDto {
+	raw := objectAt(system, "runes")
+	if raw == nil { return nil }
+	return &ItemRuneDataDto{
+		Potency: intAt(raw, "potency"),
+		Resilient: intAt(raw, "resilient"),
+		Property: stringsAt(raw, "property"),
+	}
 }
