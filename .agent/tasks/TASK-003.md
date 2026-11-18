@@ -1,11 +1,11 @@
 ---
 id: TASK-003
 title: 1. Основа
-status: ready
+status: in_progress
 priority: high
 assignee: unassigned
 created_at: '2026-11-17'
-updated_at: '2026-11-17'
+updated_at: '2026-11-18'
 estimate: null
 parent: null
 depends_on:
@@ -54,3 +54,8 @@ Go-каркас, PostgreSQL 15+, миграции, Discord OAuth, роли и р
 ## Progress log
 
 - 2026-11-17 — Создана из полного этапа v0.3. Реализация не начата.
+
+
+## Progress log
+
+- 2026-11-18 — Частично реализована основа: Go backend module и bootstrap REST API, PostgreSQL 18 Compose service, API container, health check, bootstrap DB role/grants и начальная запись Foundry world. Существующий CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs. Это не закрывает TASK-003: Discord OAuth, user sessions, RBAC, audit, полноценные migrations и backup/restore ещё не завершены.
