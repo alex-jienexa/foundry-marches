@@ -23,6 +23,7 @@ type ProficiencyRanks struct {
 	Defenses     map[string]RankValue
 	Attacks      map[string]RankValue
 	Spellcasting *RankValue
+	SpellcastingTraditions map[string]RankValue
 	Skills       map[string]RankValue
 	Warnings     []string
 	Complete     bool
@@ -45,7 +46,8 @@ func ResolveProficiencyRanks(character pf2e.CharacterDto) ProficiencyRanks {
 func ResolveProficiencyRanksWithFeatureRules(character pf2e.CharacterDto, featureRules map[string][]pf2e.RuleElementDto) ProficiencyRanks {
 	result := ProficiencyRanks{
 		Saves: make(map[string]RankValue), Defenses: make(map[string]RankValue),
-		Attacks: make(map[string]RankValue), Skills: make(map[string]RankValue),
+		Attacks: make(map[string]RankValue), SpellcastingTraditions: make(map[string]RankValue),
+		Skills: make(map[string]RankValue),
 		Complete: true,
 	}
 	level := 0
@@ -143,7 +145,7 @@ func nonEmpty(value, fallback string) string {
 }
 
 func hasAnyRank(r ProficiencyRanks) bool {
-	return r.Perception != nil || r.Spellcasting != nil || len(r.Saves)+len(r.Defenses)+len(r.Attacks)+len(r.Skills) > 0
+	return r.Perception != nil || r.Spellcasting != nil || len(r.Saves)+len(r.Defenses)+len(r.Attacks)+len(r.SpellcastingTraditions)+len(r.Skills) > 0
 }
 
 func hasCompendiumSource(items []pf2e.CharacterItemDto, uuid string) bool {
@@ -299,8 +301,10 @@ func applyRankPath(result *ProficiencyRanks, path string, rank int, source strin
 		upgradeMap(result.Defenses, parts[3], rank, source)
 	case len(parts) == 5 && parts[0] == "system" && parts[1] == "proficiencies" && parts[2] == "attacks":
 		upgradeMap(result.Attacks, parts[3], rank, source)
-	case strings.HasPrefix(path, "system.proficiencies.spellcasting.") || path == "system.proficiencies.spellcasting.rank":
+	case path == "system.proficiencies.spellcasting.rank":
 		upgrade(&result.Spellcasting, rank, source)
+	case len(parts) == 5 && parts[0] == "system" && parts[1] == "proficiencies" && parts[2] == "spellcasting":
+		upgradeMap(result.SpellcastingTraditions, parts[3], rank, source)
 	default:
 		return false
 	}
