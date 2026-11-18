@@ -371,16 +371,32 @@ func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInpu
 		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
 	}
 	proficiencies := objectAt(system, "proficiencies")
-	perception := proficiencyAt(objectAt(proficiencies, "perception"), "actor.proficiencies.perception")
+	perceptionRaw := objectAt(proficiencies, "perception")
+	perceptionSource := "actor.proficiencies.perception"
+	if perceptionRaw == nil {
+		perceptionRaw = objectAt(objectAt(system, "attributes"), "perception")
+		perceptionSource = "actor.attributes.perception"
+	}
+	perception := proficiencyAt(perceptionRaw, perceptionSource)
 	savesRaw := objectAt(proficiencies, "savingThrows")
 	if savesRaw == nil { savesRaw = objectAt(proficiencies, "saves") }
+	savesSource := "actor.proficiencies.savingThrows"
+	if savesRaw == nil {
+		savesRaw = objectAt(system, "saves")
+		savesSource = "actor.saves"
+	}
 	defensesRaw := objectAt(proficiencies, "defenses")
+	defensesSource := "actor.proficiencies.defenses"
+	if defensesRaw == nil {
+		defensesRaw = objectAt(system, "defenses")
+		defensesSource = "actor.defenses"
+	}
 	return CharacterStatisticsInputDto{
 		Abilities: abilities,
 		Proficiencies: CharacterProficienciesDto{
 			Perception: perception,
-			Saves: proficiencyMap(savesRaw, "actor.proficiencies.savingThrows"),
-			Defenses: proficiencyMap(defensesRaw, "actor.proficiencies.defenses"),
+			Saves: proficiencyMap(savesRaw, savesSource),
+			Defenses: proficiencyMap(defensesRaw, defensesSource),
 		},
 	}
 }
