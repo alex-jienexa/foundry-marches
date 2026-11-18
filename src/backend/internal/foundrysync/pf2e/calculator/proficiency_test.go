@@ -88,7 +88,6 @@ func TestResolveConditionalRuleIsReportedNotExecuted(t *testing.T) {
 	if got.Complete || len(got.Warnings) == 0 { t.Fatalf("conditional rule should mark result incomplete: %+v", got) }
 }
 
-func intPointer(value int) *int { return &value }
 
 
 func TestResolveProficiencyFromResolvedClassFeatureReference(t *testing.T) {
