@@ -193,6 +193,5 @@ func truncateMessage(value string) string {
 	if len(runes) <= maxRunes {
 		return value
 	}
-	return string(runes[:maxRunes-20]) + "
-… список сокращён"
+	return string(runes[:maxRunes-20]) + "\n… список сокращён"
 }
