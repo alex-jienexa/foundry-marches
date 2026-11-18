@@ -13,7 +13,13 @@ const DerivedCalculationVersion = "pf2e-static-1"
 // values. It deliberately excludes situational modifiers, conditions,
 // temporary effects, predicates and dynamic Rule Element expressions.
 func CalculateDerivedStats(character pf2e.CharacterDto) pf2e.CharacterDerivedStatsDto {
-	ranks := ResolveProficiencyRanks(character)
+	return CalculateDerivedStatsWithFeatureRules(character, nil)
+}
+
+// CalculateDerivedStatsWithFeatureRules includes Rule Elements resolved from
+// the class feature compendium references in the Actor's class progression.
+func CalculateDerivedStatsWithFeatureRules(character pf2e.CharacterDto, featureRules map[string][]pf2e.RuleElementDto) pf2e.CharacterDerivedStatsDto {
+	ranks := ResolveProficiencyRanksWithFeatureRules(character, featureRules)
 	result := pf2e.CharacterDerivedStatsDto{
 		Saves: make(map[string]pf2e.DerivedStatDto),
 		Skills: make(map[string]pf2e.DerivedStatDto),
