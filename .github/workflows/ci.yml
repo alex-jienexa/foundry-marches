@@ -70,3 +70,32 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/database/schema_tests.sql
       - name: Run 9 concurrency checks
         run: bash tests/database/schema_race_tests.sh
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+          cache-dependency-path: src/backend/go.mod
+      - name: Run Foundry persistence PostgreSQL integration tests
+        working-directory: src/backend
+        env:
+          FOUNDRY_TEST_DATABASE_URL: postgres://postgres:ci-ephemeral-only@localhost:5432/foundry_marches_test?sslmode=disable
+        run: go test ./internal/characters -run PostgresIntegration -v
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+          cache-dependency-path: src/backend/go.mod
+      - name: Verify Go formatting
+        working-directory: src/backend
+        run: test -z "$(gofmt -l .)"
+      - name: Run Go tests
+        working-directory: src/backend
+        run: go test ./...
+      - name: Run Go vet
+        working-directory: src/backend
+        run: go vet ./...

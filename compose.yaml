@@ -1,0 +1,54 @@
+name: foundry-marches
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: foundry_marches
+      POSTGRES_USER: foundry_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      FOUNDRY_WORLD_ID: ${FOUNDRY_WORLD_ID:-00000000-0000-4000-8000-000000000001}
+      FOUNDRY_WORLD_NAME: ${FOUNDRY_WORLD_NAME:-Foundry Marches}
+      FOUNDRY_RELAY_BASE_URL: ${FOUNDRY_RELAY_BASE_URL:-https://relay.jiene.ru}
+      FOUNDRY_RELAY_CLIENT_ID: ${FOUNDRY_RELAY_CLIENT_ID:?Set FOUNDRY_RELAY_CLIENT_ID in .env}
+      FOUNDRY_RELAY_SECRET_REF: ${FOUNDRY_RELAY_SECRET_REF:-env:FOUNDRY_RELAY_API_KEY}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docs/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./docker/init/20-bootstrap.sql:/docker-entrypoint-initdb.d/20-bootstrap.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foundry_admin -d foundry_marches"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "host=postgres port=5432 user=foundry_api password=${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env} dbname=foundry_marches sslmode=disable"
+      FOUNDRY_WORLD_ID: ${FOUNDRY_WORLD_ID:-00000000-0000-4000-8000-000000000001}
+      FOUNDRY_RELAY_BASE_URL: ${FOUNDRY_RELAY_BASE_URL:-https://relay.jiene.ru}
+      FOUNDRY_RELAY_CLIENT_ID: ${FOUNDRY_RELAY_CLIENT_ID:?Set FOUNDRY_RELAY_CLIENT_ID in .env}
+      FOUNDRY_RELAY_API_KEY: ${FOUNDRY_RELAY_API_KEY:?Set FOUNDRY_RELAY_API_KEY in .env}
+      FOUNDRY_SYNC_API_TOKEN: ${FOUNDRY_SYNC_API_TOKEN:?Set FOUNDRY_SYNC_API_TOKEN in .env}
+      HTTP_ADDR: 0.0.0.0:8080
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:

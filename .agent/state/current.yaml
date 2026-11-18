@@ -1,29 +1,37 @@
 schema_version: '1.0'
-project_status: initializing
+project_status: in_progress
 health: at_risk
-updated_at: '2026-11-17T13:45:00+03:00'
-current_focus: Полные артефакты импортированы; начать спайк 0 и основу, реализация
-  ещё отсутствует
-active_task: null
-active_branch: null
-last_checkpoint: null
-last_verified_commit: 3032d2da61c090bde83887f564f9487d1e99e27e
+updated_at: '2026-11-18'
+current_focus: TASK-004 — проектирование явной привязки существующего персонажа приложения к Foundry Actor после подтверждённой синхронизации 11 Actor
+active_task: TASK-004
+active_branch: feat/task-004-character-decoder
+last_checkpoint: '2026-11-18: self-hosted Relay 3.4.1 и Docker Compose API/PostgreSQL работают; world sync завершён, 11 Actor snapshots сохранены, все пока snapshot_only до явной привязки'
+last_verified_commit: 4ca6fa87c4b7b40e25832f7ca15400bb39f5d713
 open_blockers:
-- Для полного сопоставления нужен отсутствующий текст ТЗ v1.0/дополнений; импорт предоставленных
-  файлов этим не блокируется
-- Live-спайк требует разрешённых тестовых доступов/данных; 10 вопросов владельцу остаются
-  открытыми
+- Отсутствует исходное ТЗ v1.0 и два дополнения; не реконструировать требования по догадкам
+- Не завершены Discord OAuth, user sessions, RBAC и аудит (этап 1)
+- Не реализована явная привязка Actor к существующему персонажу приложения (этап 2)
+- Не получены Campaign Codex JSON exports и образцы Obsidian; WebDAV ETag/If-Match не проверен
+- Не проверены Relay SSE, headless GM session и usage/quota
+- GitHub Actions workflow существует, но удалённый run для текущей ветки ещё не подтверждён
 next_actions:
-- Проверить локальный diff и вручную внести пакет в репозиторий
-- 'TASK-002: выполнить спайк 0 на согласованных тестовых данных'
-- 'TASK-003: создать основу, миграции и команды запуска/сборки'
+- Изучить ограничения и индексы foundry_actors/characters перед проектированием link operation
+- Спроектировать явную привязку Actor type=character к существующему application character: same world UUID, unique link on both sides, authorization, atomic transaction
+- Реализовать link API/repository/tests; не создавать персонажей, не назначать владельцев и не менять Foundry Actor
+- После link завершить approval, лимиты/NPC и устойчивый sync lifecycle
+- Продолжить незавершённые проверки этапа 0 и этапа 1 без изменения production/Foundry данных без отдельного разрешения
+- CI: после открытия PR владельцем проверить фактический GitHub Actions run; CD пока не проектировать в коде до отдельного одобрения
 recent_changes:
-- Весь исходный Markdown распределён по полным разделам, оригиналы сохранены с SHA-256
-- SQL baseline и оригинальные тесты сохранены без изменений
-- DBML/ER/каталог генерируются из AST; добавлена навигация PAD и этапные задачи
-- 'Локальный baseline PG15/PG16: 166/166 функциональных и 9/9 race проверок'
+- Успешно синхронизирован мир Foundry после синхронизации мира вслед за обновлением PF2e: обнаружено и сохранено 11 Actor snapshots
+- Все 11 записей имеют внутренний world_id UUID 00000000-0000-4000-8000-000000000001 и character_id NULL; snapshot_only ожидаем до явной привязки
+- Foundry REST Relay 3.4.1 deployed, Pairing подтверждён; интеграция read-only
+- Docker Compose PostgreSQL 18 Alpine и API запущены; GET /healthz вернул HTTP 200
+- Backend содержит Relay adapter, PF2e DTO/decoder/calculator, sync service, persistence repository и PostgreSQL integration tests
+- CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs; фактический удалённый run для этой ветки не наблюдался
+- Документация runtime, roadmap, milestones, open questions, tasks и PAD обновлена в этой ветке
 risks:
-- last_verified_commit — проверенный исходный публичный snapshot, не commit локального
-  импорта
-- Нет приложения, production deploy, утверждённого полного API или результатов live-интеграций
-- Сводки/диаграммы не заменяют SQL и полную спецификацию
+- Этапы 0, 1 и 2 частично выполнены, но ни один не закрыт целиком
+- Bootstrap sync endpoint использует отдельный Bearer token и пока не имеет полноценной пользовательской авторизации
+- Синхронизация синхронная; job queue/retry и production observability не завершены
+- Нельзя выполнять destructive DB operations или удалять postgres_data volume
+- Нельзя изменять Foundry Actor; XP write остаётся вне текущей read-only модели
