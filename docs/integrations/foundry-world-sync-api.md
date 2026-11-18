@@ -29,6 +29,7 @@ The repository root contains a Compose stack for PostgreSQL and the API. It crea
 3. Start the stack from the repository root:
 
    ```sh
+   docker compose config --quiet
    docker compose up -d --build
    docker compose ps
    docker compose logs -f api
@@ -49,7 +50,15 @@ The repository root contains a Compose stack for PostgreSQL and the API. It crea
      -H "Authorization: Bearer $FOUNDRY_SYNC_API_TOKEN"
    ```
 
-   Load `.env` into the shell before using the final command, or substitute the token through a protected local environment. Never paste the token into source control or chat.
+   To load the values from `.env` into the current shell before running the request:
+
+   ```sh
+   set -a
+   . ./.env
+   set +a
+   ```
+
+   Never paste the token into source control or chat.
 
 ### Database lifecycle and safety
 
