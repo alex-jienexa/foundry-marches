@@ -55,3 +55,5 @@ labels:
 ## Progress log
 
 - 2026-11-17 — Создана из полного этапа v0.3.\n- 2026-11-18 — Начат persistence slice: добавлены DTO → persistence mapper и транзакционный PostgreSQL adapter для characters, foundry_actors и inventory_items. Полный TASK-004 остаётся в backlog до реализации link/approval/jobs/API и live PostgreSQL verification.
+
+- 2026-11-18 — Добавлен read-only Relay HTTP adapter для `GET /get`: чтение и проверка Actor snapshot, разрешение Compendium Item для calculator, привязка клиента к одному world ID, лимит ответа и запрет redirect. Добавлены `httptest` проверки; ожидают локального запуска. В CI добавлены gofmt, `go test ./...` и `go vet ./...`. Live PostgreSQL verification и полный FoundryGateway остаются незавершёнными.
