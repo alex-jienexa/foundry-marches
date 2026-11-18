@@ -29,4 +29,4 @@ To run the whole backend suite with the integration tests enabled:
 FOUNDRY_TEST_DATABASE_URL='postgres://USER:PASSWORD@HOST:5432/foundry_marches_test?sslmode=disable' go test ./...
 ```
 
-Without `FOUNDRY_TEST_DATABASE_URL`, the integration tests are skipped. They use random UUIDs, only create their own fixture rows, and remove those rows with test cleanup. Never point this variable at production or a database containing campaign data.
+The GitHub Actions `database` job applies the full schema to its disposable PostgreSQL 15/16 service and runs these integration tests automatically. Without `FOUNDRY_TEST_DATABASE_URL`, the integration tests are skipped. They use random UUIDs, only create their own fixture rows, and remove those rows with test cleanup. Never point this variable at production or a database containing campaign data.
