@@ -2,8 +2,6 @@ package calculator
 
 import (
 	"encoding/json"
-	"fmt"
-	"math"
 	"strings"
 
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
@@ -22,7 +20,7 @@ func CalculateDerivedStats(character pf2e.CharacterDto) pf2e.CharacterDerivedSta
 		Version: DerivedCalculationVersion,
 	}
 
-	result.Perception = calculateCheck(character, "perception", "wis", ranks.Perception, ranks, nil)
+	result.Perception = calculateCheck(character, "perception", "wis", ranks.Perception, ranks, true)
 	for save, ability := range map[string]string{
 		"fortitude": "con",
 		"reflex": "dex",
@@ -37,12 +35,12 @@ func CalculateDerivedStats(character pf2e.CharacterDto) pf2e.CharacterDerivedSta
 
 	for skill, rank := range ranks.Skills {
 		ability := skillAbility(skill)
-		result.Skills[skill] = calculateCheck(character, skill, ability, &rank, ranks, nil)
+		result.Skills[skill] = calculateCheck(character, skill, ability, &rank, ranks, true)
 	}
 	return result
 }
 
-func calculateCheck(character pf2e.CharacterDto, name, ability string, rank *RankValue, ranks ProficiencyRanks, extra []pf2e.ModifierBreakdownDto) pf2e.DerivedStatDto {
+func calculateCheck(character pf2e.CharacterDto, name, ability string, rank *RankValue, ranks ProficiencyRanks, includeItemBonus bool) pf2e.DerivedStatDto {
 	if ability == "" {
 		return unavailable("No ability mapping is defined for "+name)
 	}
@@ -62,10 +60,13 @@ func calculateCheck(character pf2e.CharacterDto, name, ability string, rank *Ran
 		{Source: "ability."+ability, Kind: pf2e.ModifierAbility, Value: abilityMod},
 		{Source: strings.Join(rank.Sources, ", "), Kind: pf2e.ModifierProficiency, Value: proficiency},
 	}
-	breakdown = append(breakdown, extra...)
-	bonus, sources, warnings := staticItemBonus(character, name)
-	if bonus != 0 {
-		breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: strings.Join(sources, ", "), Kind: pf2e.ModifierItem, Value: bonus})
+	bonus := 0
+	var sources, warnings []string
+	if includeItemBonus {
+		bonus, sources, warnings = staticItemBonus(character, name)
+		if bonus != 0 {
+			breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: strings.Join(sources, ", "), Kind: pf2e.ModifierItem, Value: bonus})
+		}
 	}
 	return totalStat(abilityMod+proficiency+bonus, breakdown, mergeWarnings(warnings, ranks.Warnings))
 }
@@ -74,7 +75,7 @@ func calculateSave(character pf2e.CharacterDto, save, ability string, rank *Rank
 	if rank == nil {
 		return incomplete("Missing "+save+" proficiency rank")
 	}
-	stat := calculateCheck(character, save, ability, rank, ranks, nil)
+	stat := calculateCheck(character, save, ability, rank, ranks, false)
 	if stat.Status != pf2e.CalculationComplete {
 		return stat
 	}
@@ -320,7 +321,3 @@ func mergeWarnings(groups ...[]string) []string {
 
 func intPointer(value int) *int { return &value }
 
-// Keep math imported for explicit floor semantics in future ability-score
-// variants; current PF2e ability modifiers use integer floor division.
-var _ = math.Floor
-var _ = fmt.Sprintf
