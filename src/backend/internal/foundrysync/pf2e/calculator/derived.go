@@ -149,12 +149,19 @@ func calculateAC(character pf2e.CharacterDto, ranks ProficiencyRanks) pf2e.Deriv
 		dex = dexCap
 	}
 	breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "ability.dex (armor cap)", Kind: pf2e.ModifierAbility, Value: dex})
-	value := 10 + baseArmorBonus + potency + proficiency + dex
+	armorItemBonus := baseArmorBonus + potency
 	itemBonus, sources, itemWarnings := staticItemBonus(character, "ac")
-	if itemBonus != 0 {
-		value += itemBonus
+	selectedItemBonus := armorItemBonus
+	if itemBonus > selectedItemBonus {
+		selectedItemBonus = itemBonus
 		breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: strings.Join(sources, ", "), Kind: pf2e.ModifierItem, Value: itemBonus})
+	} else if armor != nil {
+		breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item "+armor.Name+" armor", Kind: pf2e.ModifierArmor, Value: baseArmorBonus})
+		if potency != 0 {
+			breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item "+armor.Name+" potency rune", Kind: pf2e.ModifierRune, Value: potency})
+		}
 	}
+	value := 10 + selectedItemBonus + proficiency + dex
 	warnings = mergeWarnings(warnings, itemWarnings)
 	return totalStat(value, breakdown, warnings)
 }
