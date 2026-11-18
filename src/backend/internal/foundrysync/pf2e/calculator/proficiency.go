@@ -113,7 +113,7 @@ func ResolveProficiencyRanks(character pf2e.CharacterDto) ProficiencyRanks {
 		}
 	}
 
-	result.Complete = len(result.Warnings) == 0 && (class != nil || hasAnyRank(result))
+	result.Complete = len(result.Warnings) == 0 && hasAnyRank(result)
 	return result
 }
 
@@ -184,7 +184,13 @@ func applyRules(result *ProficiencyRanks, rules []pf2e.RuleElementDto, source st
 		}
 	}
 	for _, rule := range rules {
-		if rule.Key != "ActiveEffectLike" || rule.Mode != "upgrade" {
+		if rule.Key != "ActiveEffectLike" {
+			continue
+		}
+		if rule.Mode != "upgrade" {
+			if strings.Contains(rule.Path, ".rank") {
+				result.Warnings = append(result.Warnings, source+": unsupported ActiveEffectLike mode "+rule.Mode+" for "+rule.Path)
+			}
 			continue
 		}
 		path, ok := resolvePath(rule.Path, choices)
