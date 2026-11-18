@@ -54,4 +54,4 @@ labels:
 
 ## Progress log
 
-- 2026-11-17 — Создана из полного этапа v0.3. Реализация не начата.
+- 2026-11-17 — Создана из полного этапа v0.3.\n- 2026-11-18 — Начат persistence slice: добавлены DTO → persistence mapper и транзакционный PostgreSQL adapter для characters, foundry_actors и inventory_items. Полный TASK-004 остаётся в backlog до реализации link/approval/jobs/API и live PostgreSQL verification.
