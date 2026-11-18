@@ -58,8 +58,10 @@ World sync выполнен: 11 Actor snapshots сохранены; все за�
 
 Отсутствующее исходное ТЗ v1.0 и два дополнения остаются пробелом исходных материалов; не реконструировать их требования по догадкам.
 
-### Технический блокер для HTTP-команды привязки — 2026-11-18
+### Discord identity и привязка Foundry Actor — решение от 2026-11-18
 
-Текущий executable API предоставляет bearer authentication только для внутреннего endpoint синхронизации Foundry. Он не устанавливает пользовательский principal, не загружает роли/permissions и не может достоверно определить инициатора операции. Поэтому `POST /api/characters/link` нельзя безопасно подключать к sync token: это позволило бы любому держателю интеграционного секрета выполнять пользовательские действия и записывать произвольный `actor_user_id`.
+Пользователь подтвердил Discord как основной интерфейс, один разрешённый сервер, регистрацию всех его участников и гибридную RBAC-модель. Для bot-only сценария браузерные Discord OAuth2 и web sessions не нужны.
 
-Перед публикацией link endpoint необходимо реализовать/подключить user session или другой одобренный пользовательский auth boundary, загрузку permission `foundry.manage` (либо явно утверждённую политику GM/owner/admin) и доверенный user ID из auth context. До этого repository method остаётся внутренним persistence API, а HTTP route не публикуется.
+Реализован внутренний API boundary: отдельный `DISCORD_BOT_API_TOKEN` (не совпадает с `FOUNDRY_SYNC_API_TOKEN`) защищает bot-to-backend запросы; бот берёт Discord user ID, guild ID и member role IDs из аутентифицированного Gateway interaction; backend независимо проверяет guild allow-list, зарегистрированную учётную запись и permission. Роли приложения и их permissions хранятся в PostgreSQL; Discord role mapping вычисляется на каждом запросе. Регистрация доступна участникам настроенного сервера, по умолчанию назначает `player`; доверенные Discord IDs из `DISCORD_ADMIN_USER_IDS` получают `owner`.
+
+Endpoint привязки теперь реализован под внутренним bot API и требует `foundry.manage`. Он использует текущий `FoundryRepository.LinkActor`, сохраняет аудит, не создаёт персонажей, не назначает владельца и не меняет Foundry Actor. Остаются отдельными задачами browser OAuth/session (если появится web UX), подтверждение владения игроком, создание/одобрение персонажа и полный approval lifecycle.
