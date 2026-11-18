@@ -10,8 +10,8 @@ type RelayResponseDto struct {
 	Data      json.RawMessage `json:"data"`
 }
 
-// FoundryActorDto is the raw Foundry document. Raw is authoritative and keeps
-// fields unknown to this version of the decoder.
+// FoundryActorDto and FoundryItemDto describe only fields the adapter reads.
+// The complete source document is retained separately as DecodedActor.RawSnapshot.
 type FoundryActorDto struct {
 	ID     string                     `json:"_id"`
 	Name   string                     `json:"name"`
@@ -20,7 +20,6 @@ type FoundryActorDto struct {
 	System map[string]json.RawMessage `json:"system"`
 	Items  []FoundryItemDto           `json:"items"`
 	Stats  FoundryDocumentStatsDto    `json:"_stats"`
-	Raw    json.RawMessage            `json:"-"`
 }
 
 type FoundryItemDto struct {
@@ -33,7 +32,6 @@ type FoundryItemDto struct {
 	System map[string]json.RawMessage `json:"system"`
 	Flags  map[string]json.RawMessage `json:"flags"`
 	Stats  FoundryDocumentStatsDto    `json:"_stats"`
-	Raw    json.RawMessage            `json:"-"`
 }
 
 type FoundryDocumentStatsDto struct {
@@ -43,39 +41,41 @@ type FoundryDocumentStatsDto struct {
 	Compendium    *string `json:"compendiumSource"`
 }
 
-// CharacterDto is the application-facing, read-only projection of a Foundry
-// Actor. It deliberately contains no PF2e rule calculations.
+// CharacterDto is a read-only application projection. It contains only values
+// represented in the persisted Actor document; prepared/calculated PF2e values
+// are deliberately not inferred here.
 type CharacterDto struct {
-	SchemaVersion int                       `json:"schemaVersion"`
-	Identity      CharacterIdentityDto      `json:"identity"`
-	Source        CharacterSourceDto        `json:"source"`
-	Progression   CharacterProgressionDto   `json:"progression"`
-	Build         CharacterBuildDto         `json:"build"`
-	Attributes    CharacterAttributesDto    `json:"attributes"`
-	Resources     CharacterResourcesDto     `json:"resources"`
-	Skills        map[string]CharacterSkillDto `json:"skills"`
-	Items         []CharacterItemDto        `json:"items"`
-	Biography     CharacterBiographyDto     `json:"biography"`
+	SchemaVersion int                     `json:"schemaVersion"`
+	Identity      CharacterIdentityDto    `json:"identity"`
+	Source        CharacterSourceDto      `json:"source"`
+	Progression   CharacterProgressionDto `json:"progression"`
+	Build         CharacterBuildDto       `json:"build"`
+	Attributes    CharacterAttributesDto  `json:"attributes"`
+	Resources     CharacterResourcesDto   `json:"resources"`
+	Skills        CharacterSkillsDto      `json:"skills"`
+	Items         []CharacterItemDto      `json:"items"`
+	Biography     CharacterBiographyDto   `json:"biography"`
 }
 
 type CharacterIdentityDto struct {
-	ID   string  `json:"id"`
-	UUID string  `json:"uuid"`
-	Name string  `json:"name"`
-	Type string  `json:"type"`
+	ID    string  `json:"id"`
+	UUID  string  `json:"uuid"`
+	Name  string  `json:"name"`
+	Type  string  `json:"type"`
 	Image *string `json:"image"`
 }
 
 type CharacterSourceDto struct {
-	Platform      string `json:"platform"`
-	CoreVersion   string `json:"coreVersion,omitempty"`
-	SystemID      string `json:"systemId,omitempty"`
-	SystemVersion string `json:"systemVersion,omitempty"`
+	Platform         string   `json:"platform"`
+	CoreVersion      string   `json:"coreVersion,omitempty"`
+	SystemID         string   `json:"systemId,omitempty"`
+	SystemVersion    string   `json:"systemVersion,omitempty"`
+	MigrationVersion *float64 `json:"migrationVersion,omitempty"`
 }
 
 type CharacterProgressionDto struct {
-	Level       *int                 `json:"level"`
-	Experience  ExperienceDto        `json:"experience"`
+	Level      *int          `json:"level"`
+	Experience ExperienceDto `json:"experience"`
 }
 
 type ExperienceDto struct {
@@ -85,10 +85,11 @@ type ExperienceDto struct {
 }
 
 type CharacterBuildDto struct {
-	Ancestry  *CharacterItemReferenceDto `json:"ancestry"`
-	Heritage  *CharacterItemReferenceDto `json:"heritage"`
+	Ancestry   *CharacterItemReferenceDto `json:"ancestry"`
+	Heritage   *CharacterItemReferenceDto `json:"heritage"`
 	Background *CharacterItemReferenceDto `json:"background"`
-	Class     *CharacterItemReferenceDto `json:"class"`
+	Class      *CharacterItemReferenceDto `json:"class"`
+	KeyAbility *string                   `json:"keyAbility"`
 }
 
 type CharacterItemReferenceDto struct {
@@ -99,29 +100,16 @@ type CharacterItemReferenceDto struct {
 	Image *string `json:"image"`
 }
 
+// HP values are copied only when present in Actor.system.attributes.hp.
+// PF2e's prepared maximum HP is not present in this Actor snapshot.
 type CharacterAttributesDto struct {
-	HP         *HitPointsDto   `json:"hp"`
-	Abilities  *AbilityScoresDto `json:"abilities"`
-	AC         *int            `json:"ac"`
-	Perception *int            `json:"perception"`
-	Saves      map[string]int  `json:"saves,omitempty"`
+	HP *HitPointsDto `json:"hp"`
 }
 
 type HitPointsDto struct {
 	Current *int `json:"current"`
 	Temp    *int `json:"temp"`
 	Max     *int `json:"max"`
-}
-
-// AbilityScoresDto is populated only when Foundry actually supplies scores.
-// A null system.abilities remains nil; the decoder does not derive scores.
-type AbilityScoresDto struct {
-	Strength     *int `json:"strength"`
-	Dexterity    *int `json:"dexterity"`
-	Constitution *int `json:"constitution"`
-	Intelligence *int `json:"intelligence"`
-	Wisdom       *int `json:"wisdom"`
-	Charisma     *int `json:"charisma"`
 }
 
 type CharacterResourcesDto struct {
@@ -133,26 +121,39 @@ type ResourceValueDto struct {
 	Max   *int `json:"max"`
 }
 
+type CharacterSkillsDto struct {
+	Standard map[string]CharacterSkillDto `json:"standard"`
+	Lore     map[string]CharacterSkillDto `json:"lore"`
+}
+
 type CharacterSkillDto struct {
 	Rank *int `json:"rank"`
 }
 
 type CharacterBiographyDto struct {
-	Appearance     *string  `json:"appearance"`
-	Backstory      *string  `json:"backstory"`
-	BirthPlace     *string  `json:"birthPlace"`
-	Attitude       *string  `json:"attitude"`
-	Beliefs        *string  `json:"beliefs"`
-	Anathema       []string `json:"anathema"`
-	Edicts         []string `json:"edicts"`
-	Likes          *string  `json:"likes"`
-	Dislikes       *string  `json:"dislikes"`
-	Catchphrases   *string  `json:"catchphrases"`
-	CampaignNotes  *string  `json:"campaignNotes"`
-	Allies         *string  `json:"allies"`
-	Enemies        *string  `json:"enemies"`
-	Organizations  *string  `json:"organizations"`
-	Visibility     map[string]bool `json:"visibility,omitempty"`
+	Appearance      *string         `json:"appearance"`
+	Backstory       *string         `json:"backstory"`
+	BirthPlace      *string         `json:"birthPlace"`
+	Attitude        *string         `json:"attitude"`
+	Beliefs         *string         `json:"beliefs"`
+	Anathema        []string        `json:"anathema"`
+	Edicts          []string        `json:"edicts"`
+	Likes           *string         `json:"likes"`
+	Dislikes        *string         `json:"dislikes"`
+	Catchphrases    *string         `json:"catchphrases"`
+	CampaignNotes   *string         `json:"campaignNotes"`
+	Allies           *string         `json:"allies"`
+	Enemies          *string         `json:"enemies"`
+	Organizations    *string         `json:"organizations"`
+	Age              *string         `json:"age"`
+	Height           *string         `json:"height"`
+	Weight           *string         `json:"weight"`
+	Gender           *string         `json:"gender"`
+	Ethnicity        *string         `json:"ethnicity"`
+	Nationality      *string         `json:"nationality"`
+	Languages        []string        `json:"languages"`
+	LanguageDetails  *string         `json:"languageDetails"`
+	Visibility       map[string]bool `json:"visibility,omitempty"`
 }
 
 type CharacterItemCategory string
@@ -164,32 +165,38 @@ const (
 	ItemCategoryOther     CharacterItemCategory = "other"
 )
 
+// CharacterItemDto contains common fields suitable for application queries.
+// Type-specific source fields remain available in the Actor RawSnapshot and
+// are not copied wholesale into every normalized Item.
 type CharacterItemDto struct {
-	ID          string                  `json:"id"`
-	Name        string                  `json:"name"`
-	Type        string                  `json:"type"`
-	Slug        *string                 `json:"slug"`
-	Image       *string                 `json:"image"`
-	Category    CharacterItemCategory   `json:"category"`
-	Quantity    *int                    `json:"quantity"`
-	Level       *int                    `json:"level"`
-	Equipment   *CharacterEquipmentDto  `json:"equipment"`
-	CompendiumSource *string            `json:"compendiumSource"`
-	// Details contains the complete Item.system object, not a curated
-	// whitelist. Type-specific decoders can be layered on without data loss.
-	Details     map[string]json.RawMessage `json:"details"`
+	ID               string                  `json:"id"`
+	Name             string                  `json:"name"`
+	Type             string                  `json:"type"`
+	Slug             *string                 `json:"slug"`
+	Image            *string                 `json:"image"`
+	Category         CharacterItemCategory   `json:"category"`
+	Quantity         *int                    `json:"quantity"`
+	Level            *int                    `json:"level"`
+	Equipped         *CharacterEquippedDto   `json:"equipped"`
+	CompendiumSource *string                 `json:"compendiumSource"`
 }
 
-type CharacterEquipmentDto struct {
+type CharacterEquippedDto struct {
 	CarryType *string `json:"carryType"`
 	HandsHeld *int    `json:"handsHeld"`
 	InSlot    *bool   `json:"inSlot"`
 	Invested  *bool   `json:"invested"`
 }
 
-// DecodedActor keeps normalized data and immutable source bytes together.
+type DecodedItem struct {
+	Foundry       FoundryItemDto
+	Character     CharacterItemDto
+	RawSnapshot   json.RawMessage
+}
+
+// DecodedActor keeps the normalized projection and one authoritative raw
+// snapshot. Item documents are already included in RawSnapshot.
 type DecodedActor struct {
-	Character CharacterDto
-	RawActor  json.RawMessage
-	RawItems  []json.RawMessage
+	Character   CharacterDto
+	RawSnapshot json.RawMessage
 }
