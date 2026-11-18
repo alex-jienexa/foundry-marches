@@ -345,8 +345,14 @@ func (h *Handler) grantRole(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "only player and gm roles can be granted through Discord")
 		return
 	}
+	tx, err := h.db.BeginTx(r.Context(), nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not start role grant")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
 	var targetID string
-	err := h.db.QueryRowContext(r.Context(), "SELECT user_id::text FROM discord_accounts WHERE discord_id = $1 AND in_guild = true", req.TargetDiscordUserID).Scan(&targetID)
+	err = tx.QueryRowContext(r.Context(), "SELECT user_id::text FROM discord_accounts WHERE discord_id = $1 AND in_guild = true FOR UPDATE", req.TargetDiscordUserID).Scan(&targetID)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "target Discord account is not registered")
 		return
@@ -355,7 +361,7 @@ func (h *Handler) grantRole(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "could not find target account")
 		return
 	}
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO user_roles (user_id, role_id, granted_by)
 SELECT $1, id, $2 FROM roles WHERE key = $3
 ON CONFLICT (user_id, role_id) DO NOTHING
@@ -364,10 +370,18 @@ ON CONFLICT (user_id, role_id) DO NOTHING
 		writeError(w, http.StatusInternalServerError, "could not grant role")
 		return
 	}
-	_, _ = h.db.ExecContext(r.Context(), `
+	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, new_value)
 VALUES ($1, 'user', 'rbac.role.granted', 'user', $2, jsonb_build_object('role', $3))
 `, actorID, targetID, req.RoleKey)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not write role grant audit record")
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not commit role grant")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "granted", "role": req.RoleKey})
 }
 
@@ -388,7 +402,13 @@ func (h *Handler) mapRole(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Discord role ID is required")
 		return
 	}
-	_, err := h.db.ExecContext(r.Context(), `
+	tx, err := h.db.BeginTx(r.Context(), nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not start Discord role mapping")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO discord_role_map (guild_id, discord_role_id, role_id)
 SELECT $1, $2, id FROM roles WHERE key = $3
 ON CONFLICT (guild_id, discord_role_id) DO UPDATE SET role_id = EXCLUDED.role_id
@@ -397,10 +417,18 @@ ON CONFLICT (guild_id, discord_role_id) DO UPDATE SET role_id = EXCLUDED.role_id
 		writeError(w, http.StatusInternalServerError, "could not map Discord role")
 		return
 	}
-	_, _ = h.db.ExecContext(r.Context(), `
+	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, new_value)
 VALUES ($1, 'user', 'rbac.discord_role.mapped', 'discord_role', $2, jsonb_build_object('role', $3))
 `, actorID, req.DiscordRoleID, req.RoleKey)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not write Discord role mapping audit record")
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not commit Discord role mapping")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "mapped", "role": req.RoleKey})
 }
 
