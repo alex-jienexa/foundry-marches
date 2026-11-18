@@ -3,7 +3,7 @@
 FROM golang:1.23-alpine AS build
 WORKDIR /src
 
-COPY src/backend/go.mod ./
+COPY src/backend/go.mod src/backend/go.sum ./
 RUN go mod download
 
 COPY src/backend/ ./
