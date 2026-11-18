@@ -1,6 +1,7 @@
 package calculator
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -19,7 +20,16 @@ func CalculateDerivedStats(character pf2e.CharacterDto) pf2e.CharacterDerivedSta
 // CalculateDerivedStatsWithFeatureRules includes Rule Elements resolved from
 // the class feature compendium references in the Actor's class progression.
 func CalculateDerivedStatsWithFeatureRules(character pf2e.CharacterDto, featureRules map[string][]pf2e.RuleElementDto) pf2e.CharacterDerivedStatsDto {
-	ranks := ResolveProficiencyRanksWithFeatureRules(character, featureRules)
+	return calculateDerivedStats(character, ResolveProficiencyRanksWithFeatureRules(character, featureRules))
+}
+
+// CalculateDerivedStatsWithResolver fetches reached class-feature documents
+// through a read-only adapter before calculating effective ranks and totals.
+func CalculateDerivedStatsWithResolver(ctx context.Context, character pf2e.CharacterDto, resolver CompendiumItemResolver) pf2e.CharacterDerivedStatsDto {
+	return calculateDerivedStats(character, ResolveProficiencyRanksWithResolver(ctx, character, resolver))
+}
+
+func calculateDerivedStats(character pf2e.CharacterDto, ranks ProficiencyRanks) pf2e.CharacterDerivedStatsDto {
 	result := pf2e.CharacterDerivedStatsDto{
 		Proficiencies: ranks,
 		Saves: make(map[string]pf2e.DerivedStatDto),
