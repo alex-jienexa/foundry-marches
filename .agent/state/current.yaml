@@ -2,22 +2,23 @@ schema_version: '1.0'
 project_status: in_progress
 health: at_risk
 updated_at: '2026-11-18'
-current_focus: TASK-004 — проектирование явной привязки существующего персонажа приложения к Foundry Actor после подтверждённой синхронизации 11 Actor
+current_focus: TASK-004 — транзакционная привязка обнаруженного Foundry Actor к существующему персонажу приложения; далее user auth/RBAC, HTTP endpoint и approval
 active_task: TASK-004
-active_branch: feat/task-004-character-decoder
-last_checkpoint: '2026-11-18: self-hosted Relay 3.4.1 и Docker Compose API/PostgreSQL работают; world sync завершён, 11 Actor snapshots сохранены, все пока snapshot_only до явной привязки'
-last_verified_commit: 4ca6fa87c4b7b40e25832f7ca15400bb39f5d713
+active_branch: feat/task-004-character-linking
+last_checkpoint: '2026-11-18: main merge commit 618bf862dd070e3688709cc319cf55b042e96df0; отдельная ветка feat/task-004-character-linking содержит repository link slice и opt-in PostgreSQL tests'
+last_verified_commit: 618bf862dd070e3688709cc319cf55b042e96df0
 open_blockers:
 - Отсутствует исходное ТЗ v1.0 и два дополнения; не реконструировать требования по догадкам
 - Не завершены Discord OAuth, user sessions, RBAC и аудит (этап 1)
-- Не реализована явная привязка Actor к существующему персонажу приложения (этап 2)
+- Не реализованы пользовательская session/RBAC и POST /api/characters/link; repository slice написан, но не запускался в этой среде
 - Не получены Campaign Codex JSON exports и образцы Obsidian; WebDAV ETag/If-Match не проверен
 - Не проверены Relay SSE, headless GM session и usage/quota
 - GitHub Actions workflow существует, но удалённый run для текущей ветки ещё не подтверждён
 next_actions:
-- Изучить ограничения и индексы foundry_actors/characters перед проектированием link operation
-- Спроектировать явную привязку Actor type=character к существующему application character: same world UUID, unique link on both sides, authorization, atomic transaction
-- Реализовать link API/repository/tests; не создавать персонажей, не назначать владельцев и не менять Foundry Actor
+- Запустить gofmt, go test ./..., go vet ./... и opt-in PostgreSQL integration suite для ветки feat/task-004-character-linking
+- Реализовать/подключить user identity, sessions и RBAC permission foundry.manage; не использовать sync bearer token для пользовательских операций
+- После появления auth boundary добавить POST /api/characters/link с корректными HTTP status mapping и actor user ID из auth context
+- После link endpoint завершить approval/review flow, лимиты/NPC и устойчивый sync lifecycle
 - После link завершить approval, лимиты/NPC и устойчивый sync lifecycle
 - Продолжить незавершённые проверки этапа 0 и этапа 1 без изменения production/Foundry данных без отдельного разрешения
 - CI: после открытия PR владельцем проверить фактический GitHub Actions run; CD пока не проектировать в коде до отдельного одобрения
@@ -26,12 +27,12 @@ recent_changes:
 - Все 11 записей имеют внутренний world_id UUID 00000000-0000-4000-8000-000000000001 и character_id NULL; snapshot_only ожидаем до явной привязки
 - Foundry REST Relay 3.4.1 deployed, Pairing подтверждён; интеграция read-only
 - Docker Compose PostgreSQL 18 Alpine и API запущены; GET /healthz вернул HTTP 200
-- Backend содержит Relay adapter, PF2e DTO/decoder/calculator, sync service, persistence repository и PostgreSQL integration tests
+- Backend содержит Relay adapter, PF2e DTO/decoder/calculator, sync service, persistence repository, PostgreSQL integration tests и отдельный FoundryRepository.LinkActor slice (ещё не проверен запуском)
 - CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs; фактический удалённый run для этой ветки не наблюдался
 - Документация runtime, roadmap, milestones, open questions, tasks и PAD обновлена в этой ветке
 risks:
 - Этапы 0, 1 и 2 частично выполнены, но ни один не закрыт целиком
-- Bootstrap sync endpoint использует отдельный Bearer token и пока не имеет полноценной пользовательской авторизации
+- Bootstrap sync endpoint использует отдельный Bearer token; пользовательский link endpoint намеренно не публикуется до реализации session/RBAC
 - Синхронизация синхронная; job queue/retry и production observability не завершены
 - Нельзя выполнять destructive DB operations или удалять postgres_data volume
 - Нельзя изменять Foundry Actor; XP write остаётся вне текущей read-only модели
