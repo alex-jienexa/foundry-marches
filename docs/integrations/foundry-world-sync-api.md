@@ -4,7 +4,7 @@ The backend exposes a first read-only world synchronization handler at:
 
 - `POST /api/integrations/foundry/sync`
 
-The handler is implemented in `src/backend/internal/foundrysync/httpapi`. The application HTTP composition root must mount it at the path above and place it behind the existing application authentication/authorization middleware. Only administrators with the `foundry.manage` permission should be allowed to invoke it. The handler deliberately does not implement a second, competing authentication system.
+The handler is implemented in `src/backend/internal/foundrysync/httpapi` and is mounted by the runnable bootstrap at `src/backend/cmd/foundry-api`. The bootstrap currently protects this administrative endpoint with a dedicated Bearer token from `FOUNDRY_SYNC_API_TOKEN` (minimum 32 characters). This is a bootstrap credential; when the main application auth/permission middleware is implemented, replace it with the `foundry.manage` permission check rather than exposing a second permanent auth model.
 
 ## What the operation does
 
@@ -17,6 +17,23 @@ The handler is implemented in `src/backend/internal/foundrysync/httpapi`. The ap
 7. Records per-Actor failures and continues with the remaining Actors.
 
 A world search that reaches Relay's documented 500-result limit is rejected rather than treated as a complete world inventory. This prevents a truncated search from being mistaken for a successful full sync.
+
+## Running the bootstrap API
+
+Run from `src/backend/` after applying `docs/database/schema.sql` and creating the matching `foundry_worlds` row:
+
+```sh
+export DATABASE_URL='postgres://USER:PASSWORD@HOST:5432/DB?sslmode=disable'
+export FOUNDRY_WORLD_ID='00000000-0000-0000-0000-000000000000'
+export FOUNDRY_RELAY_BASE_URL='https://relay.example.test'
+export FOUNDRY_RELAY_CLIENT_ID='your-foundry-client-id'
+export FOUNDRY_RELAY_API_KEY='your-relay-api-key'
+export FOUNDRY_SYNC_API_TOKEN='generate-a-random-secret-of-at-least-32-characters'
+export HTTP_ADDR='127.0.0.1:8080'
+go run ./cmd/foundry-api
+```
+
+The bootstrap defaults to loopback binding. Put it behind the existing HTTPS reverse proxy; do not expose it directly to the public network. Health check: `GET /healthz`. Sync: `POST /api/integrations/foundry/sync` with `Authorization: Bearer $FOUNDRY_SYNC_API_TOKEN`. Secrets belong in the host's secret manager or protected environment file and must never be committed.
 
 ## Response
 
@@ -38,4 +55,4 @@ A discovery-level Relay error returns HTTP 502. A second concurrent sync for the
 - Relay search currently exposes at most 500 results in one request. Pagination is not assumed.
 - Actors removed from Foundry are not yet pruned from `foundry_actors`; deletion reconciliation is a separate, explicit policy.
 - NPC and other non-character Actor snapshots are persisted, but their system-specific projections are not yet decoded into dedicated application entities.
-- The handler package is ready to mount, but this repository does not yet have an API server composition root. Mounting and production configuration belong to the next server-bootstrap task.
+- The initial bootstrap is a dedicated integration service, not yet the full application API. It does not implement user sessions, role checks or per-user access control; the Bearer token grants access to the single administrative sync operation.
