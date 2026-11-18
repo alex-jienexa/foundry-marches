@@ -126,12 +126,6 @@ func calculateAC(character pf2e.CharacterDto, ranks ProficiencyRanks) pf2e.Deriv
 		if armor.Runes != nil && armor.Runes.Potency != nil {
 			potency = *armor.Runes.Potency
 		}
-		breakdown = append(breakdown,
-			pf2e.ModifierBreakdownDto{Source: "Item "+armor.Name+" armor", Kind: pf2e.ModifierArmor, Value: baseArmorBonus},
-		)
-		if potency != 0 {
-			breakdown = append(breakdown, pf2e.ModifierBreakdownDto{Source: "Item "+armor.Name+" potency rune", Kind: pf2e.ModifierRune, Value: potency})
-		}
 	}
 	rank, ok := ranks.Defenses[defenseKey]
 	if !ok {
