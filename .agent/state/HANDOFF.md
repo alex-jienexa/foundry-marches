@@ -31,6 +31,11 @@
 
 ## Код в рабочей ветке
 
+- Текущая feature branch: `feat/task-004-character-linking`, создана от main merge commit `618bf862dd070e3688709cc319cf55b042e96df0`.
+- Добавлен `FoundryRepository.LinkActor` в `src/backend/internal/characters/foundry_link.go`: транзакционная явная связь уже обнаруженного Actor типа `character` с существующим application character; проверки world/наличия/конфликтов; idempotent повтор; append-only audit. Owner и `owner_confirmed_at` не меняются.
+- Добавлены unit coverage для SQLSTATE helper и opt-in PostgreSQL integration tests на success/idempotency/duplicate links/NPC rejection.
+- HTTP endpoint намеренно не открыт: текущий API аутентифицирует только интеграционный sync token и не предоставляет user identity/session/RBAC. Нельзя использовать sync token вместо пользовательского `foundry.manage` разрешения.
+
 - Go module расположен в `src/backend/`.
 - Bootstrap REST API и `GET /healthz`.
 - Relay HTTP adapter, world discovery/sync service.
@@ -51,17 +56,11 @@
 
 ## Следующий рекомендуемый шаг
 
-1. После PR/merge владельцем и подтверждения актуального HEAD продолжить в рабочей ветке.
-2. Спроектировать и реализовать явную привязку существующего application character к Foundry Actor:
-   - Actor должен иметь type `character`;
-   - Actor должен принадлежать настроенному world UUID;
-   - Actor не должен быть связан с другим application character;
-   - application character не должен быть связан с другим Actor;
-   - операция должна требовать соответствующего разрешения и быть атомарной;
-   - не создавать персонажей и не назначать владельцев автоматически.
-3. Добавить API, DB constraints/transactions и tests для link/unlink policy; до изменения схемы изучить существующие constraints.
-4. Затем approval и полноценный sync lifecycle.
-5. Отдельно вернуться к оставшимся проверкам spike и к недостающим исходным требованиям.
+1. Запустить `gofmt`, `go test ./...`, `go vet ./...` из `src/backend` и PostgreSQL integration suite с изолированной БД `*_test`; проверить/исправить найденные ошибки.
+2. Проверить PR/main workflow status после merge #1 отдельно от локального сообщения владельца об успешных тестах.
+3. Спроектировать user identity/session/RBAC для API (TASK-003 dependency) и только после этого добавить `POST /api/characters/link` с permission `foundry.manage`, без использования sync token как пользовательского credential.
+4. Затем реализовать approval/rejection и character review history; сохранить DB slot trigger и добавить API-level 409 mapping для slot limit.
+5. Отдельно проработать integration job/retry/awaiting_sync lifecycle. Не включать XP write в Foundry без нового архитектурного решения и разрешения владельца.
 
 ## Архитектурные правила
 
