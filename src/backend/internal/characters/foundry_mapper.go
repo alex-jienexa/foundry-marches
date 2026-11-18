@@ -11,52 +11,52 @@ import (
 )
 
 type FoundrySyncInput struct {
-	WorldID string
+	WorldID     string
 	CharacterID string
-	ActorUUID string
-	Decoded pf2e.DecodedActor
+	ActorUUID   string
+	Decoded     pf2e.DecodedActor
 }
 
 type CharacterRecord struct {
-	ID string
-	Name string
+	ID          string
+	Name        string
 	PortraitURL *string
-	Ancestry *string
-	Heritage *string
-	Background *string
-	Class *string
-	Level *int
-	XP *int
-	HPCurrent *int
-	HPMax *int
-	Attributes json.RawMessage
-	Skills json.RawMessage
+	Ancestry    *string
+	Heritage    *string
+	Background  *string
+	Class       *string
+	Level       *int
+	XP          *int
+	HPCurrent   *int
+	HPMax       *int
+	Attributes  json.RawMessage
+	Skills      json.RawMessage
 }
 
 type InventoryRecord struct {
 	FoundryItemID string
-	Name string
-	Quantity *int
-	State json.RawMessage
+	Name          string
+	Quantity      *int
+	State         json.RawMessage
 }
 
 type FoundrySyncRecord struct {
-	WorldID string
-	CharacterID string
-	ActorUUID string
-	Character CharacterRecord
-	Inventory []InventoryRecord
+	WorldID       string
+	CharacterID   string
+	ActorUUID     string
+	Character     CharacterRecord
+	Inventory     []InventoryRecord
 	ActorSnapshot json.RawMessage
-	SnapshotHash string
+	SnapshotHash  string
 }
 
 type characterAttributesPayload struct {
-	Source pf2e.CharacterSourceDto `json:"source"`
-	Progression pf2e.CharacterProgressionDto `json:"progression"`
-	Build pf2e.CharacterBuildDto `json:"build"`
-	Statistics pf2e.CharacterStatisticsInputDto `json:"statistics"`
-	Resources pf2e.CharacterResourcesDto `json:"resources"`
-	Biography pf2e.CharacterBiographyDto `json:"biography"`
+	Source      pf2e.CharacterSourceDto          `json:"source"`
+	Progression pf2e.CharacterProgressionDto     `json:"progression"`
+	Build       pf2e.CharacterBuildDto           `json:"build"`
+	Statistics  pf2e.CharacterStatisticsInputDto `json:"statistics"`
+	Resources   pf2e.CharacterResourcesDto       `json:"resources"`
+	Biography   pf2e.CharacterBiographyDto       `json:"biography"`
 }
 
 func MapFoundryActor(input FoundrySyncInput) (FoundrySyncRecord, error) {
@@ -80,9 +80,13 @@ func MapFoundryActor(input FoundrySyncInput) (FoundrySyncRecord, error) {
 		Source: c.Source, Progression: c.Progression, Build: c.Build,
 		Statistics: c.Statistics, Resources: c.Resources, Biography: c.Biography,
 	})
-	if err != nil { return FoundrySyncRecord{}, fmt.Errorf("marshal character attributes: %w", err) }
+	if err != nil {
+		return FoundrySyncRecord{}, fmt.Errorf("marshal character attributes: %w", err)
+	}
 	skills, err := json.Marshal(c.Skills)
-	if err != nil { return FoundrySyncRecord{}, fmt.Errorf("marshal character skills: %w", err) }
+	if err != nil {
+		return FoundrySyncRecord{}, fmt.Errorf("marshal character skills: %w", err)
+	}
 
 	record := FoundrySyncRecord{
 		WorldID: input.WorldID, CharacterID: input.CharacterID, ActorUUID: input.ActorUUID,
@@ -102,12 +106,20 @@ func MapFoundryActor(input FoundrySyncInput) (FoundrySyncRecord, error) {
 	record.Inventory = make([]InventoryRecord, 0, len(c.Items))
 	seenItemIDs := make(map[string]struct{}, len(c.Items))
 	for _, item := range c.Items {
-		if item.ID == "" || item.Name == "" { return FoundrySyncRecord{}, errors.New("Actor item is missing its Foundry ID or name") }
-		if _, exists := seenItemIDs[item.ID]; exists { return FoundrySyncRecord{}, fmt.Errorf("duplicate Actor item ID %q", item.ID) }
+		if item.ID == "" || item.Name == "" {
+			return FoundrySyncRecord{}, errors.New("Actor item is missing its Foundry ID or name")
+		}
+		if _, exists := seenItemIDs[item.ID]; exists {
+			return FoundrySyncRecord{}, fmt.Errorf("duplicate Actor item ID %q", item.ID)
+		}
 		seenItemIDs[item.ID] = struct{}{}
-		if item.Quantity != nil && *item.Quantity < 0 { return FoundrySyncRecord{}, fmt.Errorf("Actor item %q has negative quantity", item.ID) }
+		if item.Quantity != nil && *item.Quantity < 0 {
+			return FoundrySyncRecord{}, fmt.Errorf("Actor item %q has negative quantity", item.ID)
+		}
 		state, marshalErr := json.Marshal(item)
-		if marshalErr != nil { return FoundrySyncRecord{}, fmt.Errorf("marshal item %q: %w", item.ID, marshalErr) }
+		if marshalErr != nil {
+			return FoundrySyncRecord{}, fmt.Errorf("marshal item %q: %w", item.ID, marshalErr)
+		}
 		record.Inventory = append(record.Inventory, InventoryRecord{
 			FoundryItemID: item.ID, Name: item.Name, Quantity: item.Quantity, State: state,
 		})
@@ -118,7 +130,9 @@ func MapFoundryActor(input FoundrySyncInput) (FoundrySyncRecord, error) {
 }
 
 func referenceName(ref *pf2e.CharacterItemReferenceDto) *string {
-	if ref == nil { return nil }
+	if ref == nil {
+		return nil
+	}
 	name := ref.Name
 	return &name
 }

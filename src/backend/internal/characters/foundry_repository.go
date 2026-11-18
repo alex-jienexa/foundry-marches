@@ -2,16 +2,16 @@ package characters
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
 
 var (
-	ErrActorNotLinked = errors.New("Foundry Actor is not linked to this character")
+	ErrActorNotLinked    = errors.New("Foundry Actor is not linked to this character")
 	ErrSyncRecordInvalid = errors.New("invalid Foundry sync record")
 )
 
@@ -19,39 +19,59 @@ type SQLDB interface {
 	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)
 }
 
-type FoundryRepository struct { db SQLDB }
+type FoundryRepository struct{ db SQLDB }
 
 func NewFoundryRepository(db SQLDB) (*FoundryRepository, error) {
-	if db == nil { return nil, errors.New("database is required") }
+	if db == nil {
+		return nil, errors.New("database is required")
+	}
 	return &FoundryRepository{db: db}, nil
 }
 
 // SyncActor atomically mirrors one already-linked Actor. Owner, status, approval
 // and app-owned ledger data are intentionally not modified.
 func (r *FoundryRepository) SyncActor(ctx context.Context, record FoundrySyncRecord) error {
-	if r == nil || r.db == nil { return errors.New("Foundry repository is not initialized") }
+	if r == nil || r.db == nil {
+		return errors.New("Foundry repository is not initialized")
+	}
 	if record.WorldID == "" || record.CharacterID == "" || record.ActorUUID == "" ||
 		record.Character.ID != record.CharacterID || record.Character.Name == "" ||
 		len(record.ActorSnapshot) == 0 || !json.Valid(record.ActorSnapshot) || record.SnapshotHash == "" {
 		return ErrSyncRecordInvalid
 	}
 	sum := sha256.Sum256(record.ActorSnapshot)
-	if record.SnapshotHash != hex.EncodeToString(sum[:]) { return ErrSyncRecordInvalid }
-	if !json.Valid(record.Character.Attributes) || !json.Valid(record.Character.Skills) { return ErrSyncRecordInvalid }
+	if record.SnapshotHash != hex.EncodeToString(sum[:]) {
+		return ErrSyncRecordInvalid
+	}
+	if !json.Valid(record.Character.Attributes) || !json.Valid(record.Character.Skills) {
+		return ErrSyncRecordInvalid
+	}
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil { return fmt.Errorf("begin Foundry sync transaction: %w", err) }
+	if err != nil {
+		return fmt.Errorf("begin Foundry sync transaction: %w", err)
+	}
 	defer func() { _ = tx.Rollback() }()
 	if _, err = tx.ExecContext(ctx, "SET LOCAL app.writer = 'foundry_sync'"); err != nil {
 		return fmt.Errorf("set Foundry sync writer: %w", err)
 	}
-	if err = upsertCharacter(ctx, tx, record.Character); err != nil { return err }
-	if err = upsertFoundryActor(ctx, tx, record); err != nil { return err }
-	if err = replaceInventory(ctx, tx, record.CharacterID, record.Inventory); err != nil { return err }
-	if err = tx.Commit(); err != nil { return fmt.Errorf("commit Foundry sync transaction: %w", err) }
+	if err = upsertCharacter(ctx, tx, record.Character); err != nil {
+		return err
+	}
+	if err = upsertFoundryActor(ctx, tx, record); err != nil {
+		return err
+	}
+	if err = replaceInventory(ctx, tx, record.CharacterID, record.Inventory); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit Foundry sync transaction: %w", err)
+	}
 	return nil
 }
 
-type sqlExecer interface { ExecContext(context.Context, string, ...any) (sql.Result, error) }
+type sqlExecer interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
 
 func upsertCharacter(ctx context.Context, tx sqlExecer, c CharacterRecord) error {
 	const query = `
@@ -80,7 +100,9 @@ ON CONFLICT (id) DO UPDATE SET
 		nullableString(c.Ancestry), nullableString(c.Heritage), nullableString(c.Background),
 		nullableString(c.Class), nullableInt(c.Level), nullableInt(c.XP),
 		nullableInt(c.HPCurrent), nullableInt(c.HPMax), string(c.Attributes), string(c.Skills))
-	if err != nil { return fmt.Errorf("upsert character %s: %w", c.ID, err) }
+	if err != nil {
+		return fmt.Errorf("upsert character %s: %w", c.ID, err)
+	}
 	return nil
 }
 
@@ -97,10 +119,16 @@ WHERE world_id = $1
 `
 	result, err := tx.ExecContext(ctx, query, record.WorldID, record.ActorUUID,
 		record.CharacterID, string(record.ActorSnapshot), record.SnapshotHash)
-	if err != nil { return fmt.Errorf("update linked Foundry Actor %s: %w", record.ActorUUID, err) }
+	if err != nil {
+		return fmt.Errorf("update linked Foundry Actor %s: %w", record.ActorUUID, err)
+	}
 	affected, err := result.RowsAffected()
-	if err != nil { return fmt.Errorf("check Foundry Actor link: %w", err) }
-	if affected == 0 { return ErrActorNotLinked }
+	if err != nil {
+		return fmt.Errorf("check Foundry Actor link: %w", err)
+	}
+	if affected == 0 {
+		return ErrActorNotLinked
+	}
 	return nil
 }
 
@@ -118,7 +146,9 @@ func replaceInventory(ctx context.Context, tx sqlExecer, characterID string, ite
 		ids = append(ids, item.FoundryItemID)
 	}
 	encodedIDs, err := json.Marshal(ids)
-	if err != nil { return fmt.Errorf("marshal inventory IDs: %w", err) }
+	if err != nil {
+		return fmt.Errorf("marshal inventory IDs: %w", err)
+	}
 	if _, err = tx.ExecContext(ctx, `
 DELETE FROM inventory_items
 WHERE character_id = $1
@@ -145,7 +175,9 @@ ON CONFLICT (character_id, foundry_item_id) DO UPDATE SET
   name = EXCLUDED.name, quantity = EXCLUDED.quantity, state = EXCLUDED.state
 `, characterID, item.FoundryItemID, item.Name, *item.Quantity, string(item.State))
 		}
-		if err != nil { return fmt.Errorf("upsert Foundry item %s: %w", item.FoundryItemID, err) }
+		if err != nil {
+			return fmt.Errorf("upsert Foundry item %s: %w", item.FoundryItemID, err)
+		}
 	}
 	return nil
 }
