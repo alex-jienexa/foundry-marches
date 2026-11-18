@@ -16,6 +16,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/alex-jienexa/foundry-marches/internal/characters"
+	"github.com/alex-jienexa/foundry-marches/internal/discordapi"
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync"
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/httpapi"
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/relay"
@@ -76,8 +77,20 @@ func run() error {
 		return err
 	}
 
+	discordBotToken := requiredEnv("DISCORD_BOT_API_TOKEN")
+	if len(discordBotToken) < 32 || subtle.ConstantTimeCompare([]byte(discordBotToken), []byte(syncToken)) == 1 {
+		return errors.New("DISCORD_BOT_API_TOKEN must be 32+ characters and differ from FOUNDRY_SYNC_API_TOKEN")
+	}
+	discordGuildID := requiredEnv("DISCORD_GUILD_ID")
+	discordAdmins := strings.Split(os.Getenv("DISCORD_ADMIN_USER_IDS"), ",")
+	discordHandler, err := discordapi.NewHandler(db, repository, discordBotToken, discordGuildID, worldID, discordAdmins)
+	if err != nil {
+		return err
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle(httpapi.SyncPath, bearerTokenMiddleware(syncToken, syncHandler))
+	mux.Handle("/api/internal/discord/", discordapi.ServiceTokenMiddleware(discordBotToken, discordHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
