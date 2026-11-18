@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 )
@@ -33,6 +35,9 @@ func (r *FoundryRepository) SyncActor(ctx context.Context, record FoundrySyncRec
 		len(record.ActorSnapshot) == 0 || !json.Valid(record.ActorSnapshot) || record.SnapshotHash == "" {
 		return ErrSyncRecordInvalid
 	}
+	sum := sha256.Sum256(record.ActorSnapshot)
+	if record.SnapshotHash != hex.EncodeToString(sum[:]) { return ErrSyncRecordInvalid }
+	if !json.Valid(record.Character.Attributes) || !json.Valid(record.Character.Skills) { return ErrSyncRecordInvalid }
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil { return fmt.Errorf("begin Foundry sync transaction: %w", err) }
 	defer func() { _ = tx.Rollback() }()
@@ -100,29 +105,48 @@ WHERE foundry_actors.character_id IS NULL
 }
 
 func replaceInventory(ctx context.Context, tx sqlExecer, characterID string, items []InventoryRecord) error {
-	if _, err := tx.ExecContext(ctx, "DELETE FROM inventory_items WHERE character_id = $1", characterID); err != nil {
-		return fmt.Errorf("clear Foundry inventory mirror: %w", err)
-	}
+	ids := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
 	for _, item := range items {
 		if item.FoundryItemID == "" || item.Name == "" || len(item.State) == 0 || !json.Valid(item.State) {
 			return fmt.Errorf("%w: invalid inventory item", ErrSyncRecordInvalid)
 		}
-		var err error
+		if _, exists := seen[item.FoundryItemID]; exists {
+			return fmt.Errorf("%w: duplicate Foundry item ID %s", ErrSyncRecordInvalid, item.FoundryItemID)
+		}
+		seen[item.FoundryItemID] = struct{}{}
+		ids = append(ids, item.FoundryItemID)
+	}
+	encodedIDs, err := json.Marshal(ids)
+	if err != nil { return fmt.Errorf("marshal inventory IDs: %w", err) }
+	if _, err = tx.ExecContext(ctx, `
+DELETE FROM inventory_items
+WHERE character_id = $1
+  AND foundry_item_id IS NOT NULL
+  AND foundry_item_id NOT IN (SELECT jsonb_array_elements_text($2::jsonb))
+`, characterID, encodedIDs); err != nil {
+		return fmt.Errorf("remove stale Foundry inventory items: %w", err)
+	}
+	for _, item := range items {
 		if item.Quantity == nil {
-			// Exact absence remains in state JSON; the schema's relational quantity
-			// default is retained for legacy quantity-oriented queries.
+			// An absent source quantity is retained as null in state. On insert the
+			// schema default applies; on update the previous indexed quantity is kept.
 			_, err = tx.ExecContext(ctx, `
 INSERT INTO inventory_items (character_id, foundry_item_id, name, state)
-VALUES ($1, $2, $3, $4::jsonb)`, characterID, item.FoundryItemID, item.Name, []byte(item.State))
+VALUES ($1, $2, $3, $4::jsonb)
+ON CONFLICT (character_id, foundry_item_id) DO UPDATE SET
+  name = EXCLUDED.name, state = EXCLUDED.state
+`, characterID, item.FoundryItemID, item.Name, []byte(item.State))
 		} else {
 			_, err = tx.ExecContext(ctx, `
 INSERT INTO inventory_items (character_id, foundry_item_id, name, quantity, state)
-VALUES ($1, $2, $3, $4, $5::jsonb)`, characterID, item.FoundryItemID, item.Name, *item.Quantity, []byte(item.State))
+VALUES ($1, $2, $3, $4, $5::jsonb)
+ON CONFLICT (character_id, foundry_item_id) DO UPDATE SET
+  name = EXCLUDED.name, quantity = EXCLUDED.quantity, state = EXCLUDED.state
+`, characterID, item.FoundryItemID, item.Name, *item.Quantity, []byte(item.State))
 		}
-		if err != nil { return fmt.Errorf("insert Foundry item %s: %w", item.FoundryItemID, err) }
+		if err != nil { return fmt.Errorf("upsert Foundry item %s: %w", item.FoundryItemID, err) }
 	}
 	return nil
 }
 
-func nullableString(v *string) any { if v == nil { return nil }; return *v }
-func nullableInt(v *int) any { if v == nil { return nil }; return *v }
