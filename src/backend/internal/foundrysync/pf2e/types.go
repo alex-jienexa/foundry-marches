@@ -51,6 +51,7 @@ type CharacterDto struct {
 	Progression   CharacterProgressionDto `json:"progression"`
 	Build         CharacterBuildDto       `json:"build"`
 	Attributes    CharacterAttributesDto  `json:"attributes"`
+	Statistics    CharacterStatisticsInputDto `json:"statistics"`
 	Resources     CharacterResourcesDto   `json:"resources"`
 	Skills        CharacterSkillsDto      `json:"skills"`
 	Items         []CharacterItemDto      `json:"items"`
@@ -90,6 +91,7 @@ type CharacterBuildDto struct {
 	Background *CharacterItemReferenceDto `json:"background"`
 	Class      *CharacterItemReferenceDto `json:"class"`
 	KeyAbility *string                   `json:"keyAbility"`
+	ClassProficiencies *ClassProficiencyProfileDto `json:"classProficiencies,omitempty"`
 }
 
 type CharacterItemReferenceDto struct {
@@ -179,6 +181,8 @@ type CharacterItemDto struct {
 	Level            *int                    `json:"level"`
 	Equipped         *CharacterEquippedDto   `json:"equipped"`
 	CompendiumSource *string                 `json:"compendiumSource"`
+	Armor             *ArmorItemDataDto       `json:"armor,omitempty"`
+	Runes             *ItemRuneDataDto        `json:"runes,omitempty"`
 }
 
 type CharacterEquippedDto struct {
@@ -199,4 +203,93 @@ type DecodedItem struct {
 type DecodedActor struct {
 	Character   CharacterDto
 	RawSnapshot json.RawMessage
+}
+
+
+// CharacterStatisticsInputDto contains normalized, explicitly persisted inputs
+// that may be used by the optional derived-stat calculator. Missing source data
+// remains nil; the decoder never reconstructs ability scores or proficiency.
+type CharacterStatisticsInputDto struct {
+	Abilities      map[string]AbilityScoreDto       `json:"abilities"`
+	Proficiencies  CharacterProficienciesDto        `json:"proficiencies"`
+}
+
+// AbilityScoreDto distinguishes the stored score from a stored modifier.
+type AbilityScoreDto struct {
+	Score    *int `json:"score"`
+	Modifier *int `json:"modifier"`
+}
+
+type CharacterProficienciesDto struct {
+	Perception *ProficiencyDto            `json:"perception"`
+	Saves      map[string]ProficiencyDto  `json:"saves"`
+	Defenses   map[string]ProficiencyDto  `json:"defenses"`
+}
+
+type ProficiencyDto struct {
+	Rank   *int   `json:"rank"`
+	Source string `json:"source,omitempty"`
+}
+
+// ClassProficiencyProfileDto is a class item's progression baseline, not
+// proof of the character's current rank. Consumers must not silently treat it
+// as an Actor-prepared proficiency value.
+type ClassProficiencyProfileDto struct {
+	PerceptionRank *int           `json:"perceptionRank"`
+	SavingThrows   map[string]int `json:"savingThrows"`
+	Defenses       map[string]int `json:"defenses"`
+	TrainedSkills  []string       `json:"trainedSkills"`
+	AdditionalSkills *int         `json:"additionalSkills"`
+}
+
+type ArmorItemDataDto struct {
+	ACBonus  *int `json:"acBonus"`
+	DexCap   *int `json:"dexCap"`
+	Strength *int `json:"strength"`
+}
+
+type ItemRuneDataDto struct {
+	Potency  *int     `json:"potency"`
+	Resilient *int    `json:"resilient"`
+	Property []string `json:"property"`
+}
+
+type ModifierKind string
+
+const (
+	ModifierItem       ModifierKind = "item"
+	ModifierPotency    ModifierKind = "potency"
+	ModifierResilient  ModifierKind = "resilient"
+	ModifierUntyped    ModifierKind = "untyped"
+)
+
+// DerivedStatDto is a calculated value plus its auditable arithmetic.
+// Value is nil unless the calculation is complete.
+type DerivedStatDto struct {
+	Value     *int                    `json:"value"`
+	Status    CalculationStatus       `json:"status"`
+	Breakdown []ModifierBreakdownDto  `json:"breakdown"`
+	Warnings  []string                `json:"warnings,omitempty"`
+}
+
+type CalculationStatus string
+
+const (
+	CalculationComplete    CalculationStatus = "complete"
+	CalculationIncomplete  CalculationStatus = "incomplete"
+	CalculationUnavailable CalculationStatus = "unavailable"
+)
+
+type ModifierBreakdownDto struct {
+	Source string       `json:"source"`
+	Kind   ModifierKind `json:"kind"`
+	Value  int          `json:"value"`
+}
+
+type CharacterDerivedStatsDto struct {
+	Perception DerivedStatDto            `json:"perception"`
+	AC         DerivedStatDto            `json:"ac"`
+	Saves      map[string]DerivedStatDto `json:"saves"`
+	Skills     map[string]DerivedStatDto `json:"skills"`
+	Version    string                    `json:"calculationVersion"`
 }
