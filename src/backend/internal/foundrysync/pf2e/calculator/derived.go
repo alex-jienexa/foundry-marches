@@ -87,14 +87,16 @@ func calculateSave(character pf2e.CharacterDto, save, ability string, rank *Rank
 	}
 	resilient, runeSource, runeWarnings := resilientItemBonus(character)
 	flatBonus, flatSources, flatWarnings := staticItemBonus(character, save)
+	bonusKind := pf2e.ModifierItem
 	if resilient > flatBonus {
 		flatBonus = resilient
 		flatSources = []string{runeSource}
+		bonusKind = pf2e.ModifierResilient
 	}
 	if flatBonus != 0 {
 		stat.Value = intPointer(*stat.Value + flatBonus)
 		stat.Breakdown = append(stat.Breakdown, pf2e.ModifierBreakdownDto{
-			Source: strings.Join(flatSources, ", "), Kind: pf2e.ModifierResilient, Value: flatBonus,
+			Source: strings.Join(flatSources, ", "), Kind: bonusKind, Value: flatBonus,
 		})
 	}
 	stat.Warnings = mergeWarnings(stat.Warnings, runeWarnings, flatWarnings)
