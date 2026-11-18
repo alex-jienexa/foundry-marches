@@ -402,6 +402,7 @@ VALUES ($1, $2, '{"_id":"other","name":"Another Hero","type":"character"}'::json
 `, worldID, otherActorUUID); err != nil {
 		t.Fatalf("insert second discovered Actor: %v", err)
 	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM foundry_actors WHERE world_id = $1", worldID) })
 	if err := repo.LinkActor(ctx, worldID, otherActorUUID, characterID, userID); err != ErrCharacterAlreadyLinked {
 		t.Fatalf("link second Actor to occupied character error = %v, want ErrCharacterAlreadyLinked", err)
 	}
@@ -428,6 +429,7 @@ VALUES ($1, $2, '{"_id":"npc","name":"Guard","type":"npc"}'::jsonb)
 `, worldID, actorUUID); err != nil {
 		t.Fatalf("insert NPC snapshot: %v", err)
 	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM foundry_actors WHERE world_id = $1", worldID) })
 
 	repo, err := NewFoundryRepository(db)
 	if err != nil {
