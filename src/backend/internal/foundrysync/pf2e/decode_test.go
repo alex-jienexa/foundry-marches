@@ -268,3 +268,55 @@ func TestDecodeExplicitAbilityAndProficiencyInputs(t *testing.T) {
 		t.Fatalf("unarmored proficiency missing: %+v", got)
 	}
 }
+
+
+func TestDecodeCompleteClassProgressionAndFeatureReferences(t *testing.T) {
+	decoded, err := DecodeActor(readFixture(t, fixtureActor))
+	if err != nil { t.Fatal(err) }
+	class := decoded.Character.Build.ClassProficiencies
+	if class == nil { t.Fatal("class progression missing") }
+	if class.PerceptionRank == nil || *class.PerceptionRank != 2 { t.Fatalf("perception baseline: %+v", class.PerceptionRank) }
+	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 {
+		t.Fatalf("saving throw baselines: %+v", class.SavingThrows)
+	}
+	if class.Defenses["heavy"] != 1 || class.Defenses["unarmored"] != 1 {
+		t.Fatalf("defense baselines: %+v", class.Defenses)
+	}
+	if class.Attacks["martial"] != 2 || class.Attacks["advanced"] != 1 || class.Attacks["simple"] != 2 || class.Attacks["unarmed"] != 2 {
+		t.Fatalf("attack baselines: %+v", class.Attacks)
+	}
+	if class.SpellcastingRank == nil || *class.SpellcastingRank != 0 {
+		t.Fatalf("spellcasting baseline: %+v", class.SpellcastingRank)
+	}
+	if len(class.Features) != 15 {
+		t.Fatalf("got %d class feature references, want 15", len(class.Features))
+	}
+	foundBravery := false
+	for _, feature := range class.Features {
+		if feature.Name == "Храбрость" {
+			foundBravery = feature.UUID == "Compendium.pf2e.classfeatures.Item.GJKJafDGuX4BeAeN" &&
+				feature.Level != nil && *feature.Level == 3
+		}
+	}
+	if !foundBravery { t.Fatal("Bravery class feature reference was not preserved") }
+	if len(class.RuleElements) != 2 || class.RuleElements[0].Key == "" {
+		t.Fatalf("class Rule Elements not preserved: %+v", class.RuleElements)
+	}
+}
+
+func TestDecodeRuleElementsOnActorItems(t *testing.T) {
+	decoded, err := DecodeActor(readFixture(t, fixtureActor))
+	if err != nil { t.Fatal(err) }
+	var found bool
+	for _, item := range decoded.Character.Items {
+		if item.Slug == nil || *item.Slug != "hefty-hauler" { continue }
+		found = true
+		if len(item.RuleElements) != 2 {
+			t.Fatalf("Hefty Hauler Rule Elements: %+v", item.RuleElements)
+		}
+		if item.RuleElements[0].Key != "ActiveEffectLike" || len(item.RuleElements[0].Raw) == 0 {
+			t.Fatalf("Rule Element projection/raw missing: %+v", item.RuleElements[0])
+		}
+	}
+	if !found { t.Fatal("Hefty Hauler Actor Item not found") }
+}
