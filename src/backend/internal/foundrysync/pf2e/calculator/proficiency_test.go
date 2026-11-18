@@ -1,0 +1,89 @@
+package calculator
+
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"testing"
+
+	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
+)
+
+func loadActorFixture(t *testing.T) []byte {
+	t.Helper()
+	_, file, _, ok := runtime.Caller(0)
+	if !ok { t.Fatal("runtime.Caller failed") }
+	path := filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "..", "..", "docs", "foundry", "mxgc0DRWC8bA9ruI-20261118T073146Z-actor.json")
+	data, err := os.ReadFile(path)
+	if err != nil { t.Fatalf("read Actor fixture: %v", err) }
+	return data
+}
+
+func TestResolveFighterClassBaselineAndSelectedSkill(t *testing.T) {
+	decoded, err := pf2e.DecodeActor(loadActorFixture(t))
+	if err != nil { t.Fatal(err) }
+	got := ResolveProficiencyRanks(decoded.Character)
+	if got.Perception == nil || got.Perception.Rank != 2 {
+		t.Fatalf("perception rank = %+v, want 2", got.Perception)
+	}
+	for key, want := range map[string]int{"fortitude": 2, "reflex": 2, "will": 1} {
+		if rank := got.Saves[key]; rank.Rank != want {
+			t.Fatalf("%s rank = %+v, want %d", key, rank, want)
+		}
+	}
+	for key, want := range map[string]int{"heavy": 1, "light": 1, "medium": 1, "unarmored": 1} {
+		if rank := got.Defenses[key]; rank.Rank != want {
+			t.Fatalf("%s defense rank = %+v, want %d", key, rank, want)
+		}
+	}
+	for key, want := range map[string]int{"advanced": 1, "martial": 2, "simple": 2, "unarmed": 2} {
+		if rank := got.Attacks[key]; rank.Rank != want {
+			t.Fatalf("%s attack rank = %+v, want %d", key, rank, want)
+		}
+	}
+	if got.Spellcasting == nil || got.Spellcasting.Rank != 0 {
+		t.Fatalf("spellcasting rank = %+v, want 0", got.Spellcasting)
+	}
+	if rank := got.Skills["athletics"]; rank.Rank != 1 {
+		t.Fatalf("selected fighter skill rank = %+v, want trained (1)", rank)
+	}
+	if !got.Complete || len(got.Warnings) != 0 {
+		t.Fatalf("unexpected incomplete result: %+v", got.Warnings)
+	}
+}
+
+func TestResolveOnlySupportedStaticAndBracketedUpgrades(t *testing.T) {
+	character := pf2e.CharacterDto{
+		Progression: pf2e.CharacterProgressionDto{Level: intPointer(8)},
+		Build: pf2e.CharacterBuildDto{
+			ClassProficiencies: &pf2e.ClassProficiencyProfileDto{
+				PerceptionRank: intPointer(1),
+				RuleElements: []pf2e.RuleElementDto{
+					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.attributes.perception.rank", Value: []byte("2")},
+					{Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.saves.will.rank", Value: []byte(`{"brackets":[{"start":1,"end":6,"value":2},{"start":7,"value":3}]}`)},
+				},
+			},
+		},
+	}
+	got := ResolveProficiencyRanks(character)
+	if got.Perception == nil || got.Perception.Rank != 2 { t.Fatalf("perception upgrade not applied: %+v", got.Perception) }
+	if got.Saves["will"].Rank != 3 { t.Fatalf("level bracket not applied: %+v", got.Saves["will"]) }
+	if len(got.Warnings) != 0 { t.Fatalf("unexpected warnings: %v", got.Warnings) }
+}
+
+func TestResolveConditionalRuleIsReportedNotExecuted(t *testing.T) {
+	character := pf2e.CharacterDto{
+		Build: pf2e.CharacterBuildDto{ClassProficiencies: &pf2e.ClassProficiencyProfileDto{
+			SavingThrows: map[string]int{"will": 1},
+			RuleElements: []pf2e.RuleElementDto{{
+				Key: "ActiveEffectLike", Mode: "upgrade", Path: "system.saves.will.rank",
+				Value: []byte("2"), Predicate: []byte(`["feature:some-condition"]`),
+			}},
+		}},
+	}
+	got := ResolveProficiencyRanks(character)
+	if got.Saves["will"].Rank != 1 { t.Fatalf("conditional upgrade should not be applied: %+v", got.Saves["will"]) }
+	if got.Complete || len(got.Warnings) == 0 { t.Fatalf("conditional rule should mark result incomplete: %+v", got) }
+}
+
+func intPointer(value int) *int { return &value }
