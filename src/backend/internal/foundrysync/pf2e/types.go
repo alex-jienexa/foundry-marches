@@ -320,10 +320,28 @@ type ModifierBreakdownDto struct {
 	Value  int          `json:"value"`
 }
 
+type CalculatedProficiencyRankDto struct {
+	Rank    int      `json:"rank"`
+	Sources []string `json:"sources"`
+}
+
+type CharacterProficiencyRanksDto struct {
+	Perception             *CalculatedProficiencyRankDto            `json:"perception,omitempty"`
+	Saves                  map[string]CalculatedProficiencyRankDto  `json:"saves"`
+	Defenses               map[string]CalculatedProficiencyRankDto  `json:"defenses"`
+	Attacks                map[string]CalculatedProficiencyRankDto  `json:"attacks"`
+	Spellcasting           *CalculatedProficiencyRankDto            `json:"spellcasting,omitempty"`
+	SpellcastingTraditions map[string]CalculatedProficiencyRankDto  `json:"spellcastingTraditions"`
+	Skills                 map[string]CalculatedProficiencyRankDto  `json:"skills"`
+	Warnings               []string                                 `json:"warnings,omitempty"`
+	Complete               bool                                     `json:"complete"`
+}
+
 type CharacterDerivedStatsDto struct {
-	Perception DerivedStatDto            `json:"perception"`
-	AC         DerivedStatDto            `json:"ac"`
-	Saves      map[string]DerivedStatDto `json:"saves"`
-	Skills     map[string]DerivedStatDto `json:"skills"`
-	Version    string                    `json:"calculationVersion"`
+	Proficiencies CharacterProficiencyRanksDto `json:"proficiencies"`
+	Perception    DerivedStatDto               `json:"perception"`
+	AC            DerivedStatDto               `json:"ac"`
+	Saves         map[string]DerivedStatDto    `json:"saves"`
+	Skills        map[string]DerivedStatDto    `json:"skills"`
+	Version       string                       `json:"calculationVersion"`
 }
