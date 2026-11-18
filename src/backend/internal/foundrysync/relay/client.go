@@ -17,11 +17,11 @@ import (
 const defaultMaxResponseBytes int64 = 16 << 20
 
 var (
-	ErrInvalidConfig     = errors.New("invalid Foundry Relay client configuration")
-	ErrResponseTooLarge  = errors.New("Foundry Relay response exceeds configured size limit")
-	ErrUnexpectedStatus  = errors.New("Foundry Relay returned an unsuccessful HTTP status")
-	ErrDocumentMismatch  = errors.New("Foundry Relay returned a different document than requested")
-	ErrWorldMismatch     = errors.New("Foundry Relay client is configured for a different world")
+	ErrInvalidConfig    = errors.New("invalid Foundry Relay client configuration")
+	ErrResponseTooLarge = errors.New("Foundry Relay response exceeds configured size limit")
+	ErrUnexpectedStatus = errors.New("Foundry Relay returned an unsuccessful HTTP status")
+	ErrDocumentMismatch = errors.New("Foundry Relay returned a different document than requested")
+	ErrWorldMismatch    = errors.New("Foundry Relay client is configured for a different world")
 )
 
 // Config contains the connection details for one trusted, administrator-configured
