@@ -1,62 +1,86 @@
 # Передача контекста FoundryMarches
 
-## Текущее состояние
+## Текущее состояние на 2026-11-18
 
-TASK-002 начата в ветке `feat/task-002-integration-spike`, созданной от публичного `main` commit `1f70419cb3f7f5ba673cd7803c244335bf50d352`. Запись через GitHub теперь работает. Ветка не слита в main. Локальный git status недоступен через GitHub connector.
+Рабочая ветка: `feat/task-004-character-decoder`. Ветка не слита в `main`; владелец планирует открыть PR самостоятельно после проверки этих изменений. Не создавать PR и не выполнять merge.
 
-## Подтверждено владельцем
+Последний подтверждённый code HEAD перед документационным checkpoint: `4ca6fa87c4b7b40e25832f7ca15400bb39f5d713`. Документационные изменения после него фиксируются отдельными commit в этой же ветке.
 
-- Foundry VTT 14, build 367; PF2e 8.7.0.
-- Тестовый Actor `АНДРЕЙ`, UUID `Actor.mxgc0DRWC8bA9ruI`; владелец разрешил выполнять тестовую работу над ним.
-- Хост Arch Linux; Docker и Docker Compose установлены.
-- `foundryvtt-container` публикует порт 30000.
-- `catalog-container` публикует 127.0.0.1:8080 и категорически вне scope; не трогать.
-- Установлен, но не настроен модуль ThreeHats `foundryvtt-rest-api`; владелец разрешил перенастроить/переустановить.
-- WebDAV доступен; тестировать только в отдельной директории вне Obsidian notes.
-- Владелец просит подробные инструкции.
+## Подтверждённая инфраструктура
 
-## Выполнено в этой ветке
+- Foundry VTT 14 build 367, PF2e 8.7.0.
+- ThreeHats self-hosted Foundry REST API Relay 3.4.1; Pairing подтверждён.
+- Relay: `https://relay.jiene.ru`; WebSocket: `wss://relay.jiene.ru/relay`.
+- Caddy обслуживает HTTPS; Foundry доступен через `foundry.jiene.ru`.
+- Docker Compose: PostgreSQL 18 Alpine и Go API.
+- API опубликован на host loopback `127.0.0.1:8080`; PostgreSQL не публикует host port.
+- `GET /healthz` вернул HTTP 200.
+- Не трогать `catalog-container` и `rosochkinsad.ru`.
+- Не удалять PostgreSQL volume; не выполнять destructive DB operations без отдельного разрешения.
+- Секреты не копировать в Git, чат или документацию.
 
-- TASK-002 переведена в `in_progress`.
-- Обновлён `state/current.yaml`.
-- Создан `docs/architecture/decisions/spike-0-results.md` с первичными выводами и планом.
-- Подтверждено, что module repo и relay repo — два отдельных компонента.
-- Никаких live-запросов, изменений Foundry Actor, WebDAV или Codex не выполнялось.
-- Результаты интеграций пока не подтверждены.
+## Подтверждённый результат Foundry sync
 
-## Блокеры и правила безопасности
+После обновления PF2e владелец синхронизировал мир Foundry и повторил sync приложения. Успешно обнаружены и сохранены 11 Actor snapshots в `foundry_actors`.
 
-1. Не изменять основной игровой Actor до согласования конкретного тестового Actor, допустимых операций, резервного снимка и плана восстановления.
-2. Для relay нужны способ установки/версии и безопасный способ передать конфигурацию; не публиковать API keys в репозитории/чате.
-3. WebDAV тестировать только в отдельном изолированном каталоге, например `/FoundryMarches-spike/`, с отдельными тестовыми файлами; не читать/перезаписывать реальные заметки кампании без отдельного разрешения.
-4. Нужны обезличенные JSON-экспорты журналов Campaign Codex.
-5. Отсутствующее исходное ТЗ v1.0/два дополнения остаются gap; не реконструировать сценарии по догадкам.
+- Все записи относятся к внутреннему UUID WorldID приложения `00000000-0000-4000-8000-000000000001`.
+- У всех 11 записей `character_id IS NULL`; disposition — `snapshot_only`.
+- Это ожидаемо: приложение не создаёт персонажей автоматически и не выводит ownership из косвенных признаков.
+- Relay identifier `westmarches` не используется как WorldID приложения.
+- Синхронизация read-only; Foundry Actor не изменялись.
 
-## Следующие действия
+## Код в рабочей ветке
 
-1. Получить read-only Docker networks/mounts и текущий manifest/version Foundry module.
-2. Определить точный relay product/repository/version и deployment method; проверить его API/schema/config.
-3. Подготовить WebDAV test directory и получить read/write ETag/If-Match tests.
-4. Получить Codex JSON exports и исследовать формат без записи обратно.
-5. Провести тесты Foundry read, coin inventory, XP idempotency, level-up, item UUID, SSE, headless session, relay quota.
-6. Зафиксировать таблицу результатов с версиями, командами, фактическими ответами, ограничениями и итогом relay vs Foundry Bridge.
-7. TASK-003 остаётся независимой и может выполняться параллельно при разделении владения файлами.
+- Go module расположен в `src/backend/`.
+- Bootstrap REST API и `GET /healthz`.
+- Relay HTTP adapter, world discovery/sync service.
+- PF2e Actor DTO/decoder и частичный calculator.
+- Persistence mapper/repository для characters, foundry_actors и inventory.
+- Unit/HTTP tests и opt-in PostgreSQL integration tests.
+- Docker Compose и Dockerfile.
+- CI workflow с jobs: documentation, database (PostgreSQL 15/16) и backend (gofmt, go test, go vet).
 
-## Текущий commit
+Наличие CI workflow подтверждено, но GitHub Actions runs для этой ветки на момент проверки отсутствовали. Не заявлять успешный удалённый прогон до фактического результата после PR.
 
-Изменения PAD/TASK-002 в ветке `feat/task-002-integration-spike`; см. историю ветки. Live-интеграции ещё не проверялись.
+## Состояние этапов
 
-## Live-обновление — 2026-11-17
+- TASK-002 / этап 0 — `in_progress`: Relay и sync проверены; WebDAV ETag/If-Match, Codex exports, SSE/headless session и usage/quota остаются pending.
+- TASK-003 / этап 1 — `in_progress`: bootstrap, PostgreSQL/Compose, health и CI есть; Discord OAuth, sessions, RBAC, audit, migrations, backup/restore не завершены.
+- TASK-004 / этап 2 — `in_progress`: decoder, adapter, persistence и world sync есть; явная Actor binding, approval, limits/NPC и полная обработка job/retry не реализованы.
+- TASK-005…TASK-013 — backlog.
 
-### Подтверждено владельцем
-- Relay 3.4.1 развёрнут на Arch Linux host в `/opt/foundry-marches-relay`; SQLite, persistent `./data:/app/data`, host bind `127.0.0.1:3010:3010`.
-- Образ закреплён как `threehats/foundryvtt-rest-api-relay:3.4.1@sha256:60df34aca78968f072a77e7d19358073aa514175e0ecec43406cb1a1ed64948e` (linux/amd64).
-- Caddy проксирует `relay.jiene.ru` → `127.0.0.1:3010`; HTTPS и HTTP→HTTPS redirect проверены. Foundry работает через `foundry.jiene.ru`.
-- Foundry options: hostname `foundry.jiene.ru`, proxyPort 443, proxySSL true.
-- Foundry module URL изменён на `wss://relay.jiene.ru/relay`; admin login и Pairing успешны.
-- REST read smoke test: `GET /get` с UUID `Actor.mxgc0DRWC8bA9ruI` и clientId `fvtt_cca540151c686a43` вернул entity-result с Actor name `АНДРЕЙ`, type character, Foundry 14.367, PF2e 8.7.0, level 1, XP 0, HP 0, items [].
-- Проверка была read-only; временный JSON удалён, API key в репозиторий/чат не попадал.
-- Подробный журнал, точная конфигурация и результаты — `docs/architecture/decisions/spike-0-results.md`.
+## Следующий рекомендуемый шаг
 
-### Не считать завершённым
-Coins/inventory model, XP write + operation flag/idempotency, level-up, item UUID grant, SSE, headless session, фактический quota/usage accounting, WebDAV ETag/If-Match и Campaign Codex export остаются pending. Не выполнять write tests до snapshot/restore подготовки и подтверждения конкретной операции владельцем.
+1. После PR/merge владельцем и подтверждения актуального HEAD продолжить в рабочей ветке.
+2. Спроектировать и реализовать явную привязку существующего application character к Foundry Actor:
+   - Actor должен иметь type `character`;
+   - Actor должен принадлежать настроенному world UUID;
+   - Actor не должен быть связан с другим application character;
+   - application character не должен быть связан с другим Actor;
+   - операция должна требовать соответствующего разрешения и быть атомарной;
+   - не создавать персонажей и не назначать владельцев автоматически.
+3. Добавить API, DB constraints/transactions и tests для link/unlink policy; до изменения схемы изучить существующие constraints.
+4. Затем approval и полноценный sync lifecycle.
+5. Отдельно вернуться к оставшимся проверкам spike и к недостающим исходным требованиям.
+
+## Архитектурные правила
+
+- Foundry — авторитетный источник PF2e mechanics; текущая интеграция read-only.
+- Не менять Foundry Actor.
+- Сохранять raw snapshots и неизвестные поля; не выдумывать отсутствующие данные.
+- Различать `Actor.items[]` и ссылки в `system.items` классов/ancestry/background.
+- Использовать IDs/slugs/UUID/compendiumSource, не локализованные имена.
+- Не исполнять произвольные Rule Elements; unsupported expressions/predicates отмечать явно.
+- Не менять внутренний WorldID UUID на Relay identifier.
+- Не делать автоматическое создание персонажей или inference ownership.
+- Не реализовывать XP write в Foundry без отдельного решения и разрешения.
+- Все исполняемые/тестируемые исходники размещать под `src/`; документация/PAD — вне `src/`.
+
+## Документы
+
+- Runtime результаты: `docs/verification.md`.
+- API и Compose инструкция: `docs/integrations/foundry-world-sync-api.md`.
+- Глобальная дорожная карта: `docs/development/roadmap.md`.
+- Контрольные точки: `docs/development/milestones.md`.
+- Вопросы и пробелы: `docs/development/open-questions.md`, `docs/development/source-gaps.md`.
+- Текущая машина состояния: `state/current.yaml`.
