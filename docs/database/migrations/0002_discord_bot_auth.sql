@@ -47,6 +47,6 @@ GRANT SELECT ON users, discord_accounts, roles, permissions,
   role_permissions, user_roles, discord_role_map, characters, foundry_actors
   TO foundry_api;
 GRANT INSERT, UPDATE ON users, discord_accounts TO foundry_api;
-GRANT INSERT, DELETE ON user_roles, discord_role_map TO foundry_api;
+GRANT INSERT, UPDATE, DELETE ON user_roles, discord_role_map TO foundry_api;
 GRANT INSERT ON audit_log TO foundry_api;
 GRANT USAGE, SELECT ON SEQUENCE audit_log_id_seq TO foundry_api;
