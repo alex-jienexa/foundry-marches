@@ -2,7 +2,7 @@ package httpapi
 
 import (
 	"context"
-		"net/http"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"

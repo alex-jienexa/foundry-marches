@@ -270,7 +270,6 @@ func TestFoundryRepositoryPostgresIntegrationRollsBackUnlinkedActor(t *testing.T
 	}
 }
 
-
 func TestFoundryRepositorySyncDiscoveredNPCStoresSnapshotOnly(t *testing.T) {
 	db := openFoundryIntegrationDB(t)
 	ctx := context.Background()

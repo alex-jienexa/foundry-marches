@@ -24,22 +24,22 @@ type ActorSnapshotSink interface {
 }
 
 type ActorSyncResult struct {
-	UUID        string                                  `json:"uuid"`
-	Name        string                                  `json:"name"`
-	ActorType   string                                  `json:"actorType,omitempty"`
+	UUID        string                                 `json:"uuid"`
+	Name        string                                 `json:"name"`
+	ActorType   string                                 `json:"actorType,omitempty"`
 	Disposition characters.FoundryDiscoveryDisposition `json:"disposition,omitempty"`
-	Error       string                                  `json:"error,omitempty"`
+	Error       string                                 `json:"error,omitempty"`
 }
 
 type SyncReport struct {
-	WorldID           string            `json:"worldId"`
-	StartedAt         time.Time         `json:"startedAt"`
-	FinishedAt        time.Time         `json:"finishedAt"`
-	Discovered        int               `json:"discovered"`
-	CharactersSynced  int               `json:"charactersSynced"`
-	SnapshotsOnly     int               `json:"snapshotsOnly"`
-	Failed            int               `json:"failed"`
-	Results           []ActorSyncResult `json:"results"`
+	WorldID          string            `json:"worldId"`
+	StartedAt        time.Time         `json:"startedAt"`
+	FinishedAt       time.Time         `json:"finishedAt"`
+	Discovered       int               `json:"discovered"`
+	CharactersSynced int               `json:"charactersSynced"`
+	SnapshotsOnly    int               `json:"snapshotsOnly"`
+	Failed           int               `json:"failed"`
+	Results          []ActorSyncResult `json:"results"`
 }
 
 type SyncService struct {
@@ -91,7 +91,9 @@ func (s *SyncService) SyncAll(ctx context.Context) (SyncReport, error) {
 			report.Results = append(report.Results, result)
 			continue
 		}
-		var actorDocument struct { Type string `json:"type"` }
+		var actorDocument struct {
+			Type string `json:"type"`
+		}
 		_ = json.Unmarshal(snapshot, &actorDocument)
 		result.ActorType = actorDocument.Type
 		disposition, syncErr := s.sink.SyncDiscoveredActor(ctx, s.worldID, actor.UUID, snapshot)
