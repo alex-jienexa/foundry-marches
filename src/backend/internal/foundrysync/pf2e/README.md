@@ -134,6 +134,8 @@ semantics become a database requirement.
 
 The persistence package uses `database/sql` and accepts a caller-configured
 database handle; driver selection and connection-pool lifecycle belong to the
-application composition root. Mapper tests run with `go test ./...`. A live
+application composition root. Mapper tests and recording-driver transaction tests
+run with `go test ./...`. These tests verify mapping, transaction ordering and
+rollback behavior, but they do not execute SQL against PostgreSQL. A live
 PostgreSQL integration test still needs to be wired into the project test
 environment before this adapter is considered fully verified.
