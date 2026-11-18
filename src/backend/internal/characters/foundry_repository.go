@@ -17,6 +17,8 @@ var (
 
 type SQLDB interface {
 	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
 type FoundryRepository struct{ db SQLDB }
