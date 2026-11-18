@@ -37,7 +37,7 @@ func TestGetActorSnapshotUnwrapsAndValidatesRelayEnvelope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := client.GetActorSnapshot(context.Background(), "application-world-id", actorUUID)
+	got, err := client.GetActorSnapshot(context.Background(), "world", actorUUID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestResolveCompendiumItemReturnsItemDocument(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := NewClient(Config{BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+	client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func TestGetDocumentRejectsOversizedResponse(t *testing.T) {
 	defer server.Close()
 
 	client, err := NewClient(Config{
-		BaseURL: server.URL, ClientID: "client", APIKey: "secret", MaxResponseBytes: 32,
+		WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret", MaxResponseBytes: 32,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +122,6 @@ func TestGetActorSnapshotRejectsDifferentActor(t *testing.T) {
 		t.Fatalf("got %v, want ErrDocumentMismatch", err)
 	}
 }
-
 
 func TestGetActorSnapshotRejectsDifferentConfiguredWorld(t *testing.T) {
 	client, err := NewClient(Config{
