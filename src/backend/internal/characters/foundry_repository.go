@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrActorLinkedElsewhere = errors.New("Foundry Actor is already linked to another character")
+	ErrActorNotLinked = errors.New("Foundry Actor is not linked to this character")
 	ErrSyncRecordInvalid = errors.New("invalid Foundry sync record")
 )
 
@@ -86,22 +86,21 @@ ON CONFLICT (id) DO UPDATE SET
 
 func upsertFoundryActor(ctx context.Context, tx sqlExecer, record FoundrySyncRecord) error {
 	const query = `
-INSERT INTO foundry_actors (world_id, actor_uuid, character_id, snapshot, snapshot_hash, last_synced_at)
-VALUES ($1, $2, $3, $4::jsonb, $5, now())
-ON CONFLICT (world_id, actor_uuid) DO UPDATE SET
-  character_id = COALESCE(foundry_actors.character_id, EXCLUDED.character_id),
-  snapshot = EXCLUDED.snapshot,
-  snapshot_hash = EXCLUDED.snapshot_hash,
-  last_synced_at = now()
-WHERE foundry_actors.character_id IS NULL
-   OR foundry_actors.character_id = EXCLUDED.character_id
+UPDATE foundry_actors
+SET snapshot = $4::jsonb,
+    snapshot_hash = $5,
+    last_synced_at = now(),
+    updated_at = now()
+WHERE world_id = $1
+  AND actor_uuid = $2
+  AND character_id = $3
 `
 	result, err := tx.ExecContext(ctx, query, record.WorldID, record.ActorUUID,
 		record.CharacterID, []byte(record.ActorSnapshot), record.SnapshotHash)
-	if err != nil { return fmt.Errorf("upsert Foundry Actor %s: %w", record.ActorUUID, err) }
+	if err != nil { return fmt.Errorf("update linked Foundry Actor %s: %w", record.ActorUUID, err) }
 	affected, err := result.RowsAffected()
 	if err != nil { return fmt.Errorf("check Foundry Actor link: %w", err) }
-	if affected == 0 { return ErrActorLinkedElsewhere }
+	if affected == 0 { return ErrActorNotLinked }
 	return nil
 }
 
