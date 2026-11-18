@@ -77,3 +77,17 @@ func TestDecodeRequestRejectsUnknownFieldsAndTrailingJSON(t *testing.T) {
 		}
 	})
 }
+
+func TestDecodeRequestAcceptsEmbeddedIdentityFields(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"guild_id":"guild-1","discord_user_id":"user-1","discord_role_ids":["role-1"],"username":"player"}`))
+	rec := httptest.NewRecorder()
+	var decoded registerRequest
+	if !decodeRequest(rec, req, &decoded) {
+		t.Fatalf("decodeRequest rejected valid embedded identity fields: %s", rec.Body.String())
+	}
+	if decoded.GuildID != "guild-1" || decoded.DiscordUserID != "user-1" ||
+		len(decoded.DiscordRoleIDs) != 1 || decoded.DiscordRoleIDs[0] != "role-1" ||
+		decoded.Username != "player" {
+		t.Fatalf("decoded request = %+v, identity fields were not preserved", decoded)
+	}
+}
