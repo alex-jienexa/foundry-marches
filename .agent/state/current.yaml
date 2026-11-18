@@ -1,18 +1,19 @@
 schema_version: '1.0'
 project_status: in_progress
 health: at_risk
-updated_at: '2026-11-17T23:50:00+03:00'
-current_focus: TASK-002 — интеграционный спайк; self-hosted Relay и read-only Actor read подтверждены, продолжаются остальные проверки
+updated_at: '2026-11-18T00:00:00+03:00'
+current_focus: TASK-002 — интеграционный спайк; self-hosted Relay и read-only PF2e Actor schema inspection подтверждены; продолжается исследование полей и подготовка тестовых данных
 active_task: TASK-002
 active_branch: feat/task-002-integration-spike
-last_checkpoint: Self-hosted Relay 3.4.1 deployed; Foundry Pairing and read-only PF2e Actor GET passed (2026-11-17)
+last_checkpoint: Self-hosted Relay 3.4.1 deployed; Foundry Pairing and read-only PF2e Actor GET/schema inspection passed (2026-11-18)
 last_verified_commit: 3032d2da61c090bde83887f564f9487d1e99e27e
 open_blockers:
 - Для полного сопоставления нужен отсутствующий текст ТЗ v1.0/дополнений
 - Нет отдельного тестового мира; записи в основной игровой Actor не согласованы по конкретным операциям/откату
 - Нужны read-only сведения о Docker networks/mounts и текущем module manifest; отдельная WebDAV directory и образцы Codex
 next_actions:
-- Выполнить read-only проверку структуры PF2e inventory/coins; текущий Actor вернул пустой items array
+- Выполнить read-only проверку оставшихся разделов system: resources, abilities, initiative, pfs, exploration
+- Подготовить отдельного заполненного тестового Actor для проверки inventory/coins; текущий Actor подтверждённо пустой
 - Подготовить безопасный snapshot/restore план перед любыми write tests
 - После отдельного подтверждения выполнить XP write/idempotency и item UUID tests
 - Проверить SSE, headless GM session, usage/quota, WebDAV ETag/If-Match и Campaign Codex export
