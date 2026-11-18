@@ -2,9 +2,9 @@ package httpapi
 
 import (
 	"context"
-	"errors"
-	"net/http"
+		"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync"
@@ -69,7 +69,7 @@ func TestHandlerReturnsConflictWhenSyncIsAlreadyRunning(t *testing.T) {
 }
 
 func TestNewHandlerRequiresSyncRunner(t *testing.T) {
-	if _, err := NewHandler(nil); !errors.Is(err, errors.New("Foundry sync runner is required")) && err == nil {
+	if _, err := NewHandler(nil); err == nil {
 		t.Fatal("expected nil runner to be rejected")
 	}
 }
