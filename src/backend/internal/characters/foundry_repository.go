@@ -41,7 +41,7 @@ func (r *FoundryRepository) SyncActor(ctx context.Context, record FoundrySyncRec
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil { return fmt.Errorf("begin Foundry sync transaction: %w", err) }
 	defer func() { _ = tx.Rollback() }()
-	if _, err = tx.ExecContext(ctx, "SELECT set_config('app.writer', 'foundry_sync', true)"); err != nil {
+	if _, err = tx.ExecContext(ctx, "SET LOCAL app.writer = 'foundry_sync'"); err != nil {
 		return fmt.Errorf("set Foundry sync writer: %w", err)
 	}
 	if err = upsertCharacter(ctx, tx, record.Character); err != nil { return err }
