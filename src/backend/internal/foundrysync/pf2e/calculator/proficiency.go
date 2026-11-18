@@ -1,0 +1,293 @@
+package calculator
+
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
+)
+
+// RankValue is the effective proficiency rank known to this calculator.
+// Sources records every supported source that established or matched the rank.
+type RankValue struct {
+	Rank    int
+	Sources []string
+}
+
+// ProficiencyRanks is a deliberately limited view of PF2e proficiency.
+// It does not represent prepared roll modifiers or situational bonuses.
+type ProficiencyRanks struct {
+	Perception   *RankValue
+	Saves        map[string]RankValue
+	Defenses     map[string]RankValue
+	Attacks      map[string]RankValue
+	Spellcasting *RankValue
+	Skills       map[string]RankValue
+	Warnings     []string
+	Complete     bool
+}
+
+// ResolveProficiencyRanks starts from the class progression baseline, overlays
+// explicitly stored Actor ranks, and applies only simple, static
+// ActiveEffectLike upgrade rules found on the class or owned Actor Items.
+//
+// Compendium feature references are not executable rules. A reference whose
+// level has been reached but whose document is not present among Actor Items
+// is reported as unresolved, rather than guessed.
+func ResolveProficiencyRanks(character pf2e.CharacterDto) ProficiencyRanks {
+	result := ProficiencyRanks{
+		Saves: make(map[string]RankValue), Defenses: make(map[string]RankValue),
+		Attacks: make(map[string]RankValue), Skills: make(map[string]RankValue),
+		Complete: true,
+	}
+	level := 0
+	if character.Progression.Level != nil {
+		level = *character.Progression.Level
+	}
+
+	class := character.Build.ClassProficiencies
+	if class != nil {
+		if class.PerceptionRank != nil {
+			upgrade(&result.Perception, *class.PerceptionRank, sourceClass(character, "perception"))
+		}
+		for key, rank := range class.SavingThrows {
+			upgradeMap(result.Saves, key, rank, sourceClass(character, "savingThrows."+key))
+		}
+		for key, rank := range class.Defenses {
+			upgradeMap(result.Defenses, key, rank, sourceClass(character, "defenses."+key))
+		}
+		for key, rank := range class.Attacks {
+			upgradeMap(result.Attacks, key, rank, sourceClass(character, "attacks."+key))
+		}
+		if class.SpellcastingRank != nil {
+			upgrade(&result.Spellcasting, *class.SpellcastingRank, sourceClass(character, "spellcasting"))
+		}
+	}
+
+	// Explicit current Actor values are at least as authoritative as class
+	// baselines. The max/upgrade semantics also make repeated application safe.
+	if p := character.Statistics.Proficiencies.Perception; p != nil && p.Rank != nil {
+		upgrade(&result.Perception, *p.Rank, nonEmpty(p.Source, "actor perception"))
+	}
+	for key, value := range character.Statistics.Proficiencies.Saves {
+		if value.Rank != nil {
+			upgradeMap(result.Saves, key, *value.Rank, nonEmpty(value.Source, "actor save "+key))
+		}
+	}
+	for key, value := range character.Statistics.Proficiencies.Defenses {
+		if value.Rank != nil {
+			upgradeMap(result.Defenses, key, *value.Rank, nonEmpty(value.Source, "actor defense "+key))
+		}
+	}
+	for key, skill := range character.Skills.Standard {
+		if skill.Rank != nil {
+			upgradeMap(result.Skills, key, *skill.Rank, "Actor.system.skills."+key)
+		}
+	}
+	for key, skill := range character.Skills.Lore {
+		if skill.Rank != nil {
+			upgradeMap(result.Skills, key, *skill.Rank, "Actor.system.skills."+key)
+		}
+	}
+
+	// Apply class-level and owned-item rules. Other Rule Element kinds remain
+	// preserved in DTOs but are outside this calculator's supported subset.
+	if class != nil {
+		applyRules(&result, class.RuleElements, sourceClass(character, "rules"), level)
+	}
+	for _, item := range character.Items {
+		applyRules(&result, item.RuleElements, "Actor Item "+item.Name, level)
+	}
+
+	if class != nil {
+		for _, feature := range class.Features {
+			if feature.Level == nil || level < *feature.Level {
+				continue
+			}
+			if !hasCompendiumSource(character.Items, feature.UUID) {
+				result.Warnings = append(result.Warnings,
+					fmt.Sprintf("class feature %q (%s, level %d) is not present as an Actor Item; its Rule Elements are unavailable",
+						feature.Name, feature.UUID, *feature.Level))
+			}
+		}
+	}
+
+	result.Complete = len(result.Warnings) == 0 && (class != nil || hasAnyRank(result))
+	return result
+}
+
+func sourceClass(character pf2e.CharacterDto, field string) string {
+	name := "class"
+	if character.Build.Class != nil && character.Build.Class.Name != "" {
+		name = character.Build.Class.Name
+	}
+	return name + ".system." + field
+}
+
+func nonEmpty(value, fallback string) string {
+	if value != "" { return value }
+	return fallback
+}
+
+func hasAnyRank(r ProficiencyRanks) bool {
+	return r.Perception != nil || r.Spellcasting != nil || len(r.Saves)+len(r.Defenses)+len(r.Attacks)+len(r.Skills) > 0
+}
+
+func hasCompendiumSource(items []pf2e.CharacterItemDto, uuid string) bool {
+	for _, item := range items {
+		if item.CompendiumSource != nil && *item.CompendiumSource == uuid {
+			return true
+		}
+	}
+	return false
+}
+
+func upgrade(current **RankValue, rank int, source string) {
+	if *current == nil || rank > (*current).Rank {
+		*current = &RankValue{Rank: rank, Sources: []string{source}}
+		return
+	}
+	if rank == (*current).Rank {
+		(*current).Sources = appendUnique((*current).Sources, source)
+	}
+}
+
+func upgradeMap(target map[string]RankValue, key string, rank int, source string) {
+	current, exists := target[key]
+	if !exists || rank > current.Rank {
+		target[key] = RankValue{Rank: rank, Sources: []string{source}}
+		return
+	}
+	if rank == current.Rank {
+		current.Sources = appendUnique(current.Sources, source)
+		target[key] = current
+	}
+}
+
+func appendUnique(values []string, value string) []string {
+	for _, existing := range values {
+		if existing == value { return values }
+	}
+	return append(values, value)
+}
+
+func applyRules(result *ProficiencyRanks, rules []pf2e.RuleElementDto, source string, level int) {
+	choices := make(map[string]string)
+	for _, rule := range rules {
+		if rule.Key != "ChoiceSet" || rule.Flag == "" || len(rule.Selection) == 0 {
+			continue
+		}
+		var selection string
+		if json.Unmarshal(rule.Selection, &selection) == nil && selection != "" {
+			choices[rule.Flag] = selection
+		}
+	}
+	for _, rule := range rules {
+		if rule.Key != "ActiveEffectLike" || rule.Mode != "upgrade" {
+			continue
+		}
+		path, ok := resolvePath(rule.Path, choices)
+		if !ok {
+			result.Warnings = append(result.Warnings, source+": unresolved ActiveEffectLike path "+rule.Path)
+			continue
+		}
+		if hasPredicate(rule.Predicate) {
+			result.Warnings = append(result.Warnings, source+": conditional ActiveEffectLike is not evaluated: "+path)
+			continue
+		}
+		rank, ok := rankValueForLevel(rule.Value, level)
+		if !ok {
+			result.Warnings = append(result.Warnings, source+": unsupported ActiveEffectLike value for "+path)
+			continue
+		}
+		if rank < 0 || rank > 4 {
+			result.Warnings = append(result.Warnings, source+": proficiency rank outside 0..4 for "+path)
+			continue
+		}
+		applyRankPath(result, path, rank, source+" ActiveEffectLike")
+	}
+}
+
+func resolvePath(path string, choices map[string]string) (string, bool) {
+	for strings.Contains(path, "{item|flags.") {
+		start := strings.Index(path, "{item|flags.")
+		endOffset := strings.Index(path[start:], "}")
+		if endOffset < 0 { return "", false }
+		end := start + endOffset
+		token := path[start+len("{item|flags.") : end]
+		parts := strings.Split(token, ".")
+		if len(parts) < 3 || parts[len(parts)-2] != "rulesSelections" {
+			return "", false
+		}
+		selection, ok := choices[parts[len(parts)-1]]
+		if !ok { return "", false }
+		path = path[:start] + selection + path[end+1:]
+	}
+	return path, true
+}
+
+func hasPredicate(raw json.RawMessage) bool {
+	if len(raw) == 0 || string(raw) == "null" || string(raw) == "[]" {
+		return false
+	}
+	return true
+}
+
+func rankValueForLevel(raw json.RawMessage, level int) (int, bool) {
+	if len(raw) == 0 { return 0, false }
+	var number int
+	if json.Unmarshal(raw, &number) == nil { return number, true }
+	var bracketSet struct {
+		Brackets []struct {
+			Start *int `json:"start"`
+			End   *int `json:"end"`
+			Value *int `json:"value"`
+		} `json:"brackets"`
+	}
+	if json.Unmarshal(raw, &bracketSet) != nil || len(bracketSet.Brackets) == 0 {
+		return 0, false
+	}
+	for _, bracket := range bracketSet.Brackets {
+		start := 1
+		if bracket.Start != nil { start = *bracket.Start }
+		if level < start || (bracket.End != nil && level > *bracket.End) || bracket.Value == nil {
+			continue
+		}
+		return *bracket.Value, true
+	}
+	return 0, false
+}
+
+func applyRankPath(result *ProficiencyRanks, path string, rank int, source string) {
+	parts := strings.Split(path, ".")
+	if len(parts) < 4 || parts[len(parts)-1] != "rank" {
+		return
+	}
+	switch {
+	case path == "system.attributes.perception.rank":
+		upgrade(&result.Perception, rank, source)
+	case len(parts) == 4 && parts[0] == "system" && parts[1] == "saves":
+		upgradeMap(result.Saves, parts[2], rank, source)
+	case len(parts) == 4 && parts[0] == "system" && parts[1] == "skills":
+		upgradeMap(result.Skills, parts[2], rank, source)
+	case len(parts) == 5 && parts[0] == "system" && parts[1] == "proficiencies" && parts[2] == "defenses":
+		upgradeMap(result.Defenses, parts[3], rank, source)
+	case len(parts) == 5 && parts[0] == "system" && parts[1] == "proficiencies" && parts[2] == "attacks":
+		upgradeMap(result.Attacks, parts[3], rank, source)
+	case strings.HasPrefix(path, "system.proficiencies.spellcasting.") || path == "system.proficiencies.spellcasting.rank":
+		upgrade(&result.Spellcasting, rank, source)
+	}
+}
+
+// ParseNumericRank is exported for tests and adapters that need to validate a
+// simple rank value without evaluating PF2e roll expressions.
+func ParseNumericRank(raw json.RawMessage) (int, bool) {
+	value, ok := rankValueForLevel(raw, 1)
+	if !ok { return 0, false }
+	if _, err := strconv.Atoi(strings.TrimSpace(string(raw))); err == nil {
+		return value, true
+	}
+	return value, false
+}
