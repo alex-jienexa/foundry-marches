@@ -87,3 +87,33 @@ func TestResolveConditionalRuleIsReportedNotExecuted(t *testing.T) {
 }
 
 func intPointer(value int) *int { return &value }
+
+
+func TestResolveProficiencyFromResolvedClassFeatureReference(t *testing.T) {
+	character := pf2e.CharacterDto{
+		Progression: pf2e.CharacterProgressionDto{Level: intPointer(3)},
+		Build: pf2e.CharacterBuildDto{
+			ClassProficiencies: &pf2e.ClassProficiencyProfileDto{
+				PerceptionRank: intPointer(1),
+				Features: []pf2e.ClassFeatureReferenceDto{{
+					UUID: "Compendium.pf2e.classfeatures.Item.feature1",
+					Name: "Perception Mastery", Level: intPointer(3),
+				}},
+			},
+		},
+	}
+	withoutResolvedRules := ResolveProficiencyRanks(character)
+	if withoutResolvedRules.Complete || len(withoutResolvedRules.Warnings) == 0 {
+		t.Fatalf("missing compendium feature rules should be reported: %+v", withoutResolvedRules)
+	}
+	resolved := map[string][]pf2e.RuleElementDto{
+		"Compendium.pf2e.classfeatures.Item.feature1": {{
+			Key: "ActiveEffectLike", Mode: "upgrade",
+			Path: "system.attributes.perception.rank", Value: []byte("2"),
+		}},
+	}
+	got := ResolveProficiencyRanksWithFeatureRules(character, resolved)
+	if got.Perception == nil || got.Perception.Rank != 2 || !got.Complete || len(got.Warnings) != 0 {
+		t.Fatalf("resolved feature did not upgrade perception: %+v", got)
+	}
+}
