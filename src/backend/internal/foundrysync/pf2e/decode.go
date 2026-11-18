@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -144,6 +145,7 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 		Armor:            decodeArmorData(system),
 		Runes:            decodeItemRunes(system),
 		CompendiumSource: stringAt(objectAt(root, "_stats"), "compendiumSource"),
+		RuleElements:     decodeRuleElements(system),
 	}
 	return &DecodedItem{
 		Foundry: item, Character: normalized, RawSnapshot: cloneRaw(payload),
@@ -434,19 +436,90 @@ func decodeClassProficiencies(items []FoundryItemDto) *ClassProficiencyProfileDt
 		if item.Type != "class" {
 			continue
 		}
-		perception := intAt(item.System, "perception")
-		saves := intMapAt(objectAt(item.System, "savingThrows"))
-		defenses := intMapAt(objectAt(item.System, "defenses"))
-		trained := stringsAt(objectAt(item.System, "trainedSkills"), "value")
+		trainedSkills := objectAt(item.System, "trainedSkills")
 		return &ClassProficiencyProfileDto{
-			PerceptionRank:   perception,
-			SavingThrows:     saves,
-			Defenses:         defenses,
-			TrainedSkills:    trained,
-			AdditionalSkills: intAt(objectAt(item.System, "trainedSkills"), "additional"),
+			PerceptionRank:   intAt(item.System, "perception"),
+			SavingThrows:     intMapAt(objectAt(item.System, "savingThrows")),
+			Defenses:         intMapAt(objectAt(item.System, "defenses")),
+			Attacks:          intMapAt(objectAt(item.System, "attacks")),
+			SpellcastingRank: intAt(item.System, "spellcasting"),
+			TrainedSkills:    stringsAt(trainedSkills, "value"),
+			AdditionalSkills: intAt(trainedSkills, "additional"),
+			Features:         decodeClassFeatureReferences(objectAt(item.System, "items")),
+			RuleElements:     decodeRuleElements(item.System),
 		}
 	}
 	return nil
+}
+
+// decodeClassFeatureReferences retains links from the class progression table.
+// The linked compendium documents must be fetched separately before their rules
+// can be interpreted; names and levels alone never imply a proficiency upgrade.
+func decodeClassFeatureReferences(raw map[string]json.RawMessage) []ClassFeatureReferenceDto {
+	if raw == nil {
+		return nil
+	}
+	features := make([]ClassFeatureReferenceDto, 0, len(raw))
+	for _, value := range raw {
+		var entry map[string]json.RawMessage
+		if json.Unmarshal(value, &entry) != nil {
+			continue
+		}
+		uuid := stringAt(entry, "uuid")
+		name := stringAt(entry, "name")
+		if uuid == nil || *uuid == "" || name == nil || *name == "" {
+			continue
+		}
+		features = append(features, ClassFeatureReferenceDto{
+			UUID: *uuid, Name: *name, Level: intAt(entry, "level"), Image: stringAt(entry, "img"),
+		})
+	}
+	sort.Slice(features, func(i, j int) bool {
+		if features[i].Level == nil { return false }
+		if features[j].Level == nil { return true }
+		if *features[i].Level != *features[j].Level { return *features[i].Level < *features[j].Level }
+		return features[i].UUID < features[j].UUID
+	})
+	return features
+}
+
+// decodeRuleElements copies a deliberately small, declarative projection.
+// Raw retains unsupported fields; no Rule Element expressions are evaluated.
+func decodeRuleElements(system map[string]json.RawMessage) []RuleElementDto {
+	if system == nil {
+		return nil
+	}
+	var rawRules []json.RawMessage
+	if json.Unmarshal(system["rules"], &rawRules) != nil {
+		return nil
+	}
+	rules := make([]RuleElementDto, 0, len(rawRules))
+	for _, raw := range rawRules {
+		var entry map[string]json.RawMessage
+		if json.Unmarshal(raw, &entry) != nil {
+			continue
+		}
+		rule := RuleElementDto{
+			Key:       stringValue(entry, "key"),
+			Mode:      stringValue(entry, "mode"),
+			Path:      stringValue(entry, "path"),
+			Flag:      stringValue(entry, "flag"),
+			Value:     cloneRaw(entry["value"]),
+			Selection: cloneRaw(entry["selection"]),
+			Predicate: cloneRaw(entry["predicate"]),
+			Raw:       cloneRaw(raw),
+		}
+		if rule.Key != "" {
+			rules = append(rules, rule)
+		}
+	}
+	return rules
+}
+
+func stringValue(raw map[string]json.RawMessage, key string) string {
+	value := stringAt(raw, key)
+	if value == nil { return "" }
+	return *value
 }
 
 func intMapAt(raw map[string]json.RawMessage) map[string]int {
