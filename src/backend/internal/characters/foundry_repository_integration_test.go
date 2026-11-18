@@ -325,3 +325,124 @@ func TestFoundryRepositorySyncDiscoveredLinkedCharacter(t *testing.T) {
 		t.Fatalf("character name = %q, want Discovered Hero", name)
 	}
 }
+
+
+func TestFoundryRepositoryLinkActorPostgresIntegration(t *testing.T) {
+	db := openFoundryIntegrationDB(t)
+	ctx := context.Background()
+	worldID := integrationWorld(t, db)
+	characterID := integrationUUID(t)
+	actorUUID := "Actor.link-" + integrationUUID(t)
+	userID := integrationUUID(t)
+
+	if _, err := db.ExecContext(ctx, "INSERT INTO users (id, display_name) VALUES ($1, 'Link reviewer')", userID); err != nil {
+		t.Fatalf("insert linking user: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID) })
+	if _, err := db.ExecContext(ctx, "INSERT INTO characters (id, name) VALUES ($1, 'Existing application character')", characterID); err != nil {
+		t.Fatalf("insert existing application character: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM characters WHERE id = $1", characterID) })
+	if _, err := db.ExecContext(ctx, `
+INSERT INTO foundry_actors (world_id, actor_uuid, snapshot)
+VALUES ($1, $2, '{"_id":"linked","name":"Foundry Hero","type":"character"}'::jsonb)
+`, worldID, actorUUID); err != nil {
+		t.Fatalf("insert discovered Actor snapshot: %v", err)
+	}
+
+	repo, err := NewFoundryRepository(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.LinkActor(ctx, worldID, actorUUID, characterID, userID); err != nil {
+		t.Fatalf("link discovered Actor: %v", err)
+	}
+
+	var linkedCharacterID string
+	var ownerID sql.NullString
+	var ownerConfirmedAt sql.NullTime
+	if err := db.QueryRowContext(ctx, `
+SELECT fa.character_id::text, c.owner_user_id::text, fa.owner_confirmed_at
+FROM foundry_actors fa JOIN characters c ON c.id = fa.character_id
+WHERE fa.world_id = $1 AND fa.actor_uuid = $2
+`, worldID, actorUUID).Scan(&linkedCharacterID, &ownerID, &ownerConfirmedAt); err != nil {
+		t.Fatalf("read linked Actor: %v", err)
+	}
+	if linkedCharacterID != characterID || ownerID.Valid || ownerConfirmedAt.Valid {
+		t.Fatalf("link changed unexpected ownership fields: character=%q owner=%v ownerConfirmed=%v", linkedCharacterID, ownerID, ownerConfirmedAt)
+	}
+
+	// Repeating the same explicit operation is safe and does not duplicate audit.
+	if err := repo.LinkActor(ctx, worldID, actorUUID, characterID, userID); err != nil {
+		t.Fatalf("repeat identical link: %v", err)
+	}
+	var auditCount int
+	if err := db.QueryRowContext(ctx, `
+SELECT count(*) FROM audit_log
+WHERE actor_user_id = $1 AND action = 'foundry.actor.linked' AND entity_id = $2
+`, userID, actorUUID).Scan(&auditCount); err != nil {
+		t.Fatalf("count link audit rows: %v", err)
+	}
+	if auditCount != 1 {
+		t.Fatalf("link audit rows = %d, want exactly one", auditCount)
+	}
+
+	otherCharacterID := integrationUUID(t)
+	if _, err := db.ExecContext(ctx, "INSERT INTO characters (id, name) VALUES ($1, 'Other character')", otherCharacterID); err != nil {
+		t.Fatalf("insert other character: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM characters WHERE id = $1", otherCharacterID) })
+	if err := repo.LinkActor(ctx, worldID, actorUUID, otherCharacterID, userID); err != ErrActorAlreadyLinked {
+		t.Fatalf("link already linked Actor error = %v, want ErrActorAlreadyLinked", err)
+	}
+
+	otherActorUUID := "Actor.link-" + integrationUUID(t)
+	if _, err := db.ExecContext(ctx, `
+INSERT INTO foundry_actors (world_id, actor_uuid, snapshot)
+VALUES ($1, $2, '{"_id":"other","name":"Another Hero","type":"character"}'::jsonb)
+`, worldID, otherActorUUID); err != nil {
+		t.Fatalf("insert second discovered Actor: %v", err)
+	}
+	if err := repo.LinkActor(ctx, worldID, otherActorUUID, characterID, userID); err != ErrCharacterAlreadyLinked {
+		t.Fatalf("link second Actor to occupied character error = %v, want ErrCharacterAlreadyLinked", err)
+	}
+}
+
+func TestFoundryRepositoryLinkActorRejectsNonCharacterPostgresIntegration(t *testing.T) {
+	db := openFoundryIntegrationDB(t)
+	ctx := context.Background()
+	worldID := integrationWorld(t, db)
+	characterID := integrationUUID(t)
+	actorUUID := "Actor.npc-" + integrationUUID(t)
+	userID := integrationUUID(t)
+
+	if _, err := db.ExecContext(ctx, "INSERT INTO users (id, display_name) VALUES ($1, 'Link reviewer')", userID); err != nil {
+		t.Fatalf("insert linking user: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID) })
+	if _, err := db.ExecContext(ctx, "INSERT INTO characters (id, name) VALUES ($1, 'Existing character')", characterID); err != nil {
+		t.Fatalf("insert application character: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM characters WHERE id = $1", characterID) })
+	if _, err := db.ExecContext(ctx, `
+INSERT INTO foundry_actors (world_id, actor_uuid, snapshot)
+VALUES ($1, $2, '{"_id":"npc","name":"Guard","type":"npc"}'::jsonb)
+`, worldID, actorUUID); err != nil {
+		t.Fatalf("insert NPC snapshot: %v", err)
+	}
+
+	repo, err := NewFoundryRepository(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.LinkActor(ctx, worldID, actorUUID, characterID, userID); err != ErrActorNotCharacter {
+		t.Fatalf("link NPC error = %v, want ErrActorNotCharacter", err)
+	}
+	var linked bool
+	if err := db.QueryRowContext(ctx, "SELECT character_id IS NOT NULL FROM foundry_actors WHERE world_id = $1 AND actor_uuid = $2", worldID, actorUUID).Scan(&linked); err != nil {
+		t.Fatalf("check NPC link: %v", err)
+	}
+	if linked {
+		t.Fatal("NPC must remain unlinked")
+	}
+}
