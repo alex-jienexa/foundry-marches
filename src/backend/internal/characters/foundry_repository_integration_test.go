@@ -269,3 +269,60 @@ func TestFoundryRepositoryPostgresIntegrationRollsBackUnlinkedActor(t *testing.T
 		t.Fatalf("unlinked Actor sync left %d character rows behind; want rollback", count)
 	}
 }
+
+
+func TestFoundryRepositorySyncDiscoveredNPCStoresSnapshotOnly(t *testing.T) {
+	db := openFoundryIntegrationDB(t)
+	ctx := context.Background()
+	worldID := integrationWorld(t, db)
+	repo, err := NewFoundryRepository(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	snapshot := []byte(`{"_id":"npc-1","name":"Roadside Guard","type":"npc","items":[]}`)
+	disposition, err := repo.SyncDiscoveredActor(ctx, worldID, "Actor.npc-1", snapshot)
+	if err != nil {
+		t.Fatalf("sync discovered NPC: %v", err)
+	}
+	if disposition != DiscoverySnapshotOnly {
+		t.Fatalf("disposition = %q, want %q", disposition, DiscoverySnapshotOnly)
+	}
+
+	var storedSnapshot string
+	var characterID sql.NullString
+	if err := db.QueryRowContext(ctx, "SELECT snapshot::text, character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid = $2", worldID, "Actor.npc-1").Scan(&storedSnapshot, &characterID); err != nil {
+		t.Fatalf("read discovered NPC snapshot: %v", err)
+	}
+	if !strings.Contains(storedSnapshot, "Roadside Guard") || characterID.Valid {
+		t.Fatalf("NPC snapshot/link mismatch: snapshot=%s characterID=%v", storedSnapshot, characterID)
+	}
+}
+
+func TestFoundryRepositorySyncDiscoveredLinkedCharacter(t *testing.T) {
+	db := openFoundryIntegrationDB(t)
+	ctx := context.Background()
+	worldID := integrationWorld(t, db)
+	characterID, actorUUID := integrationLinkedCharacter(t, db, worldID)
+	repo, err := NewFoundryRepository(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actorID := strings.TrimPrefix(actorUUID, "Actor.")
+	snapshot := []byte(fmt.Sprintf(`{"_id":%q,"name":"Discovered Hero","type":"character","items":[]}`, actorID))
+	disposition, err := repo.SyncDiscoveredActor(ctx, worldID, actorUUID, snapshot)
+	if err != nil {
+		t.Fatalf("sync discovered linked character: %v", err)
+	}
+	if disposition != DiscoveryCharacterSynced {
+		t.Fatalf("disposition = %q, want %q", disposition, DiscoveryCharacterSynced)
+	}
+	var name string
+	if err := db.QueryRowContext(ctx, "SELECT name FROM characters WHERE id = $1", characterID).Scan(&name); err != nil {
+		t.Fatalf("read synchronized character: %v", err)
+	}
+	if name != "Discovered Hero" {
+		t.Fatalf("character name = %q, want Discovered Hero", name)
+	}
+}
