@@ -47,7 +47,7 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 	var actorType string
 	var existingCharacterID sql.NullString
 	if err = tx.QueryRowContext(ctx,
-		"SELECT snapshot->>'type', character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid = $2 FOR UPDATE",
+		"SELECT COALESCE(snapshot->>'type', ''), character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid = $2 FOR UPDATE",
 		worldID, actorUUID,
 	).Scan(&actorType, &existingCharacterID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
