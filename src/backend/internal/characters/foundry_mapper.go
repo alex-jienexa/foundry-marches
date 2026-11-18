@@ -100,8 +100,12 @@ func MapFoundryActor(input FoundrySyncInput) (FoundrySyncRecord, error) {
 		record.Character.HPMax = c.Attributes.HP.Max
 	}
 	record.Inventory = make([]InventoryRecord, 0, len(c.Items))
+	seenItemIDs := make(map[string]struct{}, len(c.Items))
 	for _, item := range c.Items {
 		if item.ID == "" || item.Name == "" { return FoundrySyncRecord{}, errors.New("Actor item is missing its Foundry ID or name") }
+		if _, exists := seenItemIDs[item.ID]; exists { return FoundrySyncRecord{}, fmt.Errorf("duplicate Actor item ID %q", item.ID) }
+		seenItemIDs[item.ID] = struct{}{}
+		if item.Quantity != nil && *item.Quantity < 0 { return FoundrySyncRecord{}, fmt.Errorf("Actor item %q has negative quantity", item.ID) }
 		state, marshalErr := json.Marshal(item)
 		if marshalErr != nil { return FoundrySyncRecord{}, fmt.Errorf("marshal item %q: %w", item.ID, marshalErr) }
 		record.Inventory = append(record.Inventory, InventoryRecord{
