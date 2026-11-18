@@ -145,7 +145,7 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 		Armor:            decodeArmorData(system),
 		Runes:            decodeItemRunes(system),
 		CompendiumSource: stringAt(objectAt(root, "_stats"), "compendiumSource"),
-		RuleElements:     decodeRuleElements(system),
+		RuleElements:     decodeRuleElements(system, item.Flags),
 	}
 	return &DecodedItem{
 		Foundry: item, Character: normalized, RawSnapshot: cloneRaw(payload),
@@ -446,7 +446,7 @@ func decodeClassProficiencies(items []FoundryItemDto) *ClassProficiencyProfileDt
 			TrainedSkills:    stringsAt(trainedSkills, "value"),
 			AdditionalSkills: intAt(trainedSkills, "additional"),
 			Features:         decodeClassFeatureReferences(objectAt(item.System, "items")),
-			RuleElements:     decodeRuleElements(item.System),
+			RuleElements:     decodeRuleElements(item.System, item.Flags),
 		}
 	}
 	return nil
@@ -485,7 +485,7 @@ func decodeClassFeatureReferences(raw map[string]json.RawMessage) []ClassFeature
 
 // decodeRuleElements copies a deliberately small, declarative projection.
 // Raw retains unsupported fields; no Rule Element expressions are evaluated.
-func decodeRuleElements(system map[string]json.RawMessage) []RuleElementDto {
+func decodeRuleElements(system, flags map[string]json.RawMessage) []RuleElementDto {
 	if system == nil {
 		return nil
 	}
@@ -499,13 +499,18 @@ func decodeRuleElements(system map[string]json.RawMessage) []RuleElementDto {
 		if json.Unmarshal(raw, &entry) != nil {
 			continue
 		}
+		flag := stringValue(entry, "flag")
+		selection := cloneRaw(entry["selection"])
+		if len(selection) == 0 && flag != "" {
+			selection = ruleSelection(flags, flag)
+		}
 		rule := RuleElementDto{
 			Key:       stringValue(entry, "key"),
 			Mode:      stringValue(entry, "mode"),
 			Path:      stringValue(entry, "path"),
 			Flag:      stringValue(entry, "flag"),
 			Value:     cloneRaw(entry["value"]),
-			Selection: cloneRaw(entry["selection"]),
+			Selection: selection,
 			Predicate: cloneRaw(entry["predicate"]),
 			Raw:       cloneRaw(raw),
 		}
@@ -514,6 +519,16 @@ func decodeRuleElements(system map[string]json.RawMessage) []RuleElementDto {
 		}
 	}
 	return rules
+}
+
+func ruleSelection(flags map[string]json.RawMessage, flag string) json.RawMessage {
+	for _, namespace := range []string{"system", "pf2e"} {
+		selections := objectAt(objectAt(flags, namespace), "rulesSelections")
+		if len(selections[flag]) > 0 {
+			return cloneRaw(selections[flag])
+		}
+	}
+	return nil
 }
 
 func stringValue(raw map[string]json.RawMessage, key string) string {
