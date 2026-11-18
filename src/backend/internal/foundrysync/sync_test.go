@@ -2,9 +2,11 @@ package foundrysync
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
+	"strings"
 	"testing"
 	"time"
 
@@ -35,7 +37,7 @@ type fakeActorSink struct {
 	seen        []string
 }
 
-func (f *fakeActorSink) SyncDiscoveredActor(_ context.Context, _, uuid string, _ []byte) (characters.FoundryDiscoveryDisposition, error) {
+func (f *fakeActorSink) SyncDiscoveredActor(_ context.Context, _, uuid string, _ json.RawMessage) (characters.FoundryDiscoveryDisposition, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.seen = append(f.seen, uuid)
