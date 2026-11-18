@@ -36,6 +36,13 @@ type ProficiencyRanks struct {
 // level has been reached but whose document is not present among Actor Items
 // is reported as unresolved, rather than guessed.
 func ResolveProficiencyRanks(character pf2e.CharacterDto) ProficiencyRanks {
+	return ResolveProficiencyRanksWithFeatureRules(character, nil)
+}
+
+// ResolveProficiencyRanksWithFeatureRules additionally accepts Rule Elements
+// fetched from class-feature compendium UUIDs. The caller owns the read-only
+// compendium lookup; this package only interprets the supplied declarative DTOs.
+func ResolveProficiencyRanksWithFeatureRules(character pf2e.CharacterDto, featureRules map[string][]pf2e.RuleElementDto) ProficiencyRanks {
 	result := ProficiencyRanks{
 		Saves: make(map[string]RankValue), Defenses: make(map[string]RankValue),
 		Attacks: make(map[string]RankValue), Skills: make(map[string]RankValue),
@@ -105,11 +112,16 @@ func ResolveProficiencyRanks(character pf2e.CharacterDto) ProficiencyRanks {
 			if feature.Level == nil || level < *feature.Level {
 				continue
 			}
-			if !hasCompendiumSource(character.Items, feature.UUID) {
-				result.Warnings = append(result.Warnings,
-					fmt.Sprintf("class feature %q (%s, level %d) is not present as an Actor Item; its Rule Elements are unavailable",
-						feature.Name, feature.UUID, *feature.Level))
+			if hasCompendiumSource(character.Items, feature.UUID) {
+				continue
 			}
+			if rules, ok := featureRules[feature.UUID]; ok {
+				applyRules(&result, rules, "Class feature "+feature.Name, level)
+				continue
+			}
+			result.Warnings = append(result.Warnings,
+				fmt.Sprintf("class feature %q (%s, level %d) is not present as an Actor Item and its compendium rules were not resolved",
+					feature.Name, feature.UUID, *feature.Level))
 		}
 	}
 
