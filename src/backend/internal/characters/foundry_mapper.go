@@ -64,7 +64,7 @@ func MapFoundryActor(input FoundrySyncInput) (FoundrySyncRecord, error) {
 	if input.WorldID == "" || input.CharacterID == "" || input.ActorUUID == "" {
 		return FoundrySyncRecord{}, errors.New("world ID, character ID and Actor UUID are required")
 	}
-	if c.Identity.ID == "" || c.Identity.Name == "" || c.Identity.Type != "character" {
+	if c.Identity.ID == "" || c.Identity.Name == "" || c.Identity.Type != "character" || c.Identity.UUID != input.ActorUUID {
 		return FoundrySyncRecord{}, errors.New("decoded document must be a named character Actor")
 	}
 	if c.Progression.Level != nil && (*c.Progression.Level < 1 || *c.Progression.Level > 30) {
