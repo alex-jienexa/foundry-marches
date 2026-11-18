@@ -181,3 +181,19 @@ curl -fsS --get 'https://relay.jiene.ru/get' \
 3. Перед любыми write tests — зафиксировать исходный экспорт Actor, проверить backup/restore и подготовить отдельную операцию на том же тестовом Actor.
 4. После отдельного подтверждения выполнить XP write/idempotency и item grant tests.
 5. Отдельно проверить SSE, headless GM, relay usage/quota, WebDAV и Codex.
+
+
+### 9.6. Дополнительное read-only исследование структуры Actor (2026-11-18)
+
+Владелец уточнил, что тестовый Actor `АНДРЕЙ` намеренно/фактически пуст: у него нет класса, родословной, опыта, предметов и монет. Нулевые значения и пустой инвентарь являются ожидаемым исходным состоянием, а не признаком ошибки Relay или PF2e.
+
+Повторный read-only запрос `GET /get` подтвердил:
+- `data.type=character`, `data._id=mxgc0DRWC8bA9ruI`;
+- корневые ключи `data.system`: `attributes`, `initiative`, `details`, `resources`, `_migration`, `abilities`, `skills`, `pfs`, `exploration`;
+- `system.details.level.value=1`;
+- `system.details.xp.value=0`, `min=0`, `max=1000`;
+- `system.details.keyability.value=str`;
+- `system.attributes.hp.value=0`, `temp=0`;
+- `system.skills={}`, `items=[]`.
+
+Вывод: сериализация и чтение основных частей документа Actor подтверждены; пустые коллекции и нулевые значения объясняются состоянием тестового персонажа. Структура инвентаря/монет, выдача предметов и write-сценарии остаются непроверенными. Следующий read-only шаг — исследовать остальные разделы `system` (`resources`, `abilities`, `initiative`, `pfs`, `exploration`); для предметов/монет потребуется отдельный заполненный тестовый Actor или отдельно согласованное тестовое наполнение.
