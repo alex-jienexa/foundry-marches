@@ -36,27 +36,27 @@ type bot struct {
 }
 type pendingLink struct { actorUUID, characterID, discordID, guildID string; expiresAt time.Time }
 type identity struct {
-	GuildID string \`json:"guild_id"\`
-	DiscordUserID string \`json:"discord_user_id"\`
-	DiscordRoleIDs []string \`json:"discord_role_ids"\`
+	GuildID string `json:"guild_id"`
+	DiscordUserID string `json:"discord_user_id"`
+	DiscordRoleIDs []string `json:"discord_role_ids"`
 }
 type registerPayload struct {
 	identity
-	Username string \`json:"username"\`
-	AvatarURL string \`json:"avatar_url"\`
+	Username string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
 }
 type linkPayload struct {
 	identity
-	ActorUUID string \`json:"actor_uuid"\`
-	CharacterID string \`json:"character_id"\`
+	ActorUUID string `json:"actor_uuid"`
+	CharacterID string `json:"character_id"`
 }
-type actor struct { ActorUUID string \`json:"actor_uuid"\`; Name string \`json:"name"\` }
-type character struct { ID string \`json:"id"\`; Name string \`json:"name"\`; Status string \`json:"status"\` }
+type actor struct { ActorUUID string `json:"actor_uuid"`; Name string `json:"name"` }
+type character struct { ID string `json:"id"`; Name string `json:"name"`; Status string `json:"status"` }
 type linkPreview struct {
-	ActorUUID string \`json:"actor_uuid"\`
-	ActorName string \`json:"actor_name"\`
-	CharacterID string \`json:"character_id"\`
-	CharacterName string \`json:"character_name"\`
+	ActorUUID string `json:"actor_uuid"`
+	ActorName string `json:"actor_name"`
+	CharacterID string `json:"character_id"`
+	CharacterName string `json:"character_name"`
 }
 
 func main() {
@@ -109,17 +109,17 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	id:=b.identity(i,u)
 	switch i.ApplicationCommandData().Name {
 	case "register":
-		var out struct { UserID string \`json:"user_id"\` }
+		var out struct { UserID string `json:"user_id"` }
 		err:=b.post(RegisterPath,registerPayload{identity:id,Username:u.Username,AvatarURL:u.AvatarURL("256")},&out)
 		if err!=nil { b.edit(s,i,"Регистрация не выполнена: "+err.Error(),nil); return }
 		b.edit(s,i,"Регистрация завершена. Назначена базовая роль player. Внутренний ID: "+out.UserID,nil)
 	case "foundry-actors":
-		var out struct { Actors []actor \`json:"actors"\` }
+		var out struct { Actors []actor `json:"actors"` }
 		if err:=b.post(ActorsPath,id,&out); err!=nil { b.edit(s,i,"Ошибка: "+err.Error(),nil); return }
 		lines:=[]string{}; for _,a:=range out.Actors { lines=append(lines,fmt.Sprintf("• %s — %s",a.Name,a.ActorUUID)) }
 		if len(lines)==0 { b.edit(s,i,"Несвязанных Actor типа character нет. Сначала синхронизируйте Foundry.",nil) } else { b.edit(s,i,"Несвязанные Actor (до 100):\n"+strings.Join(lines,"\n"),nil) }
 	case "characters":
-		var out struct { Characters []character \`json:"characters"\` }
+		var out struct { Characters []character `json:"characters"` }
 		if err:=b.post(CharactersPath,id,&out); err!=nil { b.edit(s,i,"Ошибка: "+err.Error(),nil); return }
 		lines:=[]string{}; for _,c:=range out.Characters { lines=append(lines,fmt.Sprintf("• %s [%s] — %s",c.Name,c.Status,c.ID)) }
 		if len(lines)==0 { b.edit(s,i,"Персонажей приложения пока нет. Foundry sync не создаёт их автоматически.",nil) } else { b.edit(s,i,"Персонажи приложения (до 200):\n"+strings.Join(lines,"\n"),nil) }
@@ -135,11 +135,11 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.edit(s,i,fmt.Sprintf("Проверьте привязку:\nFoundry: %s (%s)\nПерсонаж: %s (%s)\nВладелец персонажа не изменится.",preview.ActorName,preview.ActorUUID,preview.CharacterName,preview.CharacterID),components)
 	case "role-grant":
 		o:=commandOptions(i.ApplicationCommandData().Options)
-		payload:=struct { identity; Target string \`json:"target_discord_user_id"\`; Role string \`json:"role_key"\` }{id,o["discord_user_id"],o["role_key"]}
+		payload:=struct { identity; Target string `json:"target_discord_user_id"`; Role string `json:"role_key"` }{id,o["discord_user_id"],o["role_key"]}
 		if err:=b.post(GrantRolePath,payload,nil); err!=nil { b.edit(s,i,"Не удалось назначить роль: "+err.Error(),nil) } else { b.edit(s,i,"Роль назначена.",nil) }
 	case "role-map":
 		o:=commandOptions(i.ApplicationCommandData().Options)
-		payload:=struct { identity; RoleID string \`json:"discord_role_id"\`; Role string \`json:"role_key"\` }{id,o["discord_role_id"],o["role_key"]}
+		payload:=struct { identity; RoleID string `json:"discord_role_id"`; Role string `json:"role_key"` }{id,o["discord_role_id"],o["role_key"]}
 		if err:=b.post(MapRolePath,payload,nil); err!=nil { b.edit(s,i,"Не удалось сопоставить роль: "+err.Error(),nil) } else { b.edit(s,i,"Сопоставление сохранено.",nil) }
 	default: b.edit(s,i,"Неизвестная команда.",nil)
 	}
@@ -174,7 +174,7 @@ func (b *bot) post(path string,payload,target any)error {
 	req.Header.Set("Authorization","Bearer "+b.apiToken); req.Header.Set("Content-Type","application/json")
 	resp,err:=b.client.Do(req); if err!=nil{return err}; defer resp.Body.Close()
 	data,err:=io.ReadAll(io.LimitReader(resp.Body,1<<20)); if err!=nil{return err}
-	if resp.StatusCode<200||resp.StatusCode>=300 { var apiErr struct{Error string \`json:"error"\`}; _=json.Unmarshal(data,&apiErr); if apiErr.Error==""{apiErr.Error=http.StatusText(resp.StatusCode)}; return errors.New(apiErr.Error) }
+	if resp.StatusCode<200||resp.StatusCode>=300 { var apiErr struct{Error string `json:"error"`}; _=json.Unmarshal(data,&apiErr); if apiErr.Error==""{apiErr.Error=http.StatusText(resp.StatusCode)}; return errors.New(apiErr.Error) }
 	if target!=nil&&len(data)>0{return json.Unmarshal(data,target)}; return nil
 }
 func (b *bot) reply(s *discordgo.Session,i *discordgo.InteractionCreate,content string,components []discordgo.MessageComponent) {
