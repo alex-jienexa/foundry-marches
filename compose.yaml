@@ -40,6 +40,9 @@ services:
       FOUNDRY_RELAY_CLIENT_ID: ${FOUNDRY_RELAY_CLIENT_ID:?Set FOUNDRY_RELAY_CLIENT_ID in .env}
       FOUNDRY_RELAY_API_KEY: ${FOUNDRY_RELAY_API_KEY:?Set FOUNDRY_RELAY_API_KEY in .env}
       FOUNDRY_SYNC_API_TOKEN: ${FOUNDRY_SYNC_API_TOKEN:?Set FOUNDRY_SYNC_API_TOKEN in .env}
+      DISCORD_BOT_API_TOKEN: ${DISCORD_BOT_API_TOKEN:?Set DISCORD_BOT_API_TOKEN in .env}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?Set DISCORD_GUILD_ID in .env}
+      DISCORD_ADMIN_USER_IDS: ${DISCORD_ADMIN_USER_IDS:-}
       HTTP_ADDR: 0.0.0.0:8080
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
@@ -49,6 +52,21 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  discord-bot:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile.bot
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?Set DISCORD_BOT_TOKEN in .env}
+      DISCORD_APPLICATION_ID: ${DISCORD_APPLICATION_ID:?Set DISCORD_APPLICATION_ID in .env}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?Set DISCORD_GUILD_ID in .env}
+      DISCORD_BOT_API_TOKEN: ${DISCORD_BOT_API_TOKEN:?Set DISCORD_BOT_API_TOKEN in .env}
+      BACKEND_INTERNAL_URL: http://api:8080
 
 volumes:
   postgres_data:
