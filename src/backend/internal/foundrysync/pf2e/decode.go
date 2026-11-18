@@ -511,8 +511,10 @@ func decodeRuleElements(system, flags map[string]json.RawMessage) []RuleElementD
 			Flag:      stringValue(entry, "flag"),
 			Value:     cloneRaw(entry["value"]),
 			Selection: selection,
-			Predicate: cloneRaw(entry["predicate"]),
-			Raw:       cloneRaw(raw),
+			Predicate:    cloneRaw(entry["predicate"]),
+			Selector:     cloneRaw(entry["selector"]),
+			ModifierType: stringValue(entry, "type"),
+			Raw:          cloneRaw(raw),
 		}
 		if rule.Key != "" {
 			rules = append(rules, rule)
@@ -558,7 +560,7 @@ func decodeArmorData(system map[string]json.RawMessage) *ArmorItemDataDto {
 	if ac == nil && dexCap == nil && strength == nil {
 		return nil
 	}
-	return &ArmorItemDataDto{ACBonus: ac, DexCap: dexCap, Strength: strength}
+	return &ArmorItemDataDto{Category: stringAt(system, "category"), ACBonus: ac, DexCap: dexCap, Strength: strength}
 }
 
 func decodeItemRunes(system map[string]json.RawMessage) *ItemRuneDataDto {
