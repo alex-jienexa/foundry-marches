@@ -16,13 +16,17 @@ projects verified stored fields into the versioned application Character DTO.
   ability score, skill rank, or derived statistic is fabricated.
 - The persisted Actor document does not contain prepared AC, maximum HP, or
   prepared Perception in the supplied fixture. This adapter does not calculate them.
-- Skills come only from Actor.system.skills. Class/background selections and
-  Rule Elements are never evaluated or used to synthesize skills.
+- The decoder projects skills from Actor.system.skills and preserves class/item
+  Rule Elements separately. The calculator may apply a narrow, explicitly
+  supported static proficiency-upgrade subset (including a resolved ChoiceSet);
+  it does not rewrite Character.Skills.
 - Lore entries are separated only when their Actor.system.skills key uses the
   `lore-` prefix; the original key is retained.
 - Compendium references inside class/background Items are not expanded into
   Actor Items.
-- This package performs no writes to Foundry and no PF2e rules calculations.
+- The decoder performs no writes to Foundry and does not execute PF2e rules.
+  The sibling calculator package performs only documented, limited rank and
+  derived-stat calculations; it is not a replacement for Foundry preparation.
 
 ## Tests
 
@@ -71,3 +75,19 @@ Rule Elements present on the class Item and owned Actor Items are projected into
 PF2e `ActiveEffectLike` can upgrade proficiency ranks, including through a `ChoiceSet`-selected path. The eventual calculator may support a deliberately narrow, documented subset (static numeric `upgrade` values and simple level brackets). Unsupported expressions, predicates, conditional rules and unresolved compendium references must produce warnings/incomplete results, never guessed ranks. This is necessary because Rule Elements can depend on selections, predicates, actor level and data-preparation phases.
 
 Fighter fixture expectations: perception 2; Fortitude 2, Reflex 2, Will 1; defenses Heavy/Light/Medium/Unarmored 1; attacks Advanced 1, Martial 2, Simple 2, Unarmed 2; spellcasting 0. Its class progression table contains 15 feature references, two at level 1. The `fighterSkill` ChoiceSet and its ActiveEffectLike are preserved as source rules.
+
+
+## Proficiency calculator
+
+The sibling `calculator` package resolves effective proficiency ranks from:
+1. class progression baseline (Perception, saves, defenses, attacks and spellcasting);
+2. explicit Actor ranks and Actor skill ranks, when present;
+3. static numeric `ActiveEffectLike` rules with `mode: upgrade`, including simple
+   level brackets and `ChoiceSet` selections preserved on the source item.
+
+The resolver does not evaluate predicates, formulas, grants, `FlatModifier`,
+conditional rules or other Rule Element kinds. Class feature references whose
+level has been reached but whose compendium document is not present among Actor
+Items are reported as warnings. A warning makes the rank result incomplete.
+
+Run tests from `src/backend` with `go test ./...` and `go vet ./...`.
