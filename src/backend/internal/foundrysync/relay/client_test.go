@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 )
@@ -158,12 +157,28 @@ func TestGetDocumentUsesConfiguredBasePath(t *testing.T) {
 	}
 }
 
-func TestGetDocumentQueryDoesNotAlterBaseURL(t *testing.T) {
-	base, err := url.Parse("https://relay.example.test/prefix")
+func TestClientDoesNotFollowRedirectsWithAPIKey(t *testing.T) {
+	var targetRequests int
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		targetRequests++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
+	redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Redirect(w, nil, target.URL+"/get", http.StatusFound)
+	}))
+	defer redirect.Close()
+
+	client, err := NewClient(Config{BaseURL: redirect.URL, ClientID: "client", APIKey: "secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if base.Path != "/prefix" {
-		t.Fatalf("unexpected parsed base path %q", base.Path)
+	_, err = client.getDocument(context.Background(), "Actor.test")
+	if !errors.Is(err, ErrUnexpectedStatus) {
+		t.Fatalf("got %v, want ErrUnexpectedStatus for redirect response", err)
+	}
+	if targetRequests != 0 {
+		t.Fatalf("redirect target received %d requests; want none", targetRequests)
 	}
 }
