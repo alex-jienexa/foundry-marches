@@ -55,9 +55,15 @@ func NewClient(config Config) (*Client, error) {
 	}
 	baseURL.Path = strings.TrimRight(baseURL.Path, "/")
 
-	httpClient := config.HTTPClient
-	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	if config.HTTPClient != nil {
+		clientCopy := *config.HTTPClient
+		httpClient = &clientCopy
+	}
+	// The Relay API key is a custom header, so net/http does not treat it as
+	// sensitive on cross-origin redirects. Never forward credentials via redirects.
+	httpClient.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
 	}
 	maxResponseBytes := config.MaxResponseBytes
 	if maxResponseBytes <= 0 {
