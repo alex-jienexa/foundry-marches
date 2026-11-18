@@ -35,3 +35,26 @@ go vet ./...
 
 The tests decode the committed Relay fixtures under the repository-level
 `docs/foundry/` directory.
+
+
+## Statistics and derived-stat DTO contracts
+
+`CharacterDto.Statistics` contains only explicit Actor-level calculation inputs:
+- ability score and modifier, when `system.abilities` contains them;
+- current perception, saving-throw and defense proficiency ranks, when the Actor contains them under `system.proficiencies`;
+- current skill ranks remain in `CharacterDto.Skills`.
+
+Missing values stay absent. The decoder does not reconstruct ability scores from boosts, derive current proficiency from class progression, or execute PF2e rules.
+
+`CharacterBuildDto.ClassProficiencies` is deliberately separate. It records the class item's progression baseline (`perception`, `savingThrows`, `defenses`, `trainedSkills`) and is **not** authoritative evidence of the character's current prepared rank. In particular, the `additional` class skill count is not used to invent selected skills.
+
+Equipment calculation inputs are exposed only where their source data is structured and recognized:
+- armor `acBonus`, `dexCap` and `strength`;
+- armor/other item's rune `potency`, `resilient` and `property` values;
+- the existing equipped state.
+
+The raw Actor snapshot remains authoritative for all unrecognized fields.
+
+`CharacterDerivedStatsDto` defines the future calculator output contract: each statistic has an optional value, a status (`complete`, `incomplete`, `unavailable`), a breakdown and warnings. A missing input must never be replaced with zero. The calculation version is explicit so future algorithm changes can be distinguished.
+
+The current decoder only prepares these DTOs; it does not yet calculate AC, Perception, saves or skill totals. Temporary effects, situational modifiers, Rule Elements and other runtime-prepared values are outside this contract.
