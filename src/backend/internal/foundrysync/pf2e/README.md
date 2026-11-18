@@ -139,3 +139,25 @@ run with `go test ./...`. These tests verify mapping, transaction ordering and
 rollback behavior, but they do not execute SQL against PostgreSQL. A live
 PostgreSQL integration test still needs to be wired into the project test
 environment before this adapter is considered fully verified.
+
+
+## Read-only Relay transport adapter
+
+The sibling `internal/foundrysync/relay` package provides a read-only HTTP
+client for the self-hosted Relay `GET /get` endpoint. It sends the configured
+`clientId` query parameter and `x-api-key` header, unwraps and validates
+Relay Actor/Item envelopes through this package's decoders, and returns the
+underlying document JSON.
+
+Each client is bound to one configured application world ID. Requests for a
+different world are rejected before network I/O. The client has a bounded
+response size, request timeout, and does not follow redirects (the Relay API
+key is a custom header and must not be forwarded to a redirect target).
+Credentials are supplied by the composition root; they must not be committed
+to source or configuration files.
+
+The adapter currently supports Actor snapshot reads and the
+`calculator.CompendiumItemResolver` contract. It does not yet implement the
+full `FoundryGateway`, SSE subscriptions, writes, retries, or job orchestration.
+Its HTTP behavior is covered with `httptest`; these tests still need to be run
+locally and in CI before connecting it to a live Relay.
