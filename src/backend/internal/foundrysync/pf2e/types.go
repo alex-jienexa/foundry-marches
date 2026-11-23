@@ -91,6 +91,7 @@ type CharacterBuildDto struct {
 	Background         *CharacterItemReferenceDto  `json:"background"`
 	Class              *CharacterItemReferenceDto  `json:"class"`
 	KeyAbility         *string                     `json:"keyAbility"`
+	AncestryFeatures   []ClassFeatureReferenceDto  `json:"ancestryFeatures,omitempty"`
 	ClassProficiencies *ClassProficiencyProfileDto `json:"classProficiencies,omitempty"`
 }
 
