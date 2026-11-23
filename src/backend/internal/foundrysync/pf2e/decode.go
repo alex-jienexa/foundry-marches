@@ -253,6 +253,9 @@ func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, 
 	if classHP == nil || ancestryHP == nil {
 		return nil
 	}
+	if hasUnsupportedHPModifier(items) {
+		return nil
+	}
 	conModifier, ok := abilityModifierFromActor(system, items, "con", *level)
 	if !ok {
 		return nil
@@ -262,6 +265,30 @@ func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, 
 		return nil
 	}
 	return &maximum
+}
+
+
+func hasUnsupportedHPModifier(items []FoundryItemDto) bool {
+	for _, item := range items {
+		var rules []map[string]json.RawMessage
+		if json.Unmarshal(item.System["rules"], &rules) != nil {
+			continue
+		}
+		for _, rule := range rules {
+			key := stringAt(rule, "key")
+			path := stringAt(rule, "path")
+			selector := stringAt(rule, "selector")
+			if key != nil && *key == "ActiveEffectLike" && path != nil &&
+				(strings.Contains(*path, "system.abilities.con") || strings.Contains(*path, "system.attributes.hp")) {
+				return true
+			}
+			if key != nil && *key == "FlatModifier" && selector != nil &&
+				(strings.Contains(*selector, "hp") || strings.Contains(*selector, "hit-points")) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func abilityModifierFromActor(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
