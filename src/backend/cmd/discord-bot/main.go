@@ -1592,7 +1592,6 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 			if feature.Name == "" || feature.Level == nil || *feature.Level > *c.Progression.Level {
 				continue
 			}
-			appendUniqueCharacterEntry(&[]string{}, make(map[string]struct{}), feature.Name)
 			key := characterEntryKey(feature.Name)
 			if _, exists := seenClassFeatures[key]; exists {
 				continue
