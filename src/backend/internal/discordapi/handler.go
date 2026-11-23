@@ -19,16 +19,17 @@ import (
 )
 
 const (
-	RegisterPath       = "/api/internal/discord/register"
-	ActorsPath         = "/api/internal/discord/actors"
-	CharactersPath     = "/api/internal/discord/characters"
-	PreviewPath        = "/api/internal/discord/link/preview"
-	LinkPath           = "/api/internal/discord/link"
-	GrantRolePath      = "/api/internal/discord/roles/grant"
-	MapRolePath        = "/api/internal/discord/roles/map"
-	DraftCharacterPath = "/api/internal/discord/characters/draft"
+	RegisterPath        = "/api/internal/discord/register"
+	ActorsPath          = "/api/internal/discord/actors"
+	CharactersPath      = "/api/internal/discord/characters"
+	PreviewPath         = "/api/internal/discord/link/preview"
+	LinkPath            = "/api/internal/discord/link"
+	GrantRolePath       = "/api/internal/discord/roles/grant"
+	MapRolePath         = "/api/internal/discord/roles/map"
+	DraftCharacterPath  = "/api/internal/discord/characters/draft"
 	CharacterSearchPath = "/api/internal/discord/characters/search"
 	CharacterDetailPath = "/api/internal/discord/characters/detail"
+)
 )
 
 type Handler struct {
