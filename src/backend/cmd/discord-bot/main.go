@@ -1914,79 +1914,44 @@ func stringValue(value *string) string {
 }
 
 func characterSkillLines(standard, lore map[string]characterSkill) []string {
+	type skillLine struct {
+		name string
+		rank int
+	}
 	names := map[string]string{
-		"acrobatics":   "Акробатика",
-		"arcana":       "Аркана",
-		"athletics":    "Атлетика",
-		"crafting":     "Ремесло",
-		"deception":    "Обман",
-		"diplomacy":    "Дипломатия",
-		"intimidation": "Запугивание",
-		"medicine":     "Медицина",
-		"nature":       "Природа",
-		"occultism":    "Оккультизм",
-		"performance":  "Выступление",
-		"religion":     "Религия",
-		"society":      "Общество",
-		"stealth":      "Скрытность",
-		"survival":     "Выживание",
-		"thievery":     "Воровство",
+		"acrobatics": "Акробатика", "arcana": "Аркана", "athletics": "Атлетика",
+		"crafting": "Ремесло", "deception": "Обман", "diplomacy": "Дипломатия",
+		"intimidation": "Запугивание", "medicine": "Медицина", "nature": "Природа",
+		"occultism": "Оккультизм", "performance": "Выступление", "religion": "Религия",
+		"society": "Общество", "stealth": "Скрытность", "survival": "Выживание",
+		"thievery": "Воровство",
 	}
-	keys := make([]string, 0, len(standard))
-	for key := range standard {
-		keys = append(keys, key)
-	}
-	sort.SliceStable(keys, func(i, j int) bool {
-		left, right := standard[keys[i]].Rank, standard[keys[j]].Rank
-		if left == nil && right != nil {
-			return false
-		}
-		if left != nil && right == nil {
-			return true
-		}
-		if left != nil && right != nil && *left != *right {
-			return *left > *right
-		}
-		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
-	})
-
-	lines := make([]string, 0, len(standard)+len(lore))
-	for _, key := range keys {
-		skill := standard[key]
-		label := proficiencyLabel(skill.Rank)
-		if label == "" {
+	entries := make([]skillLine, 0, len(standard)+len(lore))
+	for key, skill := range standard {
+		if skill.Rank == nil || *skill.Rank <= 0 {
 			continue
 		}
 		name := names[key]
 		if name == "" {
 			name = humanizeSkillKey(key)
 		}
-		lines = append(lines, fmt.Sprintf("%s — %s", name, label))
+		entries = append(entries, skillLine{name: name, rank: *skill.Rank})
 	}
-
-	loreKeys := make([]string, 0, len(lore))
-	for key := range lore {
-		loreKeys = append(loreKeys, key)
-	}
-	sort.SliceStable(loreKeys, func(i, j int) bool {
-		left, right := lore[loreKeys[i]].Rank, lore[loreKeys[j]].Rank
-		if left == nil && right != nil {
-			return false
-		}
-		if left != nil && right == nil {
-			return true
-		}
-		if left != nil && right != nil && *left != *right {
-			return *left > *right
-		}
-		return strings.ToLower(loreKeys[i]) < strings.ToLower(loreKeys[j])
-	})
-	for _, key := range loreKeys {
-		label := proficiencyLabel(lore[key].Rank)
-		if label == "" {
+	for key, skill := range lore {
+		if skill.Rank == nil || *skill.Rank <= 0 {
 			continue
 		}
-		lines = append(lines, fmt.Sprintf("%s — %s", loreSkillName(key), label))
+		entries = append(entries, skillLine{name: loreSkillName(key), rank: *skill.Rank})
+	}
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].rank != entries[j].rank {
+			return entries[i].rank > entries[j].rank
+		}
+		return strings.ToLower(entries[i].name) < strings.ToLower(entries[j].name)
+	})
+	lines := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		lines = append(lines, fmt.Sprintf("%s — %s", entry.name, proficiencyLabel(&entry.rank)))
 	}
 	return lines
 }
