@@ -1103,7 +1103,7 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		if item.Tradition != nil && *item.Tradition != "" {
 			tradition = spellTraditionLabel(*item.Tradition)
 		}
-		rank := 0
+		rank := -1
 		if item.Level != nil {
 			rank = *item.Level
 		}
@@ -1116,7 +1116,7 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 			keys = append(keys, key)
 		}
 		line := item.Name
-		if rank > 0 {
+		if rank >= 0 {
 			line += fmt.Sprintf(" · ранг %d", rank)
 		} else {
 			line += " · ранг не указан"
@@ -1147,7 +1147,7 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		chunks := splitCharacterLines(groups[key], 12, 900)
 		for page, chunk := range chunks {
 			field := key.tradition
-			if key.rank > 0 {
+			if key.rank >= 0 {
 				field += fmt.Sprintf(" · ранг %d", key.rank)
 			} else {
 				field += " · ранг не указан"
