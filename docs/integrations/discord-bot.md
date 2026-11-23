@@ -84,7 +84,7 @@ The API must be healthy. The bot log should report that it connected and registe
 
 1. In the configured Discord server, run `/register` as the trusted admin account.
 2. The backend creates/updates the Discord account, grants `player`, and grants `owner` because the Discord ID is in `DISCORD_ADMIN_USER_IDS`.
-3. After the database registration succeeds, the bot grants the Discord role configured by `DISCORD_CAMPAIGN_ROLE_ID` (default `1574386309584388106`). This role is for access to campaign channels; it is separate from application RBAC roles.
+3. After the database registration succeeds, the bot grants the Discord role configured by `DISCORD_CAMPAIGN_ROLE_ID` (default `1574386309584388106`). This role is for access to campaign channels; it is separate from application RBAC roles. If Discord role assignment fails, the account remains registered; fix the bot permission/role hierarchy and run `/register` again to retry the idempotent role grant.
 4. Run `/foundry-actors` and `/characters`. The trusted owner should be able to use both because the owner role has `foundry.manage`.
 5. Have another server member run `/register`. They receive the application `player` role and the Discord campaign-access role; they cannot list or link Foundry Actors.
 5. As owner, run `/role-grant discord_user_id:<ID> role_key:gm` to grant the application GM role to a registered member. Alternatively, use `/role-map discord_role_id:<ID> role_key:gm` to map a Discord role to the application GM role. The mapping is evaluated using the member roles included in each Gateway interaction.
