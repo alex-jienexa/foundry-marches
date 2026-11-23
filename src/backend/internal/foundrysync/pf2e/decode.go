@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -105,7 +106,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 			},
 		},
 		Attributes: decodeAttributes(system, hp, actor.Items, intAt(details, "level", "value")),
-		Statistics: decodeStatistics(system),
+		Statistics: decodeStatistics(system, intAt(details, "level", "value")),
 		Resources:  CharacterResourcesDto{HeroPoints: decodeResource(hero)},
 		Skills:     decodeSkills(system["skills"]),
 		Items:      normalizedItems,
@@ -668,7 +669,7 @@ func cloneRaw(value []byte) json.RawMessage {
 
 // decodeStatistics reads only explicit Actor-level values. In particular, it
 // does not infer abilities from boosts or current ranks from class progression.
-func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInputDto {
+func decodeStatistics(system map[string]json.RawMessage, level *int) CharacterStatisticsInputDto {
 	abilities := make(map[string]AbilityScoreDto)
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
 		entry := objectAt(objectAt(system, "abilities"), key)
@@ -678,6 +679,13 @@ func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInpu
 		score := firstInt(intAt(entry, "value"), intAt(entry, "score"))
 		modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier"))
 		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
+	}
+	if derived := decodeAbilityScoresFromBoosts(system, level); len(derived) > 0 {
+		for key, value := range derived {
+			if _, exists := abilities[key]; !exists {
+				abilities[key] = value
+			}
+		}
 	}
 	proficiencies := objectAt(system, "proficiencies")
 	perceptionRaw := objectAt(proficiencies, "perception")
@@ -709,6 +717,91 @@ func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInpu
 			Saves:      proficiencyMap(savesRaw, savesSource),
 			Defenses:   proficiencyMap(defensesRaw, defensesSource),
 		},
+	}
+}
+
+// decodeAbilityScoresFromBoosts reconstructs remaster ability scores only when
+// the Actor snapshot contains the complete level-1 boost selection. It does not
+// execute Rule Elements or infer choices absent from the saved build data.
+func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int) map[string]AbilityScoreDto {
+	if level == nil {
+		return nil
+	}
+	buildAttributes := objectAt(objectAt(system, "build"), "attributes")
+	if buildAttributes == nil {
+		return nil
+	}
+	var boosts map[string][]string
+	if json.Unmarshal(buildAttributes["boosts"], &boosts) != nil || len(boosts["1"]) != 4 {
+		return nil
+	}
+	for _, key := range boosts["1"] {
+		if !isAbilityKey(key) {
+			return nil
+		}
+	}
+	scores := map[string]int{"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10}
+	var flaws map[string][]string
+	if raw := buildAttributes["flaws"]; len(raw) > 0 && !bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		if json.Unmarshal(raw, &flaws) != nil {
+			return nil
+		}
+	}
+	rounds := make([]int, 0, len(boosts))
+	for rawLevel := range boosts {
+		roundLevel, err := strconv.Atoi(rawLevel)
+		if err != nil || roundLevel < 1 {
+			return nil
+		}
+		if roundLevel <= *level {
+			rounds = append(rounds, roundLevel)
+		}
+	}
+	sort.Ints(rounds)
+	for _, roundLevel := range rounds {
+		levelKey := strconv.Itoa(roundLevel)
+		seen := make(map[string]struct{})
+		for _, key := range flaws[levelKey] {
+			if !isAbilityKey(key) {
+				return nil
+			}
+			if _, duplicate := seen[key]; duplicate {
+				return nil
+			}
+			seen[key] = struct{}{}
+			scores[key] -= 2
+		}
+		clear(seen)
+		for _, key := range boosts[levelKey] {
+			if !isAbilityKey(key) {
+				return nil
+			}
+			if _, duplicate := seen[key]; duplicate {
+				return nil
+			}
+			seen[key] = struct{}{}
+			if scores[key] >= 18 {
+				scores[key]++
+			} else {
+				scores[key] += 2
+			}
+		}
+	}
+	result := make(map[string]AbilityScoreDto, len(scores))
+	for key, score := range scores {
+		modifier := int(math.Floor(float64(score-10) / 2))
+		scoreValue, modifierValue := score, modifier
+		result[key] = AbilityScoreDto{Score: &scoreValue, Modifier: &modifierValue}
+	}
+	return result
+}
+
+func isAbilityKey(value string) bool {
+	switch value {
+	case "str", "dex", "con", "int", "wis", "cha":
+		return true
+	default:
+		return false
 	}
 }
 
