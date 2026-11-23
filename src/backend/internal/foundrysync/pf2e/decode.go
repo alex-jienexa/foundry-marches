@@ -370,8 +370,8 @@ func simpleHPModifierValue(raw json.RawMessage, level int) (int, bool) {
 		}
 		return level * multiplier, true
 	}
-	if strings.HasPrefix(expression, "*@actor.level") {
-		multiplier, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(expression, "*"), "@actor.level"))
+	if strings.HasSuffix(expression, "*@actor.level") {
+		multiplier, err := strconv.Atoi(strings.TrimSuffix(expression, "*@actor.level"))
 		if err != nil {
 			return 0, false
 		}
