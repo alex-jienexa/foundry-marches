@@ -198,7 +198,7 @@ Then test:
 | `/character-create` | Create a draft for yourself, or as GM for a mentioned player | `characters.create` for self; `foundry.manage` for another player |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link owner:@player` | Select Actor and application character, assign/confirm owner, preview and confirm link | `foundry.manage` |
-| `/character-unlink name:<имя> [owner:@player]` | Detach an Actor; optionally explicitly reassign the application character owner. Without owner, the current owner is preserved. Transfer history is retained. | `foundry.manage` |
+| `/character-unlink name:<имя> [owner:@player]` | Select an Actor, then confirm the unlink. Optionally explicitly reassign the application character owner. Without owner, the current owner is preserved. Transfer history is retained. | `foundry.manage` |
 | `/foundry-sync` | Refresh all Actor snapshots immediately | `foundry.manage` |
 | `/character` | Search and display character data; GM sees all, players see only their own linked and owner-confirmed drafts, pending approvals and active characters | `characters.create` for own characters; `foundry.manage` for global access |
 | `/my-character` | Show the caller's own linked and owner-confirmed character(s) | `characters.create` or `foundry.manage` |
@@ -212,7 +212,7 @@ Then test:
 
 - API and bot communicate through the Compose network; the bot does not need the public API port.
 - Keep the API and bot service tokens distinct. Rotate `DISCORD_BOT_API_TOKEN` in both services together.
-- The pending confirmation button expires after 10 minutes and is bound to the Discord user and guild that initiated it. A bot restart invalidates pending confirmations.
+- Link and unlink confirmation buttons expire after 10 minutes and are bound to the Discord user and guild that initiated them. A bot restart invalidates pending confirmations.
 - Do not grant privileged Discord roles to untrusted users. A role mapping intentionally grants the corresponding application role to every member who has that Discord role.
 - Select menus show up to 25 entries per page; navigation buttons paginate longer Actor/character lists. Selection flows expire after 10 minutes and are bound to the initiating Discord user and guild. A bot restart invalidates them.
-- The current implementation covers registration, automatic campaign Discord-role assignment, RBAC checks, role assignment/mapping, player/GM character draft creation, explicit owner assignment during Foundry linking, owner-aware character directory output, personal character lookup, categorized character cards, inventory and spell views, explicit Actor unlinking/owner reassignment with audit history, startup/manual/periodic Foundry sync, and integration health alerts. Maximum HP is derived only when all required source inputs are present; missing inputs remain explicitly unknown. Web OAuth2/browser sessions and character approval remain separate work.
+- The current implementation covers registration, automatic campaign Discord-role assignment, RBAC checks, role assignment/mapping, player/GM character draft creation, explicit owner assignment during Foundry linking, owner-aware character directory output, personal character lookup, categorized character cards, inventory and spell views, confirmed Actor unlinking/explicit owner reassignment with audit history, startup/manual/periodic Foundry sync, and integration health alerts. Maximum HP is derived only when all required source inputs are present; missing inputs remain explicitly unknown. Web OAuth2/browser sessions and character approval remain separate work.
