@@ -317,6 +317,18 @@ func TestCharacterCardUsesFoundryPlaceholderWithoutPortrait(t *testing.T) {
 		if embed.Thumbnail == nil || embed.Thumbnail.URL != want {
 			t.Fatalf("thumbnail = %+v, want Foundry placeholder", embed.Thumbnail)
 		}
+		fields := make(map[string]string)
+		for _, field := range embed.Fields {
+			fields[field.Name] = field.Value
+		}
+		for _, name := range []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"} {
+			if _, exists := fields[name]; !exists {
+				t.Errorf("card without portrait is missing standard field %q: %+v", name, fields)
+			}
+		}
+		if fields["ОЗ"] != "— / —" {
+			t.Errorf("missing HP field = %q, want explicit unavailable current and maximum", fields["ОЗ"])
+		}
 	}
 }
 
