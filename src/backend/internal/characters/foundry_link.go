@@ -84,6 +84,11 @@ func (r *FoundryRepository) LinkActorWithOwner(ctx context.Context, worldID, act
 	}
 	if existingCharacterID.Valid {
 		if existingCharacterID.String == characterID {
+			if currentOwnerID.Valid || ownerUserID != "" {
+				if _, err = tx.ExecContext(ctx, "UPDATE foundry_actors SET owner_confirmed_at = clock_timestamp(), updated_at = now() WHERE world_id = $1 AND actor_uuid = $2", worldID, actorUUID); err != nil {
+					return fmt.Errorf("confirm existing Foundry Actor owner: %w", err)
+				}
+			}
 			return tx.Commit()
 		}
 		return ErrActorAlreadyLinked
