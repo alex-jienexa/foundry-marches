@@ -126,9 +126,24 @@ The draft creation operation writes one `characters` row and one audit event. Th
 
 ## 8. Character lookup and integration monitoring
 
-The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu. The resulting Discord embed shows only values present in the decoded PF2e DTO: level, class/build references, HP, XP, explicitly stored ability scores/modifiers, skill ranks, hero points and a short inventory list. Missing source values are shown as unavailable rather than inferred.
+The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu.
 
-For the initial release, `/character` requires the existing `foundry.manage` permission (GM/admin/owner). It is intentionally not exposed to ordinary players until character ownership and player-facing visibility rules are implemented.
+The Embed separates PF2e documents by their source type/category:
+- class abilities (`feat` with `system.category=class`);
+- ancestry abilities (`feat` with `system.category=ancestry`);
+- actions (`type=action`), with the action kind shown where available;
+- class features from the class progression table, limited to the character's current level and deduplicated against matching Actor Items;
+- other feats (for example, general and skill feats);
+- equipment only (`CharacterItemDto.category=equipment`) in the `Предметы` field. Feats, actions, class features, ancestry, heritage, background and class documents are never presented as equipment.
+
+Fundamental build choices (ancestry, heritage, background and class) are not repeated as separate lines. Skills are displayed with PF2e proficiency names — Обучен, Эксперт, Мастер or Легенда. Rank 0/untrained and absent ranks are omitted. The decoder preserves source categories and action types; the bot does not infer a category from an Item's localized name.
+
+Access is enforced by the backend, not only by Discord command visibility:
+- GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
+- An ordinary registered player can search and open only a character whose `characters.owner_user_id` matches their internal user ID, whose linked `foundry_actors.owner_confirmed_at` is set, and whose status is `active`.
+- Unlinked, unconfirmed, draft, pending-approval and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
+
+The database already contains the owner and confirmation fields, but the player ownership assignment/confirmation workflow is not part of this change. Until that workflow assigns an owner and records confirmation, a player will see no character results; GMs can continue to inspect synchronized Actors.
 
 The `/integration-status` command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when one or more component states change. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
 
@@ -160,7 +175,7 @@ Then test:
 | `/characters` | List application characters and IDs | `foundry.manage` |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link` | Select Actor and application character, preview and confirm a link | `foundry.manage` |
-| `/character` | Search saved Foundry snapshots and display a character embed | `foundry.manage` |
+| `/character` | Search and display character data; GM sees all, players see only their own active confirmed links | Registered account; global access requires `foundry.manage` |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
@@ -172,4 +187,4 @@ Then test:
 - The pending confirmation button expires after 10 minutes and is bound to the Discord user and guild that initiated it. A bot restart invalidates pending confirmations.
 - Do not grant privileged Discord roles to untrusted users. A role mapping intentionally grants the corresponding application role to every member who has that Discord role.
 - Select menus show up to 25 entries per page; navigation buttons paginate longer Actor/character lists. Selection flows expire after 10 minutes and are bound to the initiating Discord user and guild. A bot restart invalidates them.
-- The current implementation covers registration, RBAC checks, role assignment/mapping, explicit draft creation, Foundry Actor linking, GM-only character lookup and integration health alerts. Web OAuth2/browser sessions, player-facing character visibility, ownership confirmation and character approval remain separate work.
+- The current implementation covers registration, RBAC checks, role assignment/mapping, explicit draft creation, Foundry Actor linking, character lookup with backend-enforced GM/player visibility, categorized PF2e embeds and integration health alerts. Web OAuth2/browser sessions, player ownership assignment/confirmation and character approval remain separate work.
