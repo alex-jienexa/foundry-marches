@@ -116,14 +116,14 @@ type characterView struct {
 
 type linkRequest struct {
 	identityRequest
-	ActorUUID string `json:"actor_uuid"`
-	CharacterID string `json:"character_id"`
+	ActorUUID          string `json:"actor_uuid"`
+	CharacterID        string `json:"character_id"`
 	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 }
 
 type createCharacterRequest struct {
 	identityRequest
-	Name string `json:"name"`
+	Name               string `json:"name"`
 	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 }
 

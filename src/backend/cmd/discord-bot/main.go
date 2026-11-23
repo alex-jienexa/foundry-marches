@@ -37,7 +37,7 @@ const (
 
 type bot struct {
 	apiURL, apiToken, guildID string
-	campaignRoleID             string
+	campaignRoleID            string
 	adminChannelID            string
 	healthInterval            time.Duration
 	client                    *http.Client
@@ -51,14 +51,14 @@ type bot struct {
 }
 type pendingLink struct {
 	actorUUID, characterID, discordID, guildID, ownerDiscordID string
-	expiresAt                                  time.Time
+	expiresAt                                                  time.Time
 }
 type selectionFlow struct {
 	mode, stage, discordID, guildID, actorUUID, ownerDiscordID string
-	actors                                     []actor
-	characters                                 []character
-	page                                       int
-	expiresAt                                  time.Time
+	actors                                                     []actor
+	characters                                                 []character
+	page                                                       int
+	expiresAt                                                  time.Time
 }
 type identity struct {
 	GuildID        string   `json:"guild_id"`
@@ -72,8 +72,8 @@ type registerPayload struct {
 }
 type linkPayload struct {
 	identity
-	ActorUUID   string `json:"actor_uuid"`
-	CharacterID string `json:"character_id"`
+	ActorUUID          string `json:"actor_uuid"`
+	CharacterID        string `json:"character_id"`
 	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 }
 type actor struct {
@@ -320,7 +320,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var created character
 		payload := struct {
 			identity
-			Name string `json:"name"`
+			Name               string `json:"name"`
 			OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 		}{id, o["name"], o["owner"]}
 		if err := b.post(CharacterCreatePath, payload, &created); err != nil {
@@ -328,7 +328,9 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 		ownerText := "ты"
-		if o["owner"] != "" { ownerText = "<@" + o["owner"] + ">" }
+		if o["owner"] != "" {
+			ownerText = "<@" + o["owner"] + ">"
+		}
 		b.edit(s, i, fmt.Sprintf("**Черновик персонажа создан**\n\nИмя: **%s**\nВладелец: %s\nСтатус: **Черновик**\n\nМастер сможет связать его с Foundry Actor командой `/character-link`.", created.Name, ownerText), nil)
 	case "character-draft":
 		b.startSelection(s, i, id, u, "draft", "")
@@ -871,32 +873,49 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 func directoryEmbed(title, description string, entries []string, maxShown int) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{Title: title, Description: description, Color: 0x5865F2}
 	shown := entries
-	if len(shown) > maxShown { shown = shown[:maxShown] }
+	if len(shown) > maxShown {
+		shown = shown[:maxShown]
+	}
 	const perField = 8
 	for start, fieldNumber := 0, 1; start < len(shown); start, fieldNumber = start+perField, fieldNumber+1 {
 		end := start + perField
-		if end > len(shown) { end = len(shown) }
+		if end > len(shown) {
+			end = len(shown)
+		}
 		lines := make([]string, 0, end-start)
-		for index, value := range shown[start:end] { lines = append(lines, fmt.Sprintf("%d. %s", start+index+1, value)) }
+		for index, value := range shown[start:end] {
+			lines = append(lines, fmt.Sprintf("%d. %s", start+index+1, value))
+		}
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: fmt.Sprintf("Список · %d", fieldNumber), Value: strings.Join(lines, "\n"), Inline: false})
 	}
 	footer := fmt.Sprintf("Показано %d из %d", len(shown), len(entries))
-	if len(entries) > len(shown) { footer += fmt.Sprintf(" · ещё %d не показано", len(entries)-len(shown)) }
+	if len(entries) > len(shown) {
+		footer += fmt.Sprintf(" · ещё %d не показано", len(entries)-len(shown))
+	}
 	embed.Footer = &discordgo.MessageEmbedFooter{Text: footer}
 	return embed
 }
 
 func characterStatusLabel(status string) string {
 	switch status {
-	case "draft": return "черновик"
-	case "pending_approval": return "ожидает одобрения"
-	case "active": return "активен"
-	case "unavailable": return "недоступен"
-	case "dead": return "погиб"
-	case "retired": return "выведен из игры"
-	case "npc": return "NPC"
-	case "archived": return "архив"
-	default: return status
+	case "draft":
+		return "черновик"
+	case "pending_approval":
+		return "ожидает одобрения"
+	case "active":
+		return "активен"
+	case "unavailable":
+		return "недоступен"
+	case "dead":
+		return "погиб"
+	case "retired":
+		return "выведен из игры"
+	case "npc":
+		return "NPC"
+	case "archived":
+		return "архив"
+	default:
+		return status
 	}
 }
 func addCharacterListField(embed *discordgo.MessageEmbed, name string, entries []string) {
