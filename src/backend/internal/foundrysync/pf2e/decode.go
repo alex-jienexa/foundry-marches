@@ -568,7 +568,7 @@ func decodeSkillsWithTraining(raw json.RawMessage, items []FoundryItemDto) Chara
 	skills := decodeSkills(raw)
 	for _, item := range items {
 		trained := objectAt(item.System, "trainedSkills")
-		if item.Type == "class" || item.Type == "background" {
+		if item.Type == "class" || item.Type == "background" || trained != nil {
 			for _, slug := range stringsAt(trained, "value") {
 				mergeSkillRank(&skills, slug, 1)
 			}
