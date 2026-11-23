@@ -25,6 +25,7 @@ const (
 	CharacterCreatePath = "/api/internal/discord/characters/create"
 	PreviewPath         = "/api/internal/discord/link/preview"
 	LinkPath            = "/api/internal/discord/link"
+	UnlinkPath          = "/api/internal/discord/unlink"
 	GrantRolePath       = "/api/internal/discord/roles/grant"
 	MapRolePath         = "/api/internal/discord/roles/map"
 	DraftCharacterPath  = "/api/internal/discord/characters/draft"
@@ -77,6 +78,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.previewLink(w, r)
 	case LinkPath:
 		h.link(w, r)
+	case UnlinkPath:
+		h.unlinkActor(w, r)
 	case GrantRolePath:
 		h.grantRole(w, r)
 	case MapRolePath:
@@ -122,6 +125,12 @@ type linkRequest struct {
 	identityRequest
 	ActorUUID          string `json:"actor_uuid"`
 	CharacterID        string `json:"character_id"`
+	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
+}
+
+type unlinkRequest struct {
+	identityRequest
+	ActorUUID          string `json:"actor_uuid"`
 	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 }
 
@@ -893,6 +902,50 @@ WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 	default:
 		log.Printf("Discord Foundry Actor link failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "could not link Foundry Actor")
+	}
+}
+
+
+func (h *Handler) unlinkActor(w http.ResponseWriter, r *http.Request) {
+	var req unlinkRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	userID, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage")
+	if !ok {
+		return
+	}
+	if strings.TrimSpace(req.ActorUUID) == "" {
+		writeError(w, http.StatusBadRequest, "Actor UUID is required")
+		return
+	}
+
+	newOwnerID := ""
+	if strings.TrimSpace(req.OwnerDiscordUserID) != "" {
+		err := h.db.QueryRowContext(r.Context(), `
+SELECT da.user_id::text
+FROM discord_accounts da
+JOIN users u ON u.id = da.user_id
+WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
+`, req.OwnerDiscordUserID).Scan(&newOwnerID)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "the selected owner must register with /register first")
+			return
+		}
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "could not resolve selected character owner")
+			return
+		}
+	}
+	err := h.foundry.UnlinkActor(r.Context(), h.worldID, req.ActorUUID, userID, newOwnerID)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusOK, map[string]string{"status":"unlinked"})
+	case errors.Is(err, characters.ErrActorNotLinked):
+		writeError(w, http.StatusConflict, err.Error())
+	default:
+		log.Printf("Discord Foundry Actor unlink failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not unlink Foundry Actor")
 	}
 }
 
