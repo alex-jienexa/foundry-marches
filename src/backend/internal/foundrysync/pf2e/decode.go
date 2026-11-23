@@ -157,9 +157,9 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	normalized := CharacterItemDto{
 		ID: item.ID, Name: item.Name, Type: item.Type, Image: item.Image,
 		Slug: stringAt(system, "slug"), Category: categoryFor(item.Type),
-		SystemCategory: stringAt(system, "category"),
-		ActionType:     stringAt(objectAt(system, "actionType"), "value"),
-		Quantity:       intAt(system, "quantity"),
+		SystemCategory:   stringAt(system, "category"),
+		ActionType:       stringAt(objectAt(system, "actionType"), "value"),
+		Quantity:         intAt(system, "quantity"),
 		Level:            firstInt(intAt(system, "level", "value"), intAt(system, "level")),
 		Equipped:         decodeEquipped(objectAt(system, "equipped")),
 		Armor:            decodeArmorData(system),

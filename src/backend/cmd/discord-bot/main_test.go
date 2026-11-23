@@ -115,10 +115,10 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	}
 	c.Items[len(c.Items)-1].Quantity = &two
 	c.Skills.Standard = map[string]characterSkill{
-		"athletics":   {Rank: &one},
-		"diplomacy":   {Rank: &zero},
+		"athletics":    {Rank: &one},
+		"diplomacy":    {Rank: &zero},
 		"intimidation": {Rank: &four},
-		"thievery":    {Rank: &three},
+		"thievery":     {Rank: &three},
 	}
 	c.Skills.Lore = map[string]characterSkill{
 		"lore-warfare": {Rank: &two},
