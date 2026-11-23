@@ -239,7 +239,7 @@ func TestCharacterEmbedDoesNotRenderMissingHPMaximumAsDash(t *testing.T) {
 	}{Current: &current}
 	embed := characterEmbed(c)
 	for _, field := range embed.Fields {
-		if field.Name == "Здоровье" {
+		if field.Name == "ОЗ" {
 			if field.Value != "19 ОЗ" {
 				t.Fatalf("HP field = %q, want current HP without fabricated maximum", field.Value)
 			}
@@ -386,6 +386,16 @@ func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
 	item := characterItem{Type: "equipment", ContainerID: &container, Equipped: &characterEquipped{CarryType: &stowed}}
 	if got := inventoryStateLabel(item); got != "В РЮКЗАКЕ" {
 		t.Fatalf("stowed item state = %q", got)
+	}
+}
+
+
+func TestCharacterDetailButtonsStayOnOneMessage(t *testing.T) {
+	if got := len(characterDetailComponents("abc123", false)[0].(discordgo.ActionsRow).Components); got != 4 {
+		t.Fatalf("overview buttons = %d, want 4 detail sections", got)
+	}
+	if got := len(characterDetailComponents("abc123", true)[0].(discordgo.ActionsRow).Components); got != 5 {
+		t.Fatalf("detail buttons = %d, want 4 sections plus overview", got)
 	}
 }
 
