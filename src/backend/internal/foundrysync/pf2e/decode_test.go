@@ -336,3 +336,45 @@ func TestDecodeRuleElementsOnActorItems(t *testing.T) {
 		t.Fatal("Hefty Hauler Actor Item not found")
 	}
 }
+
+func TestDecodeActorPreservesFeatAndActionCategories(t *testing.T) {
+	decoded, err := DecodeActor(readFixture(t, fixtureActor))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found := map[string]bool{}
+	for _, item := range decoded.Character.Items {
+		if item.Slug == nil {
+			continue
+		}
+		switch *item.Slug {
+		case "double-slice":
+			found["class-feat"] = item.Type == "feat" &&
+				item.SystemCategory != nil && *item.SystemCategory == "class" &&
+				item.ActionType != nil && *item.ActionType == "action"
+		case "gloomseer":
+			found["ancestry-feat"] = item.Type == "feat" &&
+				item.SystemCategory != nil && *item.SystemCategory == "ancestry"
+		case "reactive-strike":
+			if item.Type == "action" {
+				found["action"] = item.ActionType != nil && *item.ActionType == "reaction"
+			} else if item.Type == "feat" {
+				found["class-feature"] = item.SystemCategory != nil && *item.SystemCategory == "classfeature"
+			}
+		case "longsword":
+			found["equipment"] = item.Category == ItemCategoryEquipment
+		}
+	}
+
+	for category, ok := range found {
+		if !ok {
+			t.Errorf("category %q was not decoded correctly", category)
+		}
+	}
+	for _, category := range []string{"class-feat", "ancestry-feat", "action", "class-feature", "equipment"} {
+		if !found[category] {
+			t.Errorf("fixture did not expose expected category %q", category)
+		}
+	}
+}
