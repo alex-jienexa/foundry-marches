@@ -109,9 +109,10 @@ type actorView struct {
 }
 
 type characterView struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	OwnerName string `json:"owner_name,omitempty"`
 }
 
 type linkRequest struct {
@@ -374,10 +375,11 @@ func (h *Handler) listCharacters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rows, err := h.db.QueryContext(r.Context(), `
-SELECT id::text, name, status
-FROM characters
-WHERE status <> 'archived'
-ORDER BY name
+SELECT c.id::text, c.name, c.status, COALESCE(u.display_name, '')
+FROM characters c
+LEFT JOIN users u ON u.id = c.owner_user_id
+WHERE c.status <> 'archived'
+ORDER BY c.name
 LIMIT 200
 `)
 	if err != nil {
@@ -388,7 +390,7 @@ LIMIT 200
 	items := make([]characterView, 0)
 	for rows.Next() {
 		var item characterView
-		if err := rows.Scan(&item.ID, &item.Name, &item.Status); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Status, &item.OwnerName); err != nil {
 			writeError(w, http.StatusInternalServerError, "could not read character list")
 			return
 		}
