@@ -340,7 +340,7 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 		case "class":
 			hasClass = true
 			classBoosts := objectAt(item.System, "boosts")
-			if classBoosts != nil {
+			if classBoosts != nil && hasSelectedBoosts(classBoosts) {
 				boosts += selectedBoostCount(classBoosts, ability)
 				continue
 			}
@@ -364,7 +364,7 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 	}
 	for levelKey, raw := range rawBoosts {
 		boostLevel, err := strconv.Atoi(levelKey)
-		if err != nil || boostLevel > level {
+		if err != nil || boostLevel < 1 || (boostLevel-1)%4 != 0 || boostLevel > level {
 			continue
 		}
 		var selected []string
@@ -949,7 +949,7 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 		case "class":
 			hasClass = true
 			classBoosts := objectAt(item.System, "boosts")
-			if classBoosts != nil {
+			if classBoosts != nil && hasSelectedBoosts(classBoosts) {
 				if !completeSelectedBoosts(classBoosts) {
 					return nil, false
 				}
@@ -996,6 +996,19 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 		result[ability] = score
 	}
 	return result, true
+}
+
+func hasSelectedBoosts(raw map[string]json.RawMessage) bool {
+	for _, value := range raw {
+		var entry map[string]json.RawMessage
+		if json.Unmarshal(value, &entry) != nil {
+			continue
+		}
+		if selected := stringAt(entry, "selected"); selected != nil && *selected != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
