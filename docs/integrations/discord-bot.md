@@ -15,7 +15,7 @@ New members can register themselves with `/register` and receive the `player` ro
 3. Open **Bot** and add a bot if Discord has not created one automatically.
 4. Reset/copy the bot token. This is `DISCORD_BOT_TOKEN`. Store it only in the server's local `.env`; never commit it or send it in chat.
 5. Privileged Gateway intents (Presence, Server Members, Message Content) are not required for the current commands. The bot uses the Guilds intent and interaction payloads.
-6. Under **OAuth2 → URL Generator**, select scopes `bot` and `applications.commands`. Grant the bot **View Channels** and **Send Messages**. Open the generated URL and add the bot to the campaign server.
+6. Under **OAuth2 → URL Generator**, select scopes `bot` and `applications.commands`. Grant the bot **View Channels**, **Send Messages** and **Manage Roles**. The campaign access role must be below the bot's highest role in the server role hierarchy. Open the generated URL and add the bot to the campaign server.
 
 ## 2. Obtain the server ID and trusted admin ID
 
@@ -35,6 +35,8 @@ DISCORD_GUILD_ID=the-server-id
 DISCORD_ADMIN_USER_IDS=your-discord-user-id
 DISCORD_BOT_API_TOKEN=generated-random-secret
 DISCORD_ADMIN_CHANNEL_ID=discord-admin-channel-id
+# Discord role that grants access to campaign channels
+DISCORD_CAMPAIGN_ROLE_ID=1574386309584388106
 # Optional; default 60 seconds, allowed range 15..3600
 DISCORD_HEALTH_INTERVAL_SECONDS=60
 ```
@@ -82,17 +84,23 @@ The API must be healthy. The bot log should report that it connected and registe
 
 1. In the configured Discord server, run `/register` as the trusted admin account.
 2. The backend creates/updates the Discord account, grants `player`, and grants `owner` because the Discord ID is in `DISCORD_ADMIN_USER_IDS`.
-3. Run `/foundry-actors` and `/characters`. The trusted owner should be able to use both because the owner role has `foundry.manage`.
-4. Have another server member run `/register`. They receive only `player`; they cannot list or link Foundry Actors.
+3. After the database registration succeeds, the bot grants the Discord role configured by `DISCORD_CAMPAIGN_ROLE_ID` (default `1574386309584388106`). This role is for access to campaign channels; it is separate from application RBAC roles.
+4. Run `/foundry-actors` and `/characters`. The trusted owner should be able to use both because the owner role has `foundry.manage`.
+5. Have another server member run `/register`. They receive the application `player` role and the Discord campaign-access role; they cannot list or link Foundry Actors.
 5. As owner, run `/role-grant discord_user_id:<ID> role_key:gm` to grant the application GM role to a registered member. Alternatively, use `/role-map discord_role_id:<ID> role_key:gm` to map a Discord role to the application GM role. The mapping is evaluated using the member roles included in each Gateway interaction.
 6. Only `player` and `gm` may be granted/mapped with these commands. The privileged `owner` role is only bootstrapped from `DISCORD_ADMIN_USER_IDS`.
 
 ## 7. Test draft creation and linking with Андрей
 
-The bot now supports two explicit GM actions:
+Character creation and linking support both players and GMs:
 
-- `/character-draft` creates an application character in `draft` status from a selected unlinked Foundry Actor. It copies only the Actor name and portrait URL. It does not assign an owner or copy game statistics/items. Repeating the command for the same Actor returns the existing draft instead of creating a duplicate.
-- `/character-link` lets the GM select an unlinked Foundry Actor and an existing application character, then preview and confirm the link. The confirmation is bound to the initiating Discord user and guild.
+- `/character-create name:<имя>` lets a player create an application draft owned by their own registered account.
+- A GM uses `/character-create name:<имя> owner:@игрок`. The selected player must already have run `/register`; the backend resolves the mention to that player's internal account and stores explicit ownership.
+- `/character-draft` remains available to GMs who want to create a draft from a selected unlinked Foundry Actor. The draft is initially unowned.
+- `/character-link owner:@игрок` lets a GM select an unlinked Foundry Actor and an application character, then preview and confirm the link. The owner mention is optional only when the character already has an owner; an unowned draft cannot be linked without explicitly selecting one.
+- On link confirmation, the backend atomically links the Actor, assigns the selected owner if the character was unowned, records the ownership transfer/audit context, and marks ownership confirmed for that link. A conflicting existing owner is never silently replaced.
+- A player-created draft is already assigned to that player; when a GM links its Foundry Actor, the existing owner is preserved and confirmed.
+- The confirmation is bound to the initiating Discord user and guild.
 
 After linking, the existing Foundry sync path fills Foundry-owned character fields. Foundry sync itself still does not create application characters.
 
@@ -143,7 +151,7 @@ Access is enforced by the backend, not only by Discord command visibility:
 - A registered player with `characters.create` can search and open only a character whose `characters.owner_user_id` matches their internal user ID, whose linked `foundry_actors.owner_confirmed_at` is set after the latest ownership transfer (or after the original link if there was no transfer), and whose status is `active`.
 - Unlinked, unconfirmed, draft, pending-approval and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
 
-The database already contains the owner and confirmation fields, but the player ownership assignment/confirmation workflow is not part of this change. Until that workflow assigns an owner and records confirmation, a player will see no character results; GMs can continue to inspect synchronized Actors.
+Character ownership is assigned explicitly during `/character-create` or `/character-link`. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A linked character becomes visible to its assigned player only after the explicit owner assignment is committed and `owner_confirmed_at` is recorded for that link.
 
 The `/integration-status` command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when one or more component states change. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
 
@@ -176,8 +184,9 @@ Then test:
 | `/register` | Register the current server member | Server membership |
 | `/foundry-actors` | List unlinked Foundry character Actors | `foundry.manage` |
 | `/characters` | List application characters and IDs | `foundry.manage` |
+| `/character-create` | Create a draft for yourself, or as GM for a mentioned player | `characters.create` for self; `foundry.manage` for another player |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
-| `/character-link` | Select Actor and application character, preview and confirm a link | `foundry.manage` |
+| `/character-link owner:@player` | Select Actor and application character, assign/confirm owner, preview and confirm link | `foundry.manage` |
 | `/character` | Search and display character data; GM sees all, players see only their own active confirmed links | `characters.create` for own characters; `foundry.manage` for global access |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
@@ -190,4 +199,4 @@ Then test:
 - The pending confirmation button expires after 10 minutes and is bound to the Discord user and guild that initiated it. A bot restart invalidates pending confirmations.
 - Do not grant privileged Discord roles to untrusted users. A role mapping intentionally grants the corresponding application role to every member who has that Discord role.
 - Select menus show up to 25 entries per page; navigation buttons paginate longer Actor/character lists. Selection flows expire after 10 minutes and are bound to the initiating Discord user and guild. A bot restart invalidates them.
-- The current implementation covers registration, RBAC checks, role assignment/mapping, explicit draft creation, Foundry Actor linking, character lookup with backend-enforced GM/player visibility, categorized PF2e embeds and integration health alerts. Web OAuth2/browser sessions, player ownership assignment/confirmation and character approval remain separate work.
+- The current implementation covers registration, automatic campaign Discord-role assignment, RBAC checks, role assignment/mapping, player/GM character draft creation, explicit owner assignment during Foundry linking, character lookup with backend-enforced GM/player visibility, categorized PF2e embeds and integration health alerts. Web OAuth2/browser sessions and character approval remain separate work.
