@@ -53,8 +53,10 @@ The tests decode the committed Relay fixtures under the repository-level
 
 `CharacterDto.Statistics` contains explicit Actor ability values when present. If those
 values are absent, the decoder can reconstruct ability scores from complete selected
-boosts/flaws on ancestry and background Items, the class key ability, and the four
-selected boosts at each level milestone (1, 5, 9, 13, 17) reached by the character.
+boosts/flaws on ancestry and background Items, the class boost or key ability, and the
+four selected boosts at each level milestone (1, 5, 9, 13, 17) reached by the character.
+Ancestry flaws are applied before background, class and level-based boosts so the
+18-point boost threshold is evaluated in progression order.
 Each reconstructed `AbilityScoreDto` is marked `derived: true`, and the containing
 statistics object sets `abilitiesDerived: true`. Incomplete selections leave missing
 scores unknown. Derived values are presentation/calculation inputs, not writes to the
