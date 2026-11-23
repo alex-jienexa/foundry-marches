@@ -480,11 +480,22 @@ func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
 }
 
 func TestCharacterDetailButtonsStayOnOneMessage(t *testing.T) {
-	if got := len(characterDetailComponents("abc123", "overview")[0].(discordgo.ActionsRow).Components); got != 4 {
-		t.Fatalf("overview buttons = %d, want 4 detail sections", got)
-	}
-	if got := len(characterDetailComponents("abc123", "skills")[0].(discordgo.ActionsRow).Components); got != 5 {
-		t.Fatalf("detail buttons = %d, want 4 sections plus overview", got)
+	for _, section := range []string{"overview", "abilities", "skills", "inventory", "spells", "metrics"} {
+		rows := characterDetailComponents("abc123", section)
+		if len(rows) != 2 {
+			t.Fatalf("%s navigation rows = %d, want 2", section, len(rows))
+		}
+		total := 0
+		for _, component := range rows {
+			row, ok := component.(discordgo.ActionsRow)
+			if !ok {
+				t.Fatalf("%s navigation component has type %T, want ActionsRow", section, component)
+			}
+			total += len(row.Components)
+		}
+		if total != 6 {
+			t.Fatalf("%s navigation buttons = %d, want 6", section, total)
+		}
 	}
 }
 
