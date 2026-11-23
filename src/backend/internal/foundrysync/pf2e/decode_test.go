@@ -179,8 +179,8 @@ func TestDecodeItemUnknownTypeIsPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if item.Character.Category != ItemCategoryOther {
-		t.Fatalf("category = %q", item.Character.Category)
+	if item.Character.Category != ItemCategoryEquipment {
+		t.Fatalf("an unknown Actor Item with a quantity must remain visible as inventory; category = %q", item.Character.Category)
 	}
 	if item.Character.Quantity == nil || *item.Character.Quantity != 7 {
 		t.Fatal("quantity missing")
