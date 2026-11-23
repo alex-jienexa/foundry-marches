@@ -1510,7 +1510,53 @@ func spellTraditionLabel(value string) string {
 	}
 }
 
+
+func logCharacterCardDiagnostics(c characterDetails) {
+	value := strings.TrimSpace(os.Getenv("FOUNDRY_CHARACTER_DIAGNOSTICS"))
+	if !strings.EqualFold(value, "1") && !strings.EqualFold(value, "true") {
+		return
+	}
+	className, ancestryName := "", ""
+	if c.Build.Class != nil { className = c.Build.Class.Name }
+	if c.Build.Ancestry != nil { ancestryName = c.Build.Ancestry.Name }
+	hpCurrent, hpMaximum := (*int)(nil), (*int)(nil)
+	if c.Attributes.HP != nil {
+		hpCurrent, hpMaximum = c.Attributes.HP.Current, c.Attributes.HP.Max
+	}
+	log.Printf("[character-diagnostics] discord-card actor_uuid=%q name=%q class=%q ancestry=%q level=%s hp_current=%s hp_max=%s xp=%s/%s actor_ability_keys=%v reconstructed_ability_keys=%v",
+		c.Identity.UUID, c.Identity.Name, className, ancestryName,
+		diagnosticInt(c.Progression.Level), diagnosticInt(hpCurrent), diagnosticInt(hpMaximum),
+		diagnosticInt(c.Progression.Experience.Value), diagnosticInt(c.Progression.Experience.Max),
+		sortedAbilityKeys(c.Statistics.Abilities), sortedAbilityKeys(c.Statistics.ReconstructedAbilities))
+	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
+		if actorValue, ok := c.Statistics.Abilities[key]; ok {
+			log.Printf("[character-diagnostics] discord-card ability=%s source=actor score=%s modifier=%s derived=%t",
+				key, diagnosticInt(actorValue.Score), diagnosticInt(actorValue.Modifier), actorValue.Derived)
+			continue
+		}
+		if reconstructed, ok := c.Statistics.ReconstructedAbilities[key]; ok {
+			log.Printf("[character-diagnostics] discord-card ability=%s source=reconstructed score=%s modifier=%s derived=%t",
+				key, diagnosticInt(reconstructed.Score), diagnosticInt(reconstructed.Modifier), reconstructed.Derived)
+			continue
+		}
+		log.Printf("[character-diagnostics] discord-card ability=%s source=missing", key)
+	}
+}
+
+func diagnosticInt(value *int) string {
+	if value == nil { return "<nil>" }
+	return strconv.Itoa(*value)
+}
+
+func sortedAbilityKeys[T any](values map[string]T) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values { keys = append(keys, key) }
+	sort.Strings(keys)
+	return keys
+}
+
 func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
+	logCharacterCardDiagnostics(c)
 	embed := &discordgo.MessageEmbed{Title: c.Identity.Name, Color: 0x5865F2}
 	if c.Identity.Image != nil && (strings.HasPrefix(*c.Identity.Image, "https://") || strings.HasPrefix(*c.Identity.Image, "http://")) {
 		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
