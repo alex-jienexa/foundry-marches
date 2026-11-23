@@ -137,6 +137,8 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	c.Build.Heritage = &characterReference{Name: "Видящий во мраке"}
 	c.Build.Background = &characterReference{Name: "Уличный бродяга"}
 	c.Build.Class = &characterReference{Name: "Воин"}
+	keyAbility := "str"
+	c.Build.KeyAbility = &keyAbility
 	c.Build.ClassProficiencies = &classProficiencyDetails{Features: []classFeatureReference{
 		{Name: "Реагирующий удар", Level: &featureLevel},
 		{Name: "Блок щитом", Level: &featureLevel},
@@ -184,6 +186,8 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 		{"Другие способности", "Сильный носильщик"},
 		{"Предметы", "Длинный меч"},
 		{"Предметы", "Золотые монеты × 2"},
+		{"Ключевая характеристика", "Сила"},
+		{"Характеристики", "Значения не сохранены"},
 	}
 	for _, check := range checks {
 		if !strings.Contains(fields[check.field], check.want) {
