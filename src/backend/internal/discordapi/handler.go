@@ -355,6 +355,10 @@ FROM foundry_actors fa
 JOIN characters c ON c.id = fa.character_id
 WHERE fa.world_id = $1
   AND fa.owner_confirmed_at IS NOT NULL
+  AND fa.owner_confirmed_at > COALESCE(
+    (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
+    fa.linked_at
+  )
   AND c.owner_user_id = $2
   AND c.status = 'active'
   AND c.name ILIKE $3
@@ -418,6 +422,10 @@ WHERE fa.world_id = $1
         AND c.owner_user_id = $4
         AND c.status = 'active'
         AND fa.owner_confirmed_at IS NOT NULL
+        AND fa.owner_confirmed_at > COALESCE(
+          (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
+          fa.linked_at
+        )
     )
   )
 `, h.worldID, req.ActorUUID, canManage, userID).Scan(&snapshot)
