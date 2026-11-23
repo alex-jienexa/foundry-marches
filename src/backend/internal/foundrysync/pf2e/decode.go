@@ -320,48 +320,52 @@ func abilityModifierFromActor(system map[string]json.RawMessage, items []Foundry
 }
 
 func reconstructedAbilityScore(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
-	score := 10
-	hasAncestry, hasBackground, hasClass := false, false, false
-	for _, item := range items {
+	var ancestry, background, class *FoundryItemDto
+	for i := range items {
+		item := &items[i]
 		switch item.Type {
 		case "ancestry":
-			hasAncestry = true
-			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
-				score = applyAbilityBoost(score)
-			}
-			voluntary := objectAt(item.System, "voluntary")
-			if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
-				score = applyAbilityBoost(score)
-			}
-			flaws := selectedBoostCount(objectAt(item.System, "flaws"), ability) +
-				stringArrayCount(voluntary, "flaws", ability)
-			score -= flaws * 2
+			if ancestry == nil { ancestry = item }
 		case "background":
-			hasBackground = true
-			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
-				score = applyAbilityBoost(score)
-			}
+			if background == nil { background = item }
 		case "class":
-			hasClass = true
-			classBoosts := objectAt(item.System, "boosts")
-			if classBoosts != nil && hasSelectedBoosts(classBoosts) {
-				for range selectedBoostCount(classBoosts, ability) {
-					score = applyAbilityBoost(score)
-				}
-				continue
-			}
-			keyAbility := objectAt(item.System, "keyAbility")
-			selected := stringAt(keyAbility, "selected")
-			if selected != nil && *selected == ability {
-				score = applyAbilityBoost(score)
-			} else if selected == nil && stringArrayCount(keyAbility, "value", ability) == 1 && len(stringsAt(keyAbility, "value")) == 1 {
-				score = applyAbilityBoost(score)
-			}
+			if class == nil { class = item }
 		}
 	}
-	if !hasAncestry || !hasBackground || !hasClass {
+	if ancestry == nil || background == nil || class == nil {
 		return 0, false
 	}
+
+	score := 10
+	for range selectedBoostCount(objectAt(ancestry.System, "boosts"), ability) {
+		score = applyAbilityBoost(score)
+	}
+	voluntary := objectAt(ancestry.System, "voluntary")
+	if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
+		score = applyAbilityBoost(score)
+	}
+	flaws := selectedBoostCount(objectAt(ancestry.System, "flaws"), ability) +
+		stringArrayCount(voluntary, "flaws", ability)
+	score -= flaws * 2
+
+	for range selectedBoostCount(objectAt(background.System, "boosts"), ability) {
+		score = applyAbilityBoost(score)
+	}
+	classBoosts := objectAt(class.System, "boosts")
+	if classBoosts != nil && hasSelectedBoosts(classBoosts) {
+		for range selectedBoostCount(classBoosts, ability) {
+			score = applyAbilityBoost(score)
+		}
+	} else {
+		keyAbility := objectAt(class.System, "keyAbility")
+		selected := stringAt(keyAbility, "selected")
+		if selected != nil && *selected == ability {
+			score = applyAbilityBoost(score)
+		} else if selected == nil && stringArrayCount(keyAbility, "value", ability) == 1 && len(stringsAt(keyAbility, "value")) == 1 {
+			score = applyAbilityBoost(score)
+		}
+	}
+
 	build := objectAt(system, "build")
 	attributes := objectAt(build, "attributes")
 	rawBoosts := objectAt(attributes, "boosts")
