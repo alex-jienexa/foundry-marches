@@ -136,8 +136,14 @@ func TestDecodePostSessionActorSnapshot(t *testing.T) {
 	if character.Build.KeyAbility == nil || *character.Build.KeyAbility != "int" {
 		t.Fatalf("key ability = %+v, want class-defined INT", character.Build.KeyAbility)
 	}
-	if len(character.Statistics.Abilities) != 0 {
-		t.Fatalf("null Actor.system.abilities must remain unknown even when build selections exist: %+v", character.Statistics.Abilities)
+	if !character.Statistics.AbilitiesDerived || len(character.Statistics.Abilities) != 6 {
+		t.Fatalf("complete post-session build selections should derive six abilities: %+v", character.Statistics)
+	}
+	if got := character.Statistics.Abilities["int"]; got.Score == nil || *got.Score != 16 || !got.Derived {
+		t.Fatalf("INT = %+v, want derived score 16", got)
+	}
+	if got := character.Statistics.Abilities["cha"]; got.Score == nil || *got.Score != 16 {
+		t.Fatalf("CHA = %+v, want score 16", got)
 	}
 
 	if character.Attributes.HP == nil || character.Attributes.HP.Current == nil || *character.Attributes.HP.Current != 2 {
@@ -282,27 +288,71 @@ func TestDecodeSkillsSeparatesLoreWithoutDerivingIt(t *testing.T) {
 }
 
 func TestDecodeStatisticsKeepsMissingValuesUnknown(t *testing.T) {
-	decoded, err := DecodeActor(readFixture(t, fixtureActor))
-	if err != nil {
-		t.Fatal(err)
-	}
+	raw := []byte(`{"_id":"unknown","type":"character","items":[],"system":{"abilities":null}}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
 	stats := decoded.Character.Statistics
-	if len(stats.Abilities) != 0 {
-		t.Fatalf("null Actor.system.abilities must not be reconstructed: %+v", stats.Abilities)
+	if len(stats.Abilities) != 0 || stats.AbilitiesDerived {
+		t.Fatalf("missing Actor values without complete boost selections must remain unknown: %+v", stats)
 	}
 	if stats.Proficiencies.Perception != nil || len(stats.Proficiencies.Saves) != 0 {
 		t.Fatalf("missing Actor proficiencies must remain unavailable: %+v", stats.Proficiencies)
 	}
+}
+
+func TestDecodeAbilityScoresFromBuildBoostSelections(t *testing.T) {
+	decoded, err := DecodeActor(readFixture(t, fixtureActor))
+	if err != nil { t.Fatal(err) }
+	stats := decoded.Character.Statistics
+	if !stats.AbilitiesDerived || len(stats.Abilities) != 6 { t.Fatalf("expected six derived ability scores: %+v", stats) }
+	want := map[string]int{"str": 18, "dex": 12, "con": 14, "int": 10, "wis": 14, "cha": 10}
+	for ability, score := range want {
+		got := stats.Abilities[ability]
+		if got.Score == nil || *got.Score != score || !got.Derived { t.Errorf("%s = %+v, want derived score %d", ability, got, score) }
+	}
 	class := decoded.Character.Build.ClassProficiencies
-	if class == nil || class.PerceptionRank == nil || *class.PerceptionRank != 2 {
-		t.Fatalf("class progression profile not decoded: %+v", class)
+	if class == nil || class.PerceptionRank == nil || *class.PerceptionRank != 2 { t.Fatalf("class progression profile not decoded: %+v", class) }
+	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 { t.Fatalf("unexpected class save baseline: %+v", class.SavingThrows) }
+	if class.AdditionalSkills == nil || *class.AdditionalSkills != 3 { t.Fatalf("class additional skill count missing: %+v", class.AdditionalSkills) }
+}
+func TestDecodeSkillsIncludesClassAndBackgroundTraining(t *testing.T) {
+	raw := []byte(`{"_id":"skills","type":"character","items":[
+		{"_id":"class","type":"class","system":{"trainedSkills":{"value":["religion"],"additional":2},"rules":[{"key":"ActiveEffectLike","mode":"upgrade","path":"system.skills.diplomacy.rank","value":1}]}},
+		{"_id":"background","type":"background","system":{"trainedSkills":{"value":["athletics"],"lore":["Warfare Lore"]}}}
+	],"system":{"skills":{}}}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	for _, slug := range []string{"religion", "athletics", "diplomacy"} {
+		if got := decoded.Character.Skills.Standard[slug].Rank; got == nil || *got != 1 { t.Errorf("%s rank = %v, want trained (1)", slug, got) }
 	}
-	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 {
-		t.Fatalf("unexpected class save baseline: %+v", class.SavingThrows)
-	}
-	if class.AdditionalSkills == nil || *class.AdditionalSkills != 3 {
-		t.Fatalf("class additional skill count missing: %+v", class)
-	}
+	if got := decoded.Character.Skills.Lore["lore-warfare"].Rank; got == nil || *got != 1 { t.Errorf("Warfare Lore rank = %v, want trained (1)", got) }
+}
+
+func TestDecodeSkillFeatAssociationFromPrerequisite(t *testing.T) {
+	item, err := DecodeItem([]byte(`{"_id":"feat","name":"Bon Mot","type":"feat","system":{"category":"skill","prerequisites":{"value":[{"value":"Обучен Дипломатии"}]}}}`))
+	if err != nil { t.Fatal(err) }
+	if item.Character.Skill == nil || *item.Character.Skill != "diplomacy" { t.Fatalf("skill association = %v, want diplomacy", item.Character.Skill) }
+}
+
+func TestDecodePreparedSpellSlotsAndSpellbook(t *testing.T) {
+	raw := []byte(`{"_id":"caster","type":"character","items":[
+		{"_id":"entry","name":"Арканная книга","type":"spellcastingEntry","system":{
+			"tradition":{"value":"arcane"},"prepared":{"value":"prepared"},
+			"slots":{"slot0":{"prepared":[{"id":"cantrip","expended":false}],"value":0,"max":0},
+			"slot1":{"prepared":[{"id":"prepared-spell","expended":false}],"value":0,"max":1},
+			"slot2":{"prepared":[],"value":0,"max":1}}
+		}},
+		{"_id":"cantrip","name":"Свет","type":"spell","system":{"location":"entry","level":{"value":0}}},
+		{"_id":"prepared-spell","name":"Магическая стрела","type":"spell","system":{"location":"entry","level":{"value":1}}},
+		{"_id":"spellbook","name":"Щит","type":"spell","system":{"location":"entry","level":{"value":1}}}
+	]}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	spells := make(map[string]CharacterItemDto)
+	for _, item := range decoded.Character.Items { if item.Type == "spell" { spells[item.ID] = item } }
+	if got := spells["cantrip"]; got.Prepared == nil || !*got.Prepared || len(got.PreparedRanks) != 1 || got.PreparedRanks[0] != 0 { t.Errorf("cantrip slot data = %+v, want prepared at slot0", got) }
+	if got := spells["prepared-spell"]; got.Prepared == nil || !*got.Prepared || len(got.PreparedRanks) != 1 || got.PreparedRanks[0] != 1 { t.Errorf("prepared spell slot data = %+v, want prepared at rank 1", got) }
+	if got := spells["spellbook"]; got.Prepared == nil || *got.Prepared || len(got.PreparedRanks) != 0 { t.Errorf("spellbook spell = %+v, want available for preparation only", got) }
 }
 
 func TestDecodeEquipmentCalculationInputs(t *testing.T) {
