@@ -106,7 +106,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 			},
 		},
 		Attributes: decodeAttributes(system, hp, actor.Items, intAt(details, "level", "value")),
-		Statistics: decodeStatistics(system, intAt(details, "level", "value"), actor.Items),
+		Statistics: decodeStatistics(system),
 		Resources:  CharacterResourcesDto{HeroPoints: decodeResource(hero)},
 		Skills:     decodeSkills(system["skills"]),
 		Items:      normalizedItems,
@@ -670,7 +670,7 @@ func cloneRaw(value []byte) json.RawMessage {
 // decodeStatistics reads only explicit Actor-level values. Missing or null
 // system.abilities must remain unknown; build selections are not Actor-prepared
 // ability scores and must not become inputs to derived-stat calculations.
-func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems []FoundryItemDto) CharacterStatisticsInputDto {
+func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInputDto {
 	abilities := make(map[string]AbilityScoreDto)
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
 		entry := objectAt(objectAt(system, "abilities"), key)
