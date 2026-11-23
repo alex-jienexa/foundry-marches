@@ -183,6 +183,7 @@ type characterItem struct {
 	PreparedRanks       []int              `json:"preparedRanks"`
 	SpellcastingType    *string            `json:"spellcastingType"`
 	Skill               *string            `json:"skill"`
+	Cantrip             bool               `json:"cantrip"`
 }
 
 type characterEquipped struct {
@@ -681,7 +682,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				b.edit(s, i, "Не удалось загрузить данные персонажа: "+err.Error(), nil)
 				return
 			}
-			details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
+			details.Identity.Image = characterPortraitURL(details.Identity.Image, b.foundryPublicBaseURL)
 			switch mode {
 			case "inventory":
 				b.editEmbeds(s, i, characterInventoryEmbeds(details))
@@ -1137,6 +1138,14 @@ func resolveFoundryImageURL(image *string, publicBaseURL string) *string {
 	return &value
 }
 
+func characterPortraitURL(image *string, publicBaseURL string) *string {
+	if resolved := resolveFoundryImageURL(image, publicBaseURL); resolved != nil {
+		return resolved
+	}
+	placeholder := "systems/pf2e/icons/default-icons/character.svg"
+	return resolveFoundryImageURL(&placeholder, publicBaseURL)
+}
+
 func characterInventoryEmbed(c characterDetails) *discordgo.MessageEmbed {
 	embeds := characterInventoryEmbeds(c)
 	if len(embeds) == 0 {
@@ -1305,6 +1314,7 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		if item.SpellcastingType != nil && *item.SpellcastingType == "prepared" {
 			rank := -1
 			if item.Level != nil { rank = *item.Level }
+			if item.Cantrip { rank = 0 }
 			switch {
 			case item.Prepared == nil:
 				addSpell(item, "Статус подготовки не определён", rank)
@@ -1319,6 +1329,7 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		}
 		rank := -1
 		if item.Level != nil { rank = *item.Level }
+		if item.Cantrip { rank = 0 }
 		state := "Доступно"
 		if item.SpellcastingType != nil && *item.SpellcastingType == "spontaneous" {
 			state = "В репертуаре"
@@ -1399,7 +1410,7 @@ func spellTraditionLabel(value string) string {
 func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{Title: c.Identity.Name, Color: 0x5865F2}
 	if c.Identity.Image != nil && (strings.HasPrefix(*c.Identity.Image, "https://") || strings.HasPrefix(*c.Identity.Image, "http://")) {
-		embed.Image = &discordgo.MessageEmbedImage{URL: *c.Identity.Image}
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
 	}
 	if c.Attributes.Dying != nil && c.Attributes.Dying.Current != nil && c.Attributes.Dying.Max != nil &&
 		*c.Attributes.Dying.Max > 0 && *c.Attributes.Dying.Current >= *c.Attributes.Dying.Max {
@@ -1418,7 +1429,7 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		if c.Attributes.HP.Max != nil {
 			hp += " / " + strconv.Itoa(*c.Attributes.HP.Max)
 		} else {
-			hp += " ОЗ"
+			hp += " / —"
 		}
 		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 {
 			hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp)
@@ -1434,22 +1445,21 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 			value, ok = c.Statistics.ReconstructedAbilities[key]
 		}
 		if ok {
-			line := abilityNames[key] + ": "
-			if value.Score != nil {
-				line += strconv.Itoa(*value.Score)
-			} else {
-				line += "—"
+			modifier := value.Modifier
+			if modifier == nil && value.Score != nil {
+				calculated := *value.Score/2 - 5
+				modifier = &calculated
 			}
-			if value.Modifier != nil {
-				line += fmt.Sprintf(" (%+d)", *value.Modifier)
+			if modifier != nil {
+				abilities = append(abilities, fmt.Sprintf("%s: %+d", abilityNames[key], *modifier))
 			}
-			abilities = append(abilities, line)
 		}
 	}
-	if len(abilities) == 0 {
-		abilities = append(abilities, "Нет данных в снимке Foundry")
+	abilityLine := strings.Join(abilities, " · ")
+	if abilityLine == "" {
+		abilityLine = "Нет данных в снимке Foundry"
 	}
-	addCharacterListField(embed, "Характеристики", abilities)
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Характеристики", Value: abilityLine, Inline: false})
 	if c.Statistics.AbilitiesDerived {
 		embed.Description = "Недостающие значения рассчитаны по выбранным повышениям PF2e из родословной, предыстории, класса и повышений по уровням; они не являются сохранёнными значениями Actor."
 	}
@@ -1487,7 +1497,6 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 				appendUniqueCharacterEntry(&classFeatures, seenClassFeatures, item.Name)
 			case "skill":
 				skillAbilities = append(skillAbilities, item.Name)
-				otherAbilities = append(otherAbilities, item.Name)
 			default:
 				if _, exists := seenClassFeatures[characterEntryKey(item.Name)]; !exists { otherAbilities = append(otherAbilities, item.Name) }
 			}
@@ -1517,7 +1526,14 @@ func characterSkillsEmbed(c characterDetails) *discordgo.MessageEmbed {
 	groupNames := make([]string, 0, len(groups))
 	for name := range groups { groupNames = append(groupNames, name) }
 	sort.Strings(groupNames)
-	for _, name := range groupNames { addCharacterListField(embed, "Способности · "+name, groups[name]) }
+	var skillAbilityLines []string
+	for _, name := range groupNames {
+		skillAbilityLines = append(skillAbilityLines, name)
+		for _, ability := range groups[name] {
+			skillAbilityLines = append(skillAbilityLines, "- "+ability)
+		}
+	}
+	addCharacterListField(embed, "Способности навыков", skillAbilityLines)
 	if len(embed.Fields) == 0 { embed.Description = "В снимке Foundry нет обученных навыков или способностей навыков." }
 	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Навыки и способности из последней синхронизации Foundry"}
 	return embed
