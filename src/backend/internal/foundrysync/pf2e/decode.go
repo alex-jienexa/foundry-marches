@@ -105,9 +105,9 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 			},
 		},
 		Attributes: decodeAttributes(system, hp, actor.Items, intAt(details, "level", "value")),
-		Statistics: decodeStatistics(system),
+		Statistics: decodeStatistics(system, actor.Items, intAt(details, "level", "value")),
 		Resources:  CharacterResourcesDto{HeroPoints: decodeResource(hero)},
-		Skills:     decodeSkills(system["skills"]),
+		Skills:     decodeSkillsWithTraining(system["skills"], actor.Items),
 		Items:      normalizedItems,
 		Biography:  decodeBiography(bio, objectAt(details, "languages"), details),
 	}
@@ -159,6 +159,7 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	normalized := CharacterItemDto{
 		ID: item.ID, Name: item.Name, Type: item.Type, Image: item.Image,
 		Slug: stringAt(system, "slug"), Category: categoryForItem(item.Type, system),
+		Skill: decodeSkillAssociation(system),
 		SystemCategory:      stringAt(system, "category"),
 		ActionType:          stringAt(objectAt(system, "actionType"), "value"),
 		Quantity:            intAt(system, "quantity"),
@@ -304,14 +305,14 @@ func abilityModifierFromActor(system map[string]json.RawMessage, items []Foundry
 			return *modifier, true
 		}
 		if score := firstInt(intAt(entry, "value"), intAt(entry, "score")); score != nil {
-			return (*score - 10) / 2, true
+			return abilityModifierFromScore(*score), true
 		}
 	}
 	score, ok := reconstructedAbilityScore(system, items, ability, level)
 	if !ok {
 		return 0, false
 	}
-	return (score - 10) / 2, true
+	return abilityModifierFromScore(score), true
 }
 
 func reconstructedAbilityScore(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
@@ -423,13 +424,53 @@ func decodeKeyAbility(details map[string]json.RawMessage, items []FoundryItemDto
 }
 
 func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryItemDto) {
-	entries := make(map[string]FoundryItemDto)
+	type spellcastingEntryInfo struct {
+		item           FoundryItemDto
+		tradition      *string
+		preparedType   *string
+		preparedRanks  map[string][]int
+		slotsAvailable bool
+	}
+	entries := make(map[string]spellcastingEntryInfo)
 	sources := make(map[string]FoundryItemDto)
 	for _, item := range foundryItems {
 		sources[item.ID] = item
-		if item.Type == "spellcastingEntry" {
-			entries[item.ID] = item
+		if item.Type != "spellcastingEntry" {
+			continue
 		}
+		preparedType := stringAt(objectAt(item.System, "prepared"), "value")
+		info := spellcastingEntryInfo{
+			item: item,
+			tradition: firstString(stringAt(objectAt(item.System, "tradition"), "value"), stringAt(item.System, "tradition")),
+			preparedType: preparedType,
+			preparedRanks: make(map[string][]int),
+		}
+		if preparedType != nil && *preparedType == "prepared" {
+			slots := objectAt(item.System, "slots")
+			if slots != nil {
+				info.slotsAvailable = true
+				for rank := 0; rank <= 11; rank++ {
+					group := objectAt(slots, "slot"+strconv.Itoa(rank))
+					if group == nil {
+						continue
+					}
+					var prepared []json.RawMessage
+					if json.Unmarshal(group["prepared"], &prepared) != nil {
+						continue
+					}
+					for _, slot := range prepared {
+						var slotData map[string]json.RawMessage
+						if json.Unmarshal(slot, &slotData) != nil {
+							continue
+						}
+						if spellID := stringAt(slotData, "id"); spellID != nil && *spellID != "" {
+							info.preparedRanks[*spellID] = append(info.preparedRanks[*spellID], rank)
+						}
+					}
+				}
+			}
+		}
+		entries[item.ID] = info
 	}
 	for i := range items {
 		if items[i].Type != "spell" {
@@ -443,18 +484,18 @@ func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryIte
 		if entryID != nil {
 			items[i].SpellcastingEntryID = entryID
 			if entry, ok := entries[*entryID]; ok {
-				tradition := firstString(
-					stringAt(objectAt(entry.System, "tradition"), "value"),
-					stringAt(entry.System, "tradition"),
-				)
-				items[i].Tradition = tradition
-				entryName := entry.Name
-				if entryName != "" {
+				items[i].Tradition = entry.tradition
+				items[i].SpellcastingType = entry.preparedType
+				if entry.item.Name != "" {
+					entryName := entry.item.Name
 					items[i].SpellList = &entryName
 				}
-				prepared := firstBool(boolAt(entry.System, "prepared"), boolAt(objectAt(entry.System, "prepared"), "value"))
-				if prepared != nil {
-					items[i].Prepared = prepared
+				if entry.preparedType != nil && *entry.preparedType == "prepared" && entry.slotsAvailable {
+					ranks := append([]int(nil), entry.preparedRanks[items[i].ID]...)
+					sort.Ints(ranks)
+					items[i].PreparedRanks = ranks
+					prepared := len(ranks) > 0
+					items[i].Prepared = &prepared
 				}
 			}
 		}
@@ -518,6 +559,139 @@ func decodeSkills(raw json.RawMessage) CharacterSkillsDto {
 		}
 	}
 	return CharacterSkillsDto{Standard: standard, Lore: lore}
+}
+
+func decodeSkillsWithTraining(raw json.RawMessage, items []FoundryItemDto) CharacterSkillsDto {
+	skills := decodeSkills(raw)
+	for _, item := range items {
+		trained := objectAt(item.System, "trainedSkills")
+		if item.Type == "class" || item.Type == "background" {
+			for _, slug := range stringsAt(trained, "value") {
+				mergeSkillRank(&skills, slug, 1)
+			}
+			for _, lore := range stringsAt(trained, "lore") {
+				mergeSkillRank(&skills, loreSlug(lore), 1)
+			}
+		}
+		mergeSkillRuleRanks(&skills, item)
+	}
+	return skills
+}
+
+func mergeSkillRank(skills *CharacterSkillsDto, slug string, rank int) {
+	slug = strings.ToLower(strings.TrimSpace(strings.ReplaceAll(slug, "_", "-")))
+	if slug == "" || rank < 0 {
+		return
+	}
+	if strings.HasPrefix(slug, "lore-") {
+		current := skills.Lore[slug]
+		if current.Rank == nil || *current.Rank < rank {
+			value := rank
+			current.Rank = &value
+			skills.Lore[slug] = current
+		}
+		return
+	}
+	current := skills.Standard[slug]
+	if current.Rank == nil || *current.Rank < rank {
+		value := rank
+		current.Rank = &value
+		skills.Standard[slug] = current
+	}
+}
+
+func loreSlug(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.TrimSuffix(value, " lore")
+	value = strings.TrimSpace(value)
+	value = strings.ReplaceAll(value, " ", "-")
+	return "lore-" + value
+}
+
+// mergeSkillRuleRanks reads only unconditional ActiveEffectLike upgrades that
+// target a concrete system.skills.<slug>.rank path. It does not execute rules.
+func mergeSkillRuleRanks(skills *CharacterSkillsDto, item FoundryItemDto) {
+	var rules []json.RawMessage
+	if json.Unmarshal(item.System["rules"], &rules) != nil {
+		return
+	}
+	for _, raw := range rules {
+		var rule map[string]json.RawMessage
+		if json.Unmarshal(raw, &rule) != nil ||
+			stringValue(rule, "key") != "ActiveEffectLike" ||
+			stringValue(rule, "mode") != "upgrade" {
+			continue
+		}
+		if len(rule["predicate"]) > 0 && !bytes.Equal(bytes.TrimSpace(rule["predicate"]), []byte("null")) &&
+			!bytes.Equal(bytes.TrimSpace(rule["predicate"]), []byte("[]")) {
+			continue
+		}
+		path := stringValue(rule, "path")
+		const marker = "{item|flags.system.rulesSelections."
+		if start := strings.Index(path, marker); start >= 0 {
+			end := strings.Index(path[start:], "}")
+			if end < 0 {
+				continue
+			}
+			flag := path[start+len(marker) : start+end]
+			selectionRaw := ruleSelection(item.Flags, flag)
+			var selection string
+			if json.Unmarshal(selectionRaw, &selection) != nil || selection == "" {
+				continue
+			}
+			path = strings.Replace(path, path[start:start+end+1], selection, 1)
+		}
+		if !strings.HasPrefix(path, "system.skills.") || !strings.HasSuffix(path, ".rank") {
+			continue
+		}
+		slug := strings.TrimSuffix(strings.TrimPrefix(path, "system.skills."), ".rank")
+		if slug == "" || strings.Contains(slug, ".") {
+			continue
+		}
+		var rank int
+		if json.Unmarshal(rule["value"], &rank) == nil {
+			mergeSkillRank(skills, slug, rank)
+		}
+	}
+}
+
+func decodeSkillAssociation(system map[string]json.RawMessage) *string {
+	prerequisites := objectAt(system, "prerequisites")
+	var entries []map[string]json.RawMessage
+	if prerequisites == nil || json.Unmarshal(prerequisites["value"], &entries) != nil {
+		return nil
+	}
+	known := []struct{ slug string; terms []string }{
+		{"acrobatics", []string{"acrobatics", "акробатик"}},
+		{"arcana", []string{"arcana", "аркан"}},
+		{"athletics", []string{"athletics", "атлетик"}},
+		{"crafting", []string{"crafting", "ремесл"}},
+		{"deception", []string{"deception", "обман"}},
+		{"diplomacy", []string{"diplomacy", "дипломат"}},
+		{"intimidation", []string{"intimidation", "запугив"}},
+		{"medicine", []string{"medicine", "медицин"}},
+		{"nature", []string{"nature", "природ"}},
+		{"occultism", []string{"occultism", "оккульт"}},
+		{"performance", []string{"performance", "выступлен"}},
+		{"religion", []string{"religion", "религи"}},
+		{"society", []string{"society", "обществ"}},
+		{"stealth", []string{"stealth", "скрытност"}},
+		{"survival", []string{"survival", "выживан"}},
+		{"thievery", []string{"thievery", "воровств"}},
+	}
+	for _, entry := range entries {
+		value := stringValue(entry, "value")
+		value = strings.ToLower(value)
+		for _, candidate := range known {
+			for _, term := range candidate.terms {
+				if strings.Contains(value, term) {
+					slug := candidate.slug
+					return &slug
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func decodeBiography(raw, languages map[string]json.RawMessage, details map[string]json.RawMessage) CharacterBiographyDto {
@@ -666,10 +840,10 @@ func cloneRaw(value []byte) json.RawMessage {
 	return append(json.RawMessage(nil), value...)
 }
 
-// decodeStatistics reads only explicit Actor-level values. Missing or null
-// system.abilities must remain unknown; build selections are not Actor-prepared
-// ability scores and must not become inputs to derived-stat calculations.
-func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInputDto {
+// decodeStatistics prefers prepared Actor values. If those are absent, it
+// reconstructs scores only when all ancestry, background, class and level-boost
+// selections required at the character's current level are present.
+func decodeStatistics(system map[string]json.RawMessage, items []FoundryItemDto, level *int) CharacterStatisticsInputDto {
 	abilities := make(map[string]AbilityScoreDto)
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
 		entry := objectAt(objectAt(system, "abilities"), key)
@@ -679,6 +853,19 @@ func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInpu
 		score := firstInt(intAt(entry, "value"), intAt(entry, "score"))
 		modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier"))
 		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
+	}
+	derived := false
+	if scores, ok := reconstructAbilityScores(system, items, level); ok {
+		for key, score := range scores {
+			current := abilities[key]
+			if current.Score == nil && current.Modifier == nil {
+				current.Score = intPointerValue(score)
+				current.Modifier = intPointerValue(abilityModifierFromScore(score))
+				current.Derived = true
+				abilities[key] = current
+				derived = true
+			}
+		}
 	}
 	proficiencies := objectAt(system, "proficiencies")
 	perceptionRaw := objectAt(proficiencies, "perception")
@@ -704,7 +891,7 @@ func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInpu
 		defensesSource = "actor.defenses"
 	}
 	return CharacterStatisticsInputDto{
-		Abilities: abilities,
+		Abilities: abilities, AbilitiesDerived: derived,
 		Proficiencies: CharacterProficienciesDto{
 			Perception: perception,
 			Saves:      proficiencyMap(savesRaw, savesSource),
@@ -712,6 +899,95 @@ func decodeStatistics(system map[string]json.RawMessage) CharacterStatisticsInpu
 		},
 	}
 }
+
+func reconstructAbilityScores(system map[string]json.RawMessage, items []FoundryItemDto, level *int) (map[string]int, bool) {
+	if level == nil || *level < 1 {
+		return nil, false
+	}
+	hasAncestry, hasBackground, hasClass := false, false, false
+	for _, item := range items {
+		switch item.Type {
+		case "ancestry":
+			hasAncestry = true
+			if !completeSelectedBoosts(objectAt(item.System, "boosts")) ||
+				!completeSelectedBoosts(objectAt(item.System, "flaws")) {
+				return nil, false
+			}
+		case "background":
+			hasBackground = true
+			if !completeSelectedBoosts(objectAt(item.System, "boosts")) {
+				return nil, false
+			}
+		case "class":
+			hasClass = true
+			keyAbility := objectAt(item.System, "keyAbility")
+			selected := stringAt(keyAbility, "selected")
+			values := stringsAt(keyAbility, "value")
+			if selected == nil && len(values) != 1 {
+				return nil, false
+			}
+		}
+	}
+	if !hasAncestry || !hasBackground || !hasClass {
+		return nil, false
+	}
+	boosts := objectAt(objectAt(objectAt(system, "build"), "attributes"), "boosts")
+	if boosts == nil {
+		return nil, false
+	}
+	for milestone := 1; milestone <= *level; milestone += 4 {
+		var selected []string
+		if json.Unmarshal(boosts[strconv.Itoa(milestone)], &selected) != nil || len(selected) != 4 {
+			return nil, false
+		}
+		for _, ability := range selected {
+			if !isAbilityKey(ability) {
+				return nil, false
+			}
+		}
+	}
+	result := make(map[string]int, 6)
+	for _, ability := range []string{"str", "dex", "con", "int", "wis", "cha"} {
+		score, ok := reconstructedAbilityScore(system, items, ability, *level)
+		if !ok {
+			return nil, false
+		}
+		result[ability] = score
+	}
+	return result, true
+}
+
+func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
+	if raw == nil {
+		return true
+	}
+	for _, value := range raw {
+		var entry map[string]json.RawMessage
+		if json.Unmarshal(value, &entry) != nil {
+			continue
+		}
+		var choices []string
+		if json.Unmarshal(entry["value"], &choices) != nil || len(choices) == 0 {
+			continue
+		}
+		selected := stringAt(entry, "selected")
+		if selected == nil || !isAbilityKey(*selected) {
+			return false
+		}
+	}
+	return true
+}
+
+func abilityModifierFromScore(score int) int {
+	delta := score - 10
+	modifier := delta / 2
+	if delta < 0 && delta%2 != 0 {
+		modifier--
+	}
+	return modifier
+}
+
+func intPointerValue(value int) *int { return &value }
 
 func isAbilityKey(value string) bool {
 	switch value {
