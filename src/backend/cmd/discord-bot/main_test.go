@@ -288,7 +288,7 @@ func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
 	fields := make(map[string]string)
 	for _, field := range embed.Fields { fields[field.Name] = field.Value }
 	if !strings.Contains(fields["Все навыки"], "Дипломатия — Обучен") {
-		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Обучение навыкам"])
+		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Все навыки"])
 	}
 	grouped := fields["Способности навыков"]
 	for _, want := range []string{"Дипломатия", "- Остроумная реплика", "Атлетика", "- Атлетическая мощь"} {
