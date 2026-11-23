@@ -959,7 +959,7 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 			selected := stringAt(keyAbility, "selected")
 			values := stringsAt(keyAbility, "value")
 			if selected != nil && *selected != "" {
-				if !isAbilityKey(*selected) {
+				if !isAbilityKey(*selected) || (len(values) > 0 && !containsString(values, *selected)) {
 					return nil, false
 				}
 				continue
@@ -1011,6 +1011,15 @@ func hasSelectedBoosts(raw map[string]json.RawMessage) bool {
 	return false
 }
 
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
+}
+
 func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
 	if raw == nil {
 		return true
@@ -1031,7 +1040,7 @@ func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
 			continue
 		}
 		selected := stringAt(entry, "selected")
-		if selected == nil || !isAbilityKey(*selected) {
+		if selected == nil || !isAbilityKey(*selected) || !containsString(choices, *selected) {
 			return false
 		}
 	}
