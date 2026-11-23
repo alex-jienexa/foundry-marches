@@ -96,7 +96,7 @@ type characterDetails struct {
 		Image *string `json:"image"`
 	} `json:"identity"`
 	Progression struct {
-		Level *int `json:"level"`
+		Level      *int `json:"level"`
 		Experience struct {
 			Value *int `json:"value"`
 			Max   *int `json:"max"`
@@ -687,8 +687,8 @@ func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, em
 	components := []discordgo.MessageComponent{}
 	embeds := []*discordgo.MessageEmbed{embed}
 	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Content:   &content,
-		Embeds:    &embeds,
+		Content:    &content,
+		Embeds:     &embeds,
 		Components: &components,
 	})
 	if err != nil {

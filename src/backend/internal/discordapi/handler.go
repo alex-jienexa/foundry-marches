@@ -30,7 +30,6 @@ const (
 	CharacterSearchPath = "/api/internal/discord/characters/search"
 	CharacterDetailPath = "/api/internal/discord/characters/detail"
 )
-)
 
 type Handler struct {
 	db           *sql.DB
