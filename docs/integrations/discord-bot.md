@@ -183,11 +183,11 @@ Then test:
 |---|---|---|
 | `/register` | Register the current server member | Server membership |
 | `/foundry-actors` | List unlinked Foundry character Actors | `foundry.manage` |
-| `/characters` | List application characters and IDs | `foundry.manage` |
+| `/characters` | Show a readable list of application characters | `foundry.manage` |
 | `/character-create` | Create a draft for yourself, or as GM for a mentioned player | `characters.create` for self; `foundry.manage` for another player |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link owner:@player` | Select Actor and application character, assign/confirm owner, preview and confirm link | `foundry.manage` |
-| `/character` | Search and display character data; GM sees all, players see only their own active confirmed links | `characters.create` for own characters; `foundry.manage` for global access |
+| `/character` | Search and display character data; GM sees all, players see only their own linked and owner-confirmed drafts, pending approvals and active characters | `characters.create` for own characters; `foundry.manage` for global access |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
