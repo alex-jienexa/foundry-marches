@@ -42,7 +42,9 @@ type Handler struct {
 	guildID      string
 	worldID      string
 	adminUserIDs map[string]struct{}
-	syncer       interface { SyncAll(context.Context) (foundrysync.SyncReport, error) }
+	syncer       interface {
+		SyncAll(context.Context) (foundrysync.SyncReport, error)
+	}
 }
 
 func NewHandler(db *sql.DB, foundry *characters.FoundryRepository, apiToken, guildID, worldID string, adminUserIDs []string) (*Handler, error) {
@@ -62,7 +64,9 @@ func NewHandler(db *sql.DB, foundry *characters.FoundryRepository, apiToken, gui
 	return &Handler{db: db, foundry: foundry, guildID: guildID, worldID: worldID, adminUserIDs: admins}, nil
 }
 
-func (h *Handler) SetSyncService(syncer interface { SyncAll(context.Context) (foundrysync.SyncReport, error) }) {
+func (h *Handler) SetSyncService(syncer interface {
+	SyncAll(context.Context) (foundrysync.SyncReport, error)
+}) {
 	h.syncer = syncer
 }
 
@@ -914,8 +918,6 @@ WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 	}
 }
 
-
-
 func (h *Handler) syncFoundryWorld(w http.ResponseWriter, r *http.Request) {
 	var req identityRequest
 	if !decodeRequest(w, r, &req) {
@@ -975,7 +977,7 @@ WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 	err := h.foundry.UnlinkActor(r.Context(), h.worldID, req.ActorUUID, userID, newOwnerID)
 	switch {
 	case err == nil:
-		writeJSON(w, http.StatusOK, map[string]string{"status":"unlinked"})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "unlinked"})
 	case errors.Is(err, characters.ErrActorNotLinked):
 		writeError(w, http.StatusConflict, err.Error())
 	default:

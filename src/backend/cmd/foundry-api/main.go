@@ -148,7 +148,9 @@ func run() error {
 		report, err := syncService.SyncAll(r.Context())
 		if err != nil {
 			status := http.StatusBadGateway
-			if errors.Is(err, foundrysync.ErrSyncInProgress) { status = http.StatusConflict }
+			if errors.Is(err, foundrysync.ErrSyncInProgress) {
+				status = http.StatusConflict
+			}
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(status)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -183,7 +185,9 @@ func run() error {
 	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	syncInterval, err := foundrySyncInterval()
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	go runPeriodicFoundrySync(stopCtx, syncService, syncInterval)
 	serverErr := make(chan error, 1)
 	go func() {
@@ -203,7 +207,6 @@ func run() error {
 		return server.Shutdown(shutdownCtx)
 	}
 }
-
 
 func foundrySyncInterval() (time.Duration, error) {
 	seconds := 300

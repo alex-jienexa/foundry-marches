@@ -105,8 +105,8 @@ type CharacterItemReferenceDto struct {
 // Current and temporary HP are copied from Actor.system.attributes.hp. If max is absent,
 // the decoder derives it only when class, ancestry, level and Constitution are known.
 type CharacterAttributesDto struct {
-	HP    *HitPointsDto       `json:"hp"`
-	Dying *DyingConditionDto  `json:"dying,omitempty"`
+	HP    *HitPointsDto      `json:"hp"`
+	Dying *DyingConditionDto `json:"dying,omitempty"`
 }
 
 type DyingConditionDto struct {
@@ -177,16 +177,16 @@ const (
 // Type-specific source fields remain available in the Actor RawSnapshot and
 // are not copied wholesale into every normalized Item.
 type CharacterItemDto struct {
-	ID               string                `json:"id"`
-	Name             string                `json:"name"`
-	Type             string                `json:"type"`
-	Slug             *string               `json:"slug"`
-	Image            *string               `json:"image"`
-	Category         CharacterItemCategory `json:"category"`
-	SystemCategory   *string               `json:"systemCategory,omitempty"`
-	ActionType       *string               `json:"actionType,omitempty"`
-	Quantity         *int                  `json:"quantity"`
-	Level            *int                  `json:"level"`
+	ID                  string                `json:"id"`
+	Name                string                `json:"name"`
+	Type                string                `json:"type"`
+	Slug                *string               `json:"slug"`
+	Image               *string               `json:"image"`
+	Category            CharacterItemCategory `json:"category"`
+	SystemCategory      *string               `json:"systemCategory,omitempty"`
+	ActionType          *string               `json:"actionType,omitempty"`
+	Quantity            *int                  `json:"quantity"`
+	Level               *int                  `json:"level"`
 	Equipped            *CharacterEquippedDto `json:"equipped"`
 	ContainerID         *string               `json:"containerId,omitempty"`
 	Usage               *string               `json:"usage,omitempty"`
@@ -195,9 +195,9 @@ type CharacterItemDto struct {
 	SpellList           *string               `json:"spellList,omitempty"`
 	Prepared            *bool                 `json:"prepared,omitempty"`
 	CompendiumSource    *string               `json:"compendiumSource"`
-	RuleElements     []RuleElementDto      `json:"ruleElements,omitempty"`
-	Armor            *ArmorItemDataDto     `json:"armor,omitempty"`
-	Runes            *ItemRuneDataDto      `json:"runes,omitempty"`
+	RuleElements        []RuleElementDto      `json:"ruleElements,omitempty"`
+	Armor               *ArmorItemDataDto     `json:"armor,omitempty"`
+	Runes               *ItemRuneDataDto      `json:"runes,omitempty"`
 }
 
 type CharacterEquippedDto struct {

@@ -22,22 +22,22 @@ import (
 )
 
 const (
-	RegisterPath          = "/api/internal/discord/register"
-	ActorsPath            = "/api/internal/discord/actors"
-	CharactersPath        = "/api/internal/discord/characters"
-	PreviewPath           = "/api/internal/discord/link/preview"
-	LinkPath              = "/api/internal/discord/link"
-	UnlinkPath            = "/api/internal/discord/unlink"
-	GrantRolePath         = "/api/internal/discord/roles/grant"
-	MapRolePath           = "/api/internal/discord/roles/map"
-	DraftCharacterPath    = "/api/internal/discord/characters/draft"
-	CharacterCreatePath   = "/api/internal/discord/characters/create"
-	CharacterSearchPath   = "/api/internal/discord/characters/search"
-	CharacterDetailPath   = "/api/internal/discord/characters/detail"
-	MyCharactersPath      = "/api/internal/discord/characters/mine"
-	FoundrySyncPath       = "/api/internal/discord/foundry-sync"
+	RegisterPath           = "/api/internal/discord/register"
+	ActorsPath             = "/api/internal/discord/actors"
+	CharactersPath         = "/api/internal/discord/characters"
+	PreviewPath            = "/api/internal/discord/link/preview"
+	LinkPath               = "/api/internal/discord/link"
+	UnlinkPath             = "/api/internal/discord/unlink"
+	GrantRolePath          = "/api/internal/discord/roles/grant"
+	MapRolePath            = "/api/internal/discord/roles/map"
+	DraftCharacterPath     = "/api/internal/discord/characters/draft"
+	CharacterCreatePath    = "/api/internal/discord/characters/create"
+	CharacterSearchPath    = "/api/internal/discord/characters/search"
+	CharacterDetailPath    = "/api/internal/discord/characters/detail"
+	MyCharactersPath       = "/api/internal/discord/characters/mine"
+	FoundrySyncPath        = "/api/internal/discord/foundry-sync"
 	StartupFoundrySyncPath = "/api/internal/discord/foundry-sync/startup"
-	IntegrationStatusPath = "/api/internal/discord/integration-status"
+	IntegrationStatusPath  = "/api/internal/discord/integration-status"
 )
 
 type bot struct {
@@ -63,7 +63,7 @@ type pendingLink struct {
 }
 type pendingUnlink struct {
 	actorUUID, actorName, discordID, guildID, ownerDiscordID string
-	expiresAt time.Time
+	expiresAt                                                time.Time
 }
 type selectionFlow struct {
 	mode, stage, discordID, guildID, actorUUID, ownerDiscordID string
@@ -154,7 +154,7 @@ type characterDetails struct {
 }
 type characterDying struct {
 	Current *int `json:"current"`
-	Max *int `json:"max"`
+	Max     *int `json:"max"`
 }
 
 type characterItem struct {
@@ -636,12 +636,18 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			}
 			b.pendingUnlinks[pendingKey] = pendingUnlink{
 				actorUUID: chosen.ActorUUID, actorName: chosen.Name, discordID: u.ID,
-				guildID: i.GuildID, ownerDiscordID: ownerDiscordID, expiresAt: time.Now().Add(10*time.Minute),
+				guildID: i.GuildID, ownerDiscordID: ownerDiscordID, expiresAt: time.Now().Add(10 * time.Minute),
 			}
 			b.mu.Unlock()
-			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil { return }
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
+				return
+			}
 			message := "Подтверди отвязку Foundry Actor **" + chosen.Name + "**. Персонаж приложения и история сохранятся."
-			if ownerDiscordID != "" { message += "\nНовый владелец: <@" + ownerDiscordID + ">." } else { message += "\nТекущий владелец останется без изменений." }
+			if ownerDiscordID != "" {
+				message += "\nНовый владелец: <@" + ownerDiscordID + ">."
+			} else {
+				message += "\nТекущий владелец останется без изменений."
+			}
 			b.edit(s, i, message, unlinkConfirmationComponents(pendingKey))
 			return
 		}
@@ -819,10 +825,14 @@ func (b *bot) prunePendingLocked() {
 func (b *bot) pruneFlowsLocked() {
 	now := time.Now()
 	for key, flow := range b.flows {
-		if now.After(flow.expiresAt) { delete(b.flows, key) }
+		if now.After(flow.expiresAt) {
+			delete(b.flows, key)
+		}
 	}
 	for key, pending := range b.pendingUnlinks {
-		if now.After(pending.expiresAt) { delete(b.pendingUnlinks, key) }
+		if now.After(pending.expiresAt) {
+			delete(b.pendingUnlinks, key)
+		}
 	}
 }
 
@@ -866,7 +876,6 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 }
 
-
 func unlinkConfirmationComponents(key string) []discordgo.MessageComponent {
 	return []discordgo.MessageComponent{
 		discordgo.ActionsRow{Components: []discordgo.MessageComponent{
@@ -886,7 +895,9 @@ func (b *bot) handleUnlinkButton(s *discordgo.Session, i *discordgo.InteractionC
 	b.mu.Lock()
 	pending, ok := b.pendingUnlinks[key]
 	valid := ok && time.Now().Before(pending.expiresAt) && pending.discordID == u.ID && pending.guildID == i.GuildID
-	if valid { delete(b.pendingUnlinks, key) }
+	if valid {
+		delete(b.pendingUnlinks, key)
+	}
 	b.mu.Unlock()
 	if !valid {
 		b.reply(s, i, "Подтверждение отвязки недействительно или истекло. Повтори /character-unlink.", nil)
@@ -897,12 +908,14 @@ func (b *bot) handleUnlinkButton(s *discordgo.Session, i *discordgo.InteractionC
 	}
 	id := b.identity(i, u)
 	payload := map[string]any{
-		"guild_id": id.GuildID,
-		"discord_user_id": id.DiscordUserID,
+		"guild_id":         id.GuildID,
+		"discord_user_id":  id.DiscordUserID,
 		"discord_role_ids": id.DiscordRoleIDs,
-		"actor_uuid": pending.actorUUID,
+		"actor_uuid":       pending.actorUUID,
 	}
-	if pending.ownerDiscordID != "" { payload["owner_discord_user_id"] = pending.ownerDiscordID }
+	if pending.ownerDiscordID != "" {
+		payload["owner_discord_user_id"] = pending.ownerDiscordID
+	}
 	if err := b.post(UnlinkPath, payload, nil); err != nil {
 		b.edit(s, i, "Не удалось отвязать Foundry Actor: "+err.Error(), nil)
 		return
@@ -1025,9 +1038,9 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 	}
 	if total == 0 {
 		return []*discordgo.MessageEmbed{{
-			Title: "Инвентарь · " + c.Identity.Name,
+			Title:       "Инвентарь · " + c.Identity.Name,
 			Description: "В инвентаре нет предметов или они отсутствуют в последней синхронизации.",
-			Color: 0x5865F2,
+			Color:       0x5865F2,
 		}}
 	}
 
@@ -1037,7 +1050,7 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		for page, chunk := range chunks {
 			embed := &discordgo.MessageEmbed{Title: "Инвентарь · " + c.Identity.Name, Color: 0x5865F2}
 			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s · %d/%d", groupLabels[group], page+1, len(chunks)),
+				Name:  fmt.Sprintf("%s · %d/%d", groupLabels[group], page+1, len(chunks)),
 				Value: strings.Join(chunk, "\n"), Inline: false,
 			})
 			embed.Footer = &discordgo.MessageEmbedFooter{Text: fmt.Sprintf("Всего предметов: %d · данные последней синхронизации Foundry", total)}
@@ -1048,50 +1061,69 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 }
 
 func isInventoryItem(item characterItem) bool {
-	if item.Category == "equipment" { return true }
+	if item.Category == "equipment" {
+		return true
+	}
 	return item.Quantity != nil || item.Equipped != nil || item.Usage != nil || item.ContainerID != nil
 }
 
 func inventoryStateLabel(equipped *characterEquipped) string {
-	if equipped == nil { return "состояние неизвестно" }
+	if equipped == nil {
+		return "состояние неизвестно"
+	}
 	if equipped.InSlot != nil && *equipped.InSlot {
-		if equipped.Invested != nil && *equipped.Invested { return "НАДЕТО · ИНВЕСТИРОВАНО" }
+		if equipped.Invested != nil && *equipped.Invested {
+			return "НАДЕТО · ИНВЕСТИРОВАНО"
+		}
 		return "НАДЕТО"
 	}
 	if equipped.CarryType != nil {
 		switch *equipped.CarryType {
-		case "stowed": return "УБРАНО"
-		case "held": return "В РУКАХ"
+		case "stowed":
+			return "УБРАНО"
+		case "held":
+			return "В РУКАХ"
 		case "worn":
-			if equipped.Invested != nil && *equipped.Invested { return "НОСИТСЯ · ИНВЕСТИРОВАНО" }
+			if equipped.Invested != nil && *equipped.Invested {
+				return "НОСИТСЯ · ИНВЕСТИРОВАНО"
+			}
 			return "НОСИТСЯ"
 		}
 	}
-	if equipped.Invested != nil && *equipped.Invested { return "ИНВЕСТИРОВАНО" }
+	if equipped.Invested != nil && *equipped.Invested {
+		return "ИНВЕСТИРОВАНО"
+	}
 	return ""
 }
 
 func inventoryUsageLabel(usage string) string {
 	switch usage {
-	case "held-in-one-hand": return "1 рука"
-	case "held-in-two-hands": return "2 руки"
-	case "worn": return "носимое"
-	case "wornbackpack": return "рюкзак"
-	default: return ""
+	case "held-in-one-hand":
+		return "1 рука"
+	case "held-in-two-hands":
+		return "2 руки"
+	case "worn":
+		return "носимое"
+	case "wornbackpack":
+		return "рюкзак"
+	default:
+		return ""
 	}
 }
 
 func characterSpellsEmbed(c characterDetails) *discordgo.MessageEmbed {
 	embeds := characterSpellsEmbeds(c)
-	if len(embeds) == 0 { return &discordgo.MessageEmbed{Title:"Заклинания · "+c.Identity.Name,Description:"Заклинания не найдены.",Color:0x5865F2} }
+	if len(embeds) == 0 {
+		return &discordgo.MessageEmbed{Title: "Заклинания · " + c.Identity.Name, Description: "Заклинания не найдены.", Color: 0x5865F2}
+	}
 	return embeds[0]
 }
 
 func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 	type spellGroup struct {
 		tradition string
-		rank int
-		list string
+		rank      int
+		list      string
 	}
 	groups := make(map[spellGroup][]string)
 	keys := make([]spellGroup, 0)
@@ -1128,9 +1160,9 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 	}
 	if len(keys) == 0 {
 		return []*discordgo.MessageEmbed{{
-			Title: "Заклинания · " + c.Identity.Name,
+			Title:       "Заклинания · " + c.Identity.Name,
 			Description: "В последней синхронизации Foundry заклинания не найдены.",
-			Color: 0x5865F2,
+			Color:       0x5865F2,
 		}}
 	}
 	sort.Slice(keys, func(i, j int) bool {
@@ -1191,11 +1223,16 @@ func splitCharacterLines(lines []string, maxLines, maxRunes int) [][]string {
 
 func spellTraditionLabel(value string) string {
 	switch strings.ToLower(value) {
-	case "arcane": return "Арканная традиция"
-	case "divine": return "Божественная традиция"
-	case "occult": return "Оккультная традиция"
-	case "primal": return "Природная традиция"
-	default: return value
+	case "arcane":
+		return "Арканная традиция"
+	case "divine":
+		return "Божественная традиция"
+	case "occult":
+		return "Оккультная традиция"
+	case "primal":
+		return "Природная традиция"
+	default:
+		return value
 	}
 }
 

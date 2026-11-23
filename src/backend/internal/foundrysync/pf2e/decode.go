@@ -159,19 +159,19 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	normalized := CharacterItemDto{
 		ID: item.ID, Name: item.Name, Type: item.Type, Image: item.Image,
 		Slug: stringAt(system, "slug"), Category: categoryForItem(item.Type, system),
-		SystemCategory:   stringAt(system, "category"),
-		ActionType:       stringAt(objectAt(system, "actionType"), "value"),
-		Quantity:         intAt(system, "quantity"),
-		Level:            firstInt(intAt(system, "level", "value"), intAt(system, "level")),
+		SystemCategory:      stringAt(system, "category"),
+		ActionType:          stringAt(objectAt(system, "actionType"), "value"),
+		Quantity:            intAt(system, "quantity"),
+		Level:               firstInt(intAt(system, "level", "value"), intAt(system, "level")),
 		Equipped:            decodeEquipped(objectAt(system, "equipped")),
 		ContainerID:         stringAt(system, "containerId"),
 		Usage:               stringAt(objectAt(system, "usage"), "value"),
 		SpellcastingEntryID: firstString(stringAt(system, "location"), stringAt(objectAt(system, "location"), "value")),
 		Prepared:            boolAt(system, "prepared"),
-		Armor:            decodeArmorData(system),
-		Runes:            decodeItemRunes(system),
-		CompendiumSource: stringAt(objectAt(root, "_stats"), "compendiumSource"),
-		RuleElements:     decodeRuleElements(system, item.Flags),
+		Armor:               decodeArmorData(system),
+		Runes:               decodeItemRunes(system),
+		CompendiumSource:    stringAt(objectAt(root, "_stats"), "compendiumSource"),
+		RuleElements:        decodeRuleElements(system, item.Flags),
 	}
 	return &DecodedItem{
 		Foundry: item, Character: normalized, RawSnapshot: cloneRaw(payload),
@@ -225,7 +225,6 @@ func decodeHP(raw map[string]json.RawMessage) *HitPointsDto {
 	return &HitPointsDto{Current: intAt(raw, "value"), Temp: intAt(raw, "temp"), Max: intAt(raw, "max")}
 }
 
-
 func decodeAttributes(system map[string]json.RawMessage, hpRaw map[string]json.RawMessage, items []FoundryItemDto, level *int) CharacterAttributesDto {
 	hp := decodeHP(hpRaw)
 	if hp != nil && hp.Max == nil {
@@ -233,7 +232,7 @@ func decodeAttributes(system map[string]json.RawMessage, hpRaw map[string]json.R
 	}
 	attributes := objectAt(system, "attributes")
 	return CharacterAttributesDto{
-		HP: hp,
+		HP:    hp,
 		Dying: decodeDying(objectAt(attributes, "dying")),
 	}
 }
@@ -268,13 +267,12 @@ func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, 
 	if !ok {
 		return nil
 	}
-	maximum := (*classHP + conModifier) * *level + *ancestryHP
+	maximum := (*classHP+conModifier)**level + *ancestryHP
 	if maximum < 1 {
 		return nil
 	}
 	return &maximum
 }
-
 
 func hasUnsupportedHPModifier(items []FoundryItemDto) bool {
 	for _, item := range items {
@@ -645,7 +643,9 @@ func boolMapAt(raw map[string]json.RawMessage, key string) map[string]bool {
 
 func firstString(values ...*string) *string {
 	for _, value := range values {
-		if value != nil && *value != "" { return value }
+		if value != nil && *value != "" {
+			return value
+		}
 	}
 	return nil
 }
