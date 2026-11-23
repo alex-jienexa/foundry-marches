@@ -732,12 +732,24 @@ func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int
 		return nil
 	}
 	var boosts map[string][]string
-	if json.Unmarshal(buildAttributes["boosts"], &boosts) != nil || len(boosts["1"]) != 4 {
+	if json.Unmarshal(buildAttributes["boosts"], &boosts) != nil {
 		return nil
 	}
-	for _, key := range boosts["1"] {
-		if !isAbilityKey(key) {
+	requiredRounds := []int{1}
+	for _, round := range []int{5, 10, 15, 20} {
+		if *level >= round {
+			requiredRounds = append(requiredRounds, round)
+		}
+	}
+	for _, round := range requiredRounds {
+		selected, ok := boosts[strconv.Itoa(round)]
+		if !ok || len(selected) != 4 {
 			return nil
+		}
+		for _, key := range selected {
+			if !isAbilityKey(key) {
+				return nil
+			}
 		}
 	}
 	scores := map[string]int{"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10}
@@ -774,7 +786,7 @@ func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int
 	rounds := make([]int, 0, len(boosts))
 	for rawLevel := range boosts {
 		roundLevel, err := strconv.Atoi(rawLevel)
-		if err != nil || roundLevel < 1 {
+		if err != nil || (roundLevel != 1 && roundLevel != 5 && roundLevel != 10 && roundLevel != 15 && roundLevel != 20) {
 			return nil
 		}
 		if roundLevel <= *level {
