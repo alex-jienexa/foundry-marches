@@ -347,7 +347,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if err := b.post(GrantRolePath, payload, nil); err != nil {
 			b.edit(s, i, "Не удалось назначить роль: "+err.Error(), nil)
 		} else {
-			b.edit(s, i, "Роль назначена.", nil)
+			b.edit(s, i, "✅ **Роль приложения назначена.**", nil)
 		}
 	case "role-map":
 		o := commandOptions(i.ApplicationCommandData().Options)
@@ -359,7 +359,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if err := b.post(MapRolePath, payload, nil); err != nil {
 			b.edit(s, i, "Не удалось сопоставить роль: "+err.Error(), nil)
 		} else {
-			b.edit(s, i, "Сопоставление сохранено.", nil)
+			b.edit(s, i, "✅ **Сопоставление Discord-роли сохранено.**", nil)
 		}
 	default:
 		b.edit(s, i, "Неизвестная команда.", nil)
@@ -548,7 +548,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				b.edit(s, i, "Не удалось создать черновик: "+err.Error(), nil)
 				return
 			}
-			b.edit(s, i, fmt.Sprintf("Создан черновик персонажа **%s**. ID: `%s`. Статус: draft. Владелец не назначен. Следующий шаг — /character-link для привязки.", created.Name, created.ID), nil)
+			b.edit(s, i, fmt.Sprintf("**Черновик создан**\n\nПерсонаж: **%s**\nВладелец: пока не назначен\n\nПри привязке через `/character-link` мастер должен указать владельца через Discord-упоминание.", created.Name), nil)
 			return
 		}
 		flow.stage, flow.page = "character", 0
