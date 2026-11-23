@@ -50,8 +50,8 @@ func TestDecodeActorRealFixture(t *testing.T) {
 	if c.Attributes.HP == nil || c.Attributes.HP.Current == nil || *c.Attributes.HP.Current != 20 {
 		t.Fatalf("unexpected HP: %+v", c.Attributes.HP)
 	}
-	if c.Attributes.HP.Max != nil {
-		t.Fatalf("maximum HP is not stored in this Actor snapshot: %+v", c.Attributes.HP)
+	if c.Attributes.HP.Max == nil || *c.Attributes.HP.Max != 20 {
+		t.Fatalf("maximum HP should be derived from class, ancestry, CON and level: %+v", c.Attributes.HP)
 	}
 	if c.Resources.HeroPoints == nil || c.Resources.HeroPoints.Value == nil || *c.Resources.HeroPoints.Value != 1 {
 		t.Fatalf("unexpected hero points: %+v", c.Resources.HeroPoints)
