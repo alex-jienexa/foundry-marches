@@ -367,11 +367,6 @@ func TestDecodeActorPreservesFeatAndActionCategories(t *testing.T) {
 		}
 	}
 
-	for category, ok := range found {
-		if !ok {
-			t.Errorf("category %q was not decoded correctly", category)
-		}
-	}
 	for _, category := range []string{"class-feat", "ancestry-feat", "action", "class-feature", "equipment"} {
 		if !found[category] {
 			t.Errorf("fixture did not expose expected category %q", category)
