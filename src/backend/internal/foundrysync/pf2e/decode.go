@@ -248,10 +248,15 @@ func decodeHP(raw map[string]json.RawMessage) *HitPointsDto {
 
 func decodeAttributes(system map[string]json.RawMessage, hpRaw map[string]json.RawMessage, items []FoundryItemDto, level *int) CharacterAttributesDto {
 	hp := decodeHP(hpRaw)
-	if hp != nil && hp.Max == nil {
-		logCharacterDiagnostic("hp source=actor max=<absent>; attempting supported derivation")
+	if hp == nil {
+		// The HP object itself may be absent; still attempt to derive the
+		// maximum from whichever independent inputs are available.
+		hp = &HitPointsDto{}
+	}
+	if hp.Max == nil {
+		logCharacterDiagnostic("hp source=actor max=<absent>; attempting partial derivation")
 		hp.Max = deriveMaximumHP(system, items, level)
-	} else if hp != nil {
+	} else {
 		logCharacterDiagnostic("hp source=actor max=%s current=%s temp=%s", diagnosticIntPointer(hp.Max), diagnosticIntPointer(hp.Current), diagnosticIntPointer(hp.Temp))
 	}
 	attributes := objectAt(system, "attributes")
@@ -513,7 +518,6 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 	for _, item := range items {
 		switch item.Type {
 		case "ancestry":
-			score += 0
 			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
 				score = applyAbilityBoost(score)
 			}
@@ -530,7 +534,7 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 			}
 		case "class":
 			classBoosts := objectAt(item.System, "boosts")
-			if classBoosts != nil {
+			if len(classBoosts) > 0 {
 				for range selectedBoostCount(classBoosts, ability) {
 					score = applyAbilityBoost(score)
 				}
