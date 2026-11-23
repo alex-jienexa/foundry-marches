@@ -577,13 +577,24 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 		}
 	}
 
-	// Level-based boosts are independent milestones. Missing or malformed
-	// milestones are skipped; known selections from other levels still count.
+	// Foundry stores gradual ability boosts under their individual level
+	// keys (for example 1, 2, 3, ...). Apply every persisted selection,
+	// including choices recorded for levels above the character's current
+	// level. This keeps the reconstructed score aligned with the configured
+	// gradual-boost variant instead of assuming the standard 1/5/9 cadence.
 	boosts := objectAt(objectAt(objectAt(system, "build"), "attributes"), "boosts")
-	for milestone := 1; milestone <= level; milestone += 4 {
+	boostLevels := make([]int, 0, len(boosts))
+	for levelKey := range boosts {
+		boostLevel, err := strconv.Atoi(levelKey)
+		if err != nil || boostLevel < 1 {
+			continue
+		}
+		boostLevels = append(boostLevels, boostLevel)
+	}
+	sort.Ints(boostLevels)
+	for _, boostLevel := range boostLevels {
 		var selected []string
-		raw := boosts[strconv.Itoa(milestone)]
-		if len(raw) == 0 || json.Unmarshal(raw, &selected) != nil {
+		if json.Unmarshal(boosts[strconv.Itoa(boostLevel)], &selected) != nil {
 			continue
 		}
 		for _, selectedAbility := range selected {
