@@ -94,7 +94,7 @@ The API must be healthy. The bot log should report that it connected and registe
 5. As owner, run `/role-grant discord_user_id:<ID> role_key:gm` to grant the application GM role to a registered member. Alternatively, use `/role-map discord_role_id:<ID> role_key:gm` to map a Discord role to the application GM role. The mapping is evaluated using the member roles included in each Gateway interaction.
 6. Only `player` and `gm` may be granted/mapped with these commands. The privileged `owner` role is only bootstrapped from `DISCORD_ADMIN_USER_IDS`.
 
-## 8. Character card navigation
+## Character card navigation
 
 Use `/character name:<имя>` to open a character card. The card provides separate pages for abilities, skills, equipment, spells and campaign metrics. The active page button is highlighted and disabled; the other page buttons update the same message. The skills page includes trained skills and groups skill feats by the skill identified from their prerequisites. The abilities page also retains a flat list of skill feats.
 
