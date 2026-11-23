@@ -287,6 +287,35 @@ func TestDecodeSkillsSeparatesLoreWithoutDerivingIt(t *testing.T) {
 	}
 }
 
+func TestDecodeAncestryFeatureProgression(t *testing.T) {
+	raw := []byte(`{
+		"_id":"ancestry-features",
+		"name":"Тест",
+		"type":"character",
+		"system":{"details":{"level":{"value":3}}},
+		"items":[{
+			"_id":"human",
+			"name":"Человек",
+			"type":"ancestry",
+			"system":{"items":{
+				"later":{"uuid":"Compendium.pf2e.ancestryfeatures.Item.later","name":"Поздняя особенность","level":5},
+				"early":{"uuid":"Compendium.pf2e.ancestryfeatures.Item.early","name":"Ранняя особенность","level":1}
+			}}
+		}]
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	features := decoded.Character.Build.AncestryFeatures
+	if len(features) != 2 {
+		t.Fatalf("ancestry features = %+v, want 2 references", features)
+	}
+	if features[0].Name != "Ранняя особенность" || features[1].Name != "Поздняя особенность" {
+		t.Fatalf("ancestry features are not sorted by level: %+v", features)
+	}
+}
+
 func TestDecodeStatisticsKeepsMissingValuesUnknown(t *testing.T) {
 	raw := []byte(`{"_id":"unknown","type":"character","items":[],"system":{"abilities":null}}`)
 	decoded, err := DecodeActor(raw)
