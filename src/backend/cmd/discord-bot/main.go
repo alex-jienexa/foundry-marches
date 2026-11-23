@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -38,6 +39,7 @@ const (
 
 type bot struct {
 	apiURL, apiToken, guildID string
+	foundryPublicBaseURL      string
 	campaignRoleID            string
 	adminChannelID            string
 	healthInterval            time.Duration
@@ -177,6 +179,7 @@ func main() {
 	guildID, apiToken := requiredEnv("DISCORD_GUILD_ID"), requiredEnv("DISCORD_BOT_API_TOKEN")
 	adminChannelID := strings.TrimSpace(os.Getenv("DISCORD_ADMIN_CHANNEL_ID"))
 	campaignRoleID := strings.TrimSpace(os.Getenv("DISCORD_CAMPAIGN_ROLE_ID"))
+	foundryPublicBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("FOUNDRY_PUBLIC_BASE_URL")), "/")
 	healthInterval := 60 * time.Second
 	if raw := strings.TrimSpace(os.Getenv("DISCORD_HEALTH_INTERVAL_SECONDS")); raw != "" {
 		seconds, err := strconv.Atoi(raw)
@@ -186,7 +189,7 @@ func main() {
 		healthInterval = time.Duration(seconds) * time.Second
 	}
 	b := &bot{apiURL: strings.TrimRight(requiredEnv("BACKEND_INTERNAL_URL"), "/"), apiToken: apiToken,
-		guildID: guildID, campaignRoleID: campaignRoleID, adminChannelID: adminChannelID, healthInterval: healthInterval,
+		guildID: guildID, foundryPublicBaseURL: foundryPublicBaseURL, campaignRoleID: campaignRoleID, adminChannelID: adminChannelID, healthInterval: healthInterval,
 		client: &http.Client{Timeout: 12 * time.Second}, pending: make(map[string]pendingLink),
 		flows: make(map[string]*selectionFlow), reportedErrors: make(map[string]time.Time)}
 	if len(apiToken) < 32 {
@@ -587,6 +590,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				b.edit(s, i, "Не удалось загрузить данные персонажа: "+err.Error(), nil)
 				return
 			}
+			details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
 			switch mode {
 			case "inventory":
 				b.editEmbed(s, i, characterInventoryEmbed(details))
@@ -798,6 +802,34 @@ func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, em
 	if err != nil {
 		log.Printf("Discord embed edit: %v", err)
 	}
+}
+
+func resolveFoundryImageURL(image *string, publicBaseURL string) *string {
+	if image == nil || strings.TrimSpace(*image) == "" {
+		return image
+	}
+	source, err := url.Parse(strings.TrimSpace(*image))
+	if err != nil {
+		return nil
+	}
+	if source.IsAbs() {
+		if source.Scheme == "http" || source.Scheme == "https" {
+			value := source.String()
+			return &value
+		}
+		return nil
+	}
+	base, err := url.Parse(strings.TrimSpace(publicBaseURL))
+	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" {
+		return nil
+	}
+	base.Path = strings.TrimRight(base.Path, "/") + "/"
+	resolved := base.ResolveReference(&url.URL{Path: strings.TrimLeft(source.Path, "/")})
+	if resolved.Scheme != "http" && resolved.Scheme != "https" {
+		return nil
+	}
+	value := resolved.String()
+	return &value
 }
 
 func characterInventoryEmbed(c characterDetails) *discordgo.MessageEmbed {
