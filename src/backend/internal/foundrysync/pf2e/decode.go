@@ -249,7 +249,10 @@ func decodeHP(raw map[string]json.RawMessage) *HitPointsDto {
 func decodeAttributes(system map[string]json.RawMessage, hpRaw map[string]json.RawMessage, items []FoundryItemDto, level *int) CharacterAttributesDto {
 	hp := decodeHP(hpRaw)
 	if hp != nil && hp.Max == nil {
+		logCharacterDiagnostic("hp source=actor max=<absent>; attempting supported derivation")
 		hp.Max = deriveMaximumHP(system, items, level)
+	} else if hp != nil {
+		logCharacterDiagnostic("hp source=actor max=%s current=%s temp=%s", diagnosticIntPointer(hp.Max), diagnosticIntPointer(hp.Current), diagnosticIntPointer(hp.Temp))
 	}
 	attributes := objectAt(system, "attributes")
 	return CharacterAttributesDto{
