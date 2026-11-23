@@ -325,7 +325,7 @@ func TestDecodeAbilityBoostsApplyInLevelOrderAfterAncestryFlaw(t *testing.T) {
 	}}},"abilities":null}}`)
 	decoded, err := DecodeActor(raw)
 	if err != nil { t.Fatal(err) }
-	got := decoded.Character.Statistics.Abilities["dex"]
+	got := decoded.Character.Statistics.ReconstructedAbilities["dex"]
 	if got.Score == nil || *got.Score != 18 {
 		t.Fatalf("DEX = %+v, want 18 after ancestry flaw and subsequent boosts", got)
 	}
@@ -360,8 +360,8 @@ func TestDecodeAbilityScoresApplyAncestryAndVoluntaryFlaws(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 	want := map[string]int{"str":16,"dex":12,"con":10,"int":12,"wis":12,"cha":10}
 	for ability, score := range want {
-		got := decoded.Character.Statistics.Abilities[ability]
-		if got.Score == nil || *got.Score != score { t.Errorf("%s score = %+v, want %d", ability, got, score) }
+		got := decoded.Character.Statistics.ReconstructedAbilities[ability]
+		if got.Score == nil || *got.Score != score || !got.Derived { t.Errorf("%s reconstructed score = %+v, want %d", ability, got, score) }
 	}
 }
 
