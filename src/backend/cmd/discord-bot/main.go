@@ -1617,7 +1617,11 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 			abilities = append(abilities, abilityNames[key]+": —")
 			continue
 		}
-		abilities = append(abilities, fmt.Sprintf("%s: %+d", abilityNames[key], *modifier))
+		partial := ""
+		if value.Score != nil && *value.Score%2 != 0 {
+			partial = "½"
+		}
+		abilities = append(abilities, fmt.Sprintf("%s: %+d%s", abilityNames[key], *modifier, partial))
 	}
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 		Name: "Характеристики", Value: strings.Join(abilities, " · "), Inline: false,
