@@ -795,7 +795,7 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		case item.Category == "equipment":
 			line := item.Name
 			if item.Quantity != nil && *item.Quantity > 1 {
-				line += " × " + strconv.Itoa(*item.Quantity)
+				line = appendLocalizedCharacterSuffix(line, " × "+strconv.Itoa(*item.Quantity))
 			}
 			items = append(items, line)
 		case item.Type == "action":
@@ -882,9 +882,19 @@ func actionDisplayName(item characterItem) string {
 		"passive":  "пассивное",
 	}
 	if label := labels[stringValue(item.ActionType)]; label != "" {
-		return name + " — " + label
+		return appendLocalizedCharacterSuffix(name, " — "+label)
 	}
 	return name
+}
+
+// appendLocalizedCharacterSuffix keeps qualifiers next to the localized name
+// instead of placing them after the English translation.
+func appendLocalizedCharacterSuffix(name, suffix string) string {
+	localized, translated, hasTranslation := strings.Cut(name, " / ")
+	if !hasTranslation {
+		return name + suffix
+	}
+	return localized + suffix + " / " + translated
 }
 
 func stringValue(value *string) string {
