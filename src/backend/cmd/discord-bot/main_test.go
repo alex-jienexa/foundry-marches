@@ -196,6 +196,54 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 	}
 }
 
+func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
+	components := characterDetailComponents("flow", "skills")
+	if len(components) != 2 { t.Fatalf("navigation rows = %d, want 2", len(components)) }
+	first := components[0].(discordgo.ActionsRow)
+	second := components[1].(discordgo.ActionsRow)
+	buttons := append(append([]discordgo.MessageComponent{}, first.Components...), second.Components...)
+	if len(buttons) != 6 { t.Fatalf("navigation buttons = %d, want 6", len(buttons)) }
+	labels := make([]string, 0, len(buttons))
+	activeFound := false
+	for _, component := range buttons {
+		button := component.(discordgo.Button)
+		labels = append(labels, button.Label)
+		if button.Label == "Навыки" {
+			activeFound = button.Style == discordgo.PrimaryButton && button.Disabled
+		}
+		if button.Label == "Карточка" && (button.Style != discordgo.SecondaryButton || button.Disabled) {
+			t.Fatalf("inactive card button should remain enabled and secondary: %+v", button)
+		}
+		if button.Label == "К карточке" { t.Fatal("legacy return button must not be present") }
+	}
+	if !activeFound { t.Fatalf("active skills button was not highlighted and disabled: %v", labels) }
+}
+
+func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
+	diplomacy, athletics := "diplomacy", "athletics"
+	category := "skill"
+	trained := 1
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Skills.Standard = map[string]characterSkill{"diplomacy": {Rank: &trained}}
+	c.Items = []characterItem{
+		{Name: "Остроумная реплика / Bon Mot", Type: "feat", SystemCategory: &category, Skill: &diplomacy},
+		{Name: "Атлетическая мощь / Powerful Leap", Type: "feat", SystemCategory: &category, Skill: &athletics},
+	}
+	embed := characterSkillsEmbed(c)
+	fields := make(map[string]string)
+	for _, field := range embed.Fields { fields[field.Name] = field.Value }
+	if !strings.Contains(fields["Обучение навыкам"], "Дипломатия — Обучен") {
+		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Обучение навыкам"])
+	}
+	if !strings.Contains(fields["Способности · Дипломатия"], "Остроумная реплика") {
+		t.Fatalf("Diplomacy skill-feat group = %q", fields["Способности · Дипломатия"])
+	}
+	if !strings.Contains(fields["Способности · Атлетика"], "Атлетическая мощь") {
+		t.Fatalf("Athletics skill-feat group = %q", fields["Способности · Атлетика"])
+	}
+}
+
 func TestResolveFoundryImageURL(t *testing.T) {
 	relative := "systems/pf2e/icons/default-icons/character.svg"
 	got := resolveFoundryImageURL(&relative, "https://foundry.example.test")
