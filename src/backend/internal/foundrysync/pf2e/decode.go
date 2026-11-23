@@ -158,7 +158,7 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	system := objectAt(root, "system")
 	normalized := CharacterItemDto{
 		ID: item.ID, Name: item.Name, Type: item.Type, Image: item.Image,
-		Slug: stringAt(system, "slug"), Category: categoryFor(item.Type),
+		Slug: stringAt(system, "slug"), Category: categoryForItem(item.Type, system),
 		SystemCategory:   stringAt(system, "category"),
 		ActionType:       stringAt(objectAt(system, "actionType"), "value"),
 		Quantity:         intAt(system, "quantity"),
@@ -176,6 +176,14 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	return &DecodedItem{
 		Foundry: item, Character: normalized, RawSnapshot: cloneRaw(payload),
 	}, nil
+}
+
+func categoryForItem(kind string, system map[string]json.RawMessage) CharacterItemCategory {
+	category := categoryFor(kind)
+	if category == ItemCategoryOther && (system["quantity"] != nil || system["bulk"] != nil || system["equipped"] != nil || system["usage"] != nil || system["containerId"] != nil) {
+		return ItemCategoryEquipment
+	}
+	return category
 }
 
 func categoryFor(kind string) CharacterItemCategory {
