@@ -227,6 +227,22 @@ func TestResolveFoundryImageURL(t *testing.T) {
 	}
 }
 
+
+func TestCharacterEmbedUsesPublicFoundryPortrait(t *testing.T) {
+	path := "assets/westmarches/pc/portrait.jpg"
+	resolved := resolveFoundryImageURL(&path, "https://foundry.jiene.ru")
+	if resolved == nil || *resolved != "https://foundry.jiene.ru/assets/westmarches/pc/portrait.jpg" {
+		t.Fatalf("resolved portrait URL = %v", resolved)
+	}
+	character := characterDetails{}
+	character.Identity.Name = "Портретный персонаж"
+	character.Identity.Image = resolved
+	embed := characterEmbed(character)
+	if embed.Image == nil || embed.Image.URL != *resolved {
+		t.Fatalf("embed image = %+v, want resolved public portrait URL", embed.Image)
+	}
+}
+
 func TestCharacterEmbedDoesNotRenderMissingHPMaximumAsDash(t *testing.T) {
 	current := 19
 	c := characterDetails{}
