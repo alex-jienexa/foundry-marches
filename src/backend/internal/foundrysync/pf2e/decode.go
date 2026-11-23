@@ -286,14 +286,15 @@ func logActorDecodeDiagnostics(actor FoundryActorDto, character CharacterDto, ra
 	}
 	var className, ancestryName, backgroundName string
 	var classHP, ancestryHP *int
+	var classItem, ancestryItem, backgroundItem *FoundryItemDto
 	for _, item := range items {
 		switch item.Type {
 		case "class":
-			className, classHP = item.Name, intAt(item.System, "hp")
+			className, classHP, classItem = item.Name, intAt(item.System, "hp"), &item
 		case "ancestry":
-			ancestryName, ancestryHP = item.Name, intAt(item.System, "hp")
+			ancestryName, ancestryHP, ancestryItem = item.Name, intAt(item.System, "hp"), &item
 		case "background":
-			backgroundName = item.Name
+			backgroundName, backgroundItem = item.Name, &item
 		}
 	}
 	system := actor.System
@@ -301,11 +302,15 @@ func logActorDecodeDiagnostics(actor FoundryActorDto, character CharacterDto, ra
 	xp := objectAt(details, "xp")
 	attributes := objectAt(system, "attributes")
 	abilities := objectAt(system, "abilities")
+	buildAttributes := objectAt(objectAt(system, "build"), "attributes")
 	logCharacterDiagnostic(
-		"decode actor_uuid=%q name=%q type=%q items=%d raw_fields={details:%t,details.level:%t,details.xp.value:%t,details.xp.max:%t,attributes:%t,attributes.hp:%t,abilities:%t} decoded={level:%s,xp:%s/%s,hp:%s/%s,class:%q,class_hp:%s,ancestry:%q,ancestry_hp:%s,background:%q,ability_keys:%v,ability_raw={str:%s,dex:%s,con:%s,int:%s,wis:%s,cha:%s}}",
+		"decode actor_uuid=%q name=%q type=%q items=%d raw_fields={details:%t,details.level:%t,details.xp.value:%t,details.xp.max:%t,attributes:%t,attributes.hp:%t,abilities:%t,build.attributes.boosts:%t,ancestry.boosts:%t,ancestry.voluntary:%t,background.boosts:%t,class.boosts:%t,class.keyAbility:%t} decoded={level:%s,xp:%s/%s,hp:%s/%s,class:%q,class_hp:%s,ancestry:%q,ancestry_hp:%s,background:%q,ability_keys:%v,ability_raw={str:%s,dex:%s,con:%s,int:%s,wis:%s,cha:%s}}",
 		"Actor."+actor.ID, actor.Name, actor.Type, len(items),
 		system["details"] != nil, details["level"] != nil, xp["value"] != nil, xp["max"] != nil,
-		system["attributes"] != nil, attributes["hp"] != nil, abilities != nil,
+		system["attributes"] != nil, attributes["hp"] != nil, abilities != nil, buildAttributes["boosts"] != nil,
+		ancestryItem != nil && ancestryItem.System["boosts"] != nil, ancestryItem != nil && ancestryItem.System["voluntary"] != nil,
+		backgroundItem != nil && backgroundItem.System["boosts"] != nil, classItem != nil && classItem.System["boosts"] != nil,
+		classItem != nil && classItem.System["keyAbility"] != nil,
 		diagnosticIntPointer(character.Progression.Level), diagnosticIntPointer(character.Progression.Experience.Value), diagnosticIntPointer(character.Progression.Experience.Max),
 		diagnosticIntPointer(hpCurrentValue(character.Attributes.HP)), diagnosticIntPointer(hpMaxValue(character.Attributes.HP)),
 		className, diagnosticIntPointer(classHP), ancestryName, diagnosticIntPointer(ancestryHP), backgroundName, rawObjectKeys(abilities),
