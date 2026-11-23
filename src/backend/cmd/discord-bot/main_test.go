@@ -302,6 +302,7 @@ func TestCharacterInventoryIncludesAllPhysicalItemTypesAndState(t *testing.T) {
 		{ID:"potion",Name:"Зелье",Type:"consumable",Category:"equipment",Quantity:&one,Equipped:&characterEquipped{CarryType:&stowed}},
 		{ID:"pack",Name:"Рюкзак",Type:"backpack",Category:"equipment"},
 		{ID:"coin",Name:"Монеты",Type:"treasure",Category:"equipment",Quantity:&one},
+		{ID:"custom",Name:"Талисман",Type:"customPhysical",Category:"other",Quantity:&one},
 	}
 	embeds := characterInventoryEmbeds(c)
 	if len(embeds) < 5 {
@@ -311,7 +312,7 @@ func TestCharacterInventoryIncludesAllPhysicalItemTypesAndState(t *testing.T) {
 	for _, embed := range embeds {
 		for _, field := range embed.Fields { joined += field.Name + "\n" + field.Value + "\n" }
 	}
-	for _, want := range []string{"Кинжал","Кожаный доспех","Верёвка","Зелье","Рюкзак","Монеты","НАДЕТО","ИНВЕСТИРОВАНО","УБРАНО","в Рюкзак"} {
+	for _, want := range []string{"Кинжал","Кожаный доспех","Верёвка","Зелье","Рюкзак","Монеты","Талисман","НАДЕТО","ИНВЕСТИРОВАНО","УБРАНО","в Рюкзак"} {
 		if !strings.Contains(joined,want) { t.Errorf("inventory output missing %q: %s",want,joined) }
 	}
 }
