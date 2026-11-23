@@ -308,7 +308,11 @@ func abilityModifierFromActor(system map[string]json.RawMessage, items []Foundry
 			return abilityModifierFromScore(*score), true
 		}
 	}
-	score, ok := reconstructedAbilityScore(system, items, ability, level)
+	scores, ok := reconstructAbilityScores(system, items, &level)
+	if !ok {
+		return 0, false
+	}
+	score, ok := scores[ability]
 	if !ok {
 		return 0, false
 	}
