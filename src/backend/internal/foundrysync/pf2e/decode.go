@@ -533,16 +533,28 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 	for _, item := range items {
 		switch item.Type {
 		case "ancestry":
-			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
-				score = applyAbilityBoost(score)
+			if alternateBoosts, alternate := alternateAncestryBoosts(item.System); alternate {
+				// A non-null alternateAncestryBoosts switches Foundry to the
+				// two-free-boost ancestry variant. Standard boosts and ancestry
+				// flaws are ignored; only selections actually present in the
+				// alternate array are applied.
+				for _, selected := range alternateBoosts {
+					if selected == ability {
+						score = applyAbilityBoost(score)
+					}
+				}
+			} else {
+				for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
+					score = applyAbilityBoost(score)
+				}
+				flaws := selectedBoostCount(objectAt(item.System, "flaws"), ability)
+				score -= flaws * 2
 			}
 			voluntary := objectAt(item.System, "voluntary")
 			if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
 				score = applyAbilityBoost(score)
 			}
-			flaws := selectedBoostCount(objectAt(item.System, "flaws"), ability) +
-				stringArrayCount(voluntary, "flaws", ability)
-			score -= flaws * 2
+			score -= stringArrayCount(voluntary, "flaws", ability) * 2
 		case "background":
 			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
 				score = applyAbilityBoost(score)
@@ -588,6 +600,30 @@ func applyAbilityBoost(score int) int {
 		return score + 1
 	}
 	return score + 2
+}
+
+
+func alternateAncestryBoosts(system map[string]json.RawMessage) ([]string, bool) {
+	raw, exists := system["alternateAncestryBoosts"]
+	if !exists || len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return nil, false
+	}
+
+	var selected []string
+	if json.Unmarshal(raw, &selected) != nil {
+		// Presence of a non-null value still enables the alternate mode.
+		// A malformed selection contributes no boosts, but must not cause
+		// standard ancestry boosts/flaws to be applied as a fallback.
+		return nil, true
+	}
+
+	valid := selected[:0]
+	for _, ability := range selected {
+		if isAbilityKey(ability) {
+			valid = append(valid, ability)
+		}
+	}
+	return valid, true
 }
 
 func selectedBoostCount(raw map[string]json.RawMessage, ability string) int {
