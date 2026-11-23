@@ -320,36 +320,42 @@ func abilityModifierFromActor(system map[string]json.RawMessage, items []Foundry
 }
 
 func reconstructedAbilityScore(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
+	score := 10
 	hasAncestry, hasBackground, hasClass := false, false, false
-	boosts := 0
-	flaws := 0
 	for _, item := range items {
 		switch item.Type {
 		case "ancestry":
 			hasAncestry = true
-			boosts += selectedBoostCount(objectAt(item.System, "boosts"), ability)
-			flaws += selectedBoostCount(objectAt(item.System, "flaws"), ability)
+			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
+				score = applyAbilityBoost(score)
+			}
 			voluntary := objectAt(item.System, "voluntary")
 			if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
-				boosts++
+				score = applyAbilityBoost(score)
 			}
-			flaws += stringArrayCount(voluntary, "flaws", ability)
+			flaws := selectedBoostCount(objectAt(item.System, "flaws"), ability) +
+				stringArrayCount(voluntary, "flaws", ability)
+			score -= flaws * 2
 		case "background":
 			hasBackground = true
-			boosts += selectedBoostCount(objectAt(item.System, "boosts"), ability)
+			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
+				score = applyAbilityBoost(score)
+			}
 		case "class":
 			hasClass = true
 			classBoosts := objectAt(item.System, "boosts")
 			if classBoosts != nil && hasSelectedBoosts(classBoosts) {
-				boosts += selectedBoostCount(classBoosts, ability)
+				for range selectedBoostCount(classBoosts, ability) {
+					score = applyAbilityBoost(score)
+				}
 				continue
 			}
 			keyAbility := objectAt(item.System, "keyAbility")
 			selected := stringAt(keyAbility, "selected")
 			if selected != nil && *selected == ability {
-				boosts++
+				score = applyAbilityBoost(score)
 			} else if selected == nil && stringArrayCount(keyAbility, "value", ability) == 1 && len(stringsAt(keyAbility, "value")) == 1 {
-				boosts++
+				score = applyAbilityBoost(score)
 			}
 		}
 	}
@@ -362,30 +368,25 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 	if rawBoosts == nil {
 		return 0, false
 	}
-	for levelKey, raw := range rawBoosts {
-		boostLevel, err := strconv.Atoi(levelKey)
-		if err != nil || boostLevel < 1 || (boostLevel-1)%4 != 0 || boostLevel > level {
-			continue
-		}
+	for milestone := 1; milestone <= level; milestone += 4 {
 		var selected []string
-		if json.Unmarshal(raw, &selected) == nil {
-			for _, value := range selected {
-				if value == ability {
-					boosts++
-				}
+		if json.Unmarshal(rawBoosts[strconv.Itoa(milestone)], &selected) != nil {
+			return 0, false
+		}
+		for _, selectedAbility := range selected {
+			if selectedAbility == ability {
+				score = applyAbilityBoost(score)
 			}
 		}
 	}
-	score := 10
-	for range boosts {
-		if score >= 18 {
-			score++
-		} else {
-			score += 2
-		}
-	}
-	score -= flaws * 2
 	return score, true
+}
+
+func applyAbilityBoost(score int) int {
+	if score >= 18 {
+		return score + 1
+	}
+	return score + 2
 }
 
 func selectedBoostCount(raw map[string]json.RawMessage, ability string) int {
