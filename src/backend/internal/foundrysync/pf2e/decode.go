@@ -106,7 +106,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 			},
 		},
 		Attributes: decodeAttributes(system, hp, actor.Items, intAt(details, "level", "value")),
-		Statistics: decodeStatistics(system, intAt(details, "level", "value")),
+		Statistics: decodeStatistics(system, intAt(details, "level", "value"), actor.Items),
 		Resources:  CharacterResourcesDto{HeroPoints: decodeResource(hero)},
 		Skills:     decodeSkills(system["skills"]),
 		Items:      normalizedItems,
@@ -669,7 +669,7 @@ func cloneRaw(value []byte) json.RawMessage {
 
 // decodeStatistics reads only explicit Actor-level values. In particular, it
 // does not infer abilities from boosts or current ranks from class progression.
-func decodeStatistics(system map[string]json.RawMessage, level *int) CharacterStatisticsInputDto {
+func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems []FoundryItemDto) CharacterStatisticsInputDto {
 	abilities := make(map[string]AbilityScoreDto)
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
 		entry := objectAt(objectAt(system, "abilities"), key)
@@ -680,7 +680,7 @@ func decodeStatistics(system map[string]json.RawMessage, level *int) CharacterSt
 		modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier"))
 		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
 	}
-	if derived := decodeAbilityScoresFromBoosts(system, level); len(derived) > 0 {
+	if derived := decodeAbilityScoresFromBoosts(system, level, actorItems); len(derived) > 0 {
 		for key, value := range derived {
 			if _, exists := abilities[key]; !exists {
 				abilities[key] = value
@@ -723,7 +723,7 @@ func decodeStatistics(system map[string]json.RawMessage, level *int) CharacterSt
 // decodeAbilityScoresFromBoosts reconstructs remaster ability scores only when
 // the Actor snapshot contains the complete level-1 boost selection. It does not
 // execute Rule Elements or infer choices absent from the saved build data.
-func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int) map[string]AbilityScoreDto {
+func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int, actorItems []FoundryItemDto) map[string]AbilityScoreDto {
 	if level == nil {
 		return nil
 	}
@@ -741,10 +741,30 @@ func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int
 		}
 	}
 	scores := map[string]int{"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10}
-	var flaws map[string][]string
+	flaws := make(map[string][]string)
 	if raw := buildAttributes["flaws"]; len(raw) > 0 && !bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		if json.Unmarshal(raw, &flaws) != nil {
-			return nil
+			var levelOneFlaws []string
+			if json.Unmarshal(raw, &levelOneFlaws) != nil {
+				return nil
+			}
+			flaws["1"] = append(flaws["1"], levelOneFlaws...)
+		}
+	}
+	// Ancestry flaw choices are stored on the Actor's ancestry Item rather
+	// than in system.abilities; apply only an explicit selected value.
+	for _, item := range actorItems {
+		if item.Type != "ancestry" {
+			continue
+		}
+		for _, selection := range objectAt(item.System, "flaws") {
+			selected := stringAt(objectAt(map[string]json.RawMessage{"selection": selection}, "selection"), "selected")
+			if selected != nil && *selected != "" {
+				flaws["1"] = append(flaws["1"], *selected)
+			}
+		}
+		if voluntary := objectAt(item.System, "voluntary"); voluntary != nil {
+			flaws["1"] = append(flaws["1"], stringsAt(voluntary, "flaws")...)
 		}
 	}
 	rounds := make([]int, 0, len(boosts))
