@@ -178,6 +178,7 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 		{"Способности родословной", "Видящий во мраке"},
 		{"Действия", "Реагирующий удар — реакция"},
 		{"Особенности класса", "Реагирующий удар"},
+		{"Способности навыков", "Сильный носильщик"},
 		{"Другие способности", "Сильный носильщик"},
 	}
 	for _, check := range checks {
@@ -195,6 +196,35 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 		t.Errorf("class feature must not be duplicated: %q", fields["Особенности класса"])
 	}
 }
+
+func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testing.T) {
+	preparedType := "prepared"
+	tradition := "arcane"
+	list := "Арканная книга"
+	prepared := true
+	unprepared := false
+	c := characterDetails{}
+	c.Identity.Name = "Маг"
+	c.Items = []characterItem{
+		{Name:"Свет",Type:"spell",Level:intPtr(0),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{0}},
+		{Name:"Магическая стрела",Type:"spell",Level:intPtr(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{1}},
+		{Name:"Щит",Type:"spell",Level:intPtr(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&unprepared},
+	}
+	embed := characterSpellsEmbed(c)
+	fields := make(map[string]string)
+	for _, field := range embed.Fields { fields[field.Name] = field.Value }
+	var cantripPrepared, rankOnePrepared, rankOneBook bool
+	for name, value := range fields {
+		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "чары") && strings.Contains(value, "Свет") { cantripPrepared = true }
+		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Магическая стрела") { rankOnePrepared = true }
+		if strings.Contains(name, "Подготовка") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Щит") { rankOneBook = true }
+	}
+	if !cantripPrepared || !rankOnePrepared || !rankOneBook {
+		t.Fatalf("prepared/book groups incorrect: %+v", fields)
+	}
+}
+
+func intPtr(value int) *int { return &value }
 
 func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
 	components := characterDetailComponents("flow", "skills")
