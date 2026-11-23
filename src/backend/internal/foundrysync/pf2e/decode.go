@@ -278,41 +278,107 @@ func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, 
 	if classHP == nil || ancestryHP == nil {
 		return nil
 	}
-	if hasUnsupportedHPModifier(items) {
+	hpModifier, ok := calculateHPModifiers(items, *level)
+	if !ok {
 		return nil
 	}
 	conModifier, ok := abilityModifierFromActor(system, items, "con", *level)
 	if !ok {
 		return nil
 	}
-	maximum := (*classHP+conModifier)**level + *ancestryHP
+	maximum := *ancestryHP + (*classHP+conModifier)*(*level) + hpModifier
 	if maximum < 1 {
 		return nil
 	}
 	return &maximum
 }
 
-func hasUnsupportedHPModifier(items []FoundryItemDto) bool {
+func calculateHPModifiers(items []FoundryItemDto, level int) (int, bool) {
+	total := 0
 	for _, item := range items {
 		var rules []map[string]json.RawMessage
 		if json.Unmarshal(item.System["rules"], &rules) != nil {
 			continue
 		}
 		for _, rule := range rules {
-			key := stringAt(rule, "key")
-			path := stringAt(rule, "path")
-			selector := stringAt(rule, "selector")
-			if key != nil && *key == "ActiveEffectLike" && path != nil &&
-				(strings.Contains(*path, "system.abilities.con") || strings.Contains(*path, "system.attributes.hp")) {
-				return true
+			key := stringValue(rule, "key")
+			switch key {
+			case "ActiveEffectLike":
+				path := stringValue(rule, "path")
+				if strings.Contains(path, "system.abilities.con") || strings.Contains(path, "system.attributes.hp") {
+					return 0, false
+				}
+			case "FlatModifier":
+				if !ruleSelectsHP(rule) {
+					continue
+				}
+				modifierType := stringValue(rule, "type")
+				if modifierType != "" && modifierType != "untyped" {
+					return 0, false
+				}
+				predicate := strings.TrimSpace(string(rule["predicate"]))
+				if predicate != "" && predicate != "null" && predicate != "[]" && predicate != "{}" {
+					return 0, false
+				}
+				value, ok := simpleHPModifierValue(rule["value"], level)
+				if !ok {
+					return 0, false
+				}
+				total += value
 			}
-			if key != nil && *key == "FlatModifier" && selector != nil &&
-				(strings.Contains(*selector, "hp") || strings.Contains(*selector, "hit-points")) {
+		}
+	}
+	return total, true
+}
+
+func ruleSelectsHP(rule map[string]json.RawMessage) bool {
+	if selector := stringAt(rule, "selector"); selector != nil {
+		switch strings.ToLower(strings.TrimSpace(*selector)) {
+		case "hp", "hp-per-level", "hit-points":
+			return true
+		}
+	}
+	var selectors []string
+	if json.Unmarshal(rule["selector"], &selectors) == nil {
+		for _, selector := range selectors {
+			switch strings.ToLower(strings.TrimSpace(selector)) {
+			case "hp", "hp-per-level", "hit-points":
 				return true
 			}
 		}
 	}
 	return false
+}
+
+func simpleHPModifierValue(raw json.RawMessage, level int) (int, bool) {
+	var value int
+	if json.Unmarshal(raw, &value) == nil {
+		return value, true
+	}
+	var expression string
+	if json.Unmarshal(raw, &expression) != nil {
+		return 0, false
+	}
+	expression = strings.ReplaceAll(strings.TrimSpace(expression), " ", "")
+	if expression == "@actor.level" {
+		return level, true
+	}
+	if strings.HasPrefix(expression, "@actor.level*") {
+		multiplier, err := strconv.Atoi(strings.TrimPrefix(expression, "@actor.level*"))
+		if err != nil {
+			return 0, false
+		}
+		return level * multiplier, true
+	}
+	if strings.HasPrefix(expression, "*@actor.level") {
+		multiplier, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(expression, "*"), "@actor.level"))
+		if err != nil {
+			return 0, false
+		}
+		return level * multiplier, true
+	}
+	value, err := strconv.Atoi(expression)
+	return value, err == nil
 }
 
 func abilityModifierFromActor(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
