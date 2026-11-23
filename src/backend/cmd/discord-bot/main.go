@@ -683,10 +683,12 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 }
 
 func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *discordgo.MessageEmbed) {
+	content := ""
 	components := []discordgo.MessageComponent{}
 	embeds := []*discordgo.MessageEmbed{embed}
 	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Embeds:     &embeds,
+		Content:   &content,
+		Embeds:    &embeds,
 		Components: &components,
 	})
 	if err != nil {
