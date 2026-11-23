@@ -56,6 +56,8 @@ FOR UPDATE OF fa, c
 		}
 	}
 
+	// character_id is the current link state. linked_at is NOT NULL and retains
+	// the timestamp of the most recent successful link for historical context.
 	result, err := tx.ExecContext(ctx, `
 UPDATE foundry_actors
 SET character_id = NULL, owner_confirmed_at = NULL, updated_at = now()
