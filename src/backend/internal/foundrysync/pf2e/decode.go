@@ -667,8 +667,9 @@ func cloneRaw(value []byte) json.RawMessage {
 	return append(json.RawMessage(nil), value...)
 }
 
-// decodeStatistics reads explicit Actor-level values and reconstructs ability
-// scores only from complete, saved PF2e boost selections.
+// decodeStatistics reads only explicit Actor-level values. Missing or null
+// system.abilities must remain unknown; build selections are not Actor-prepared
+// ability scores and must not become inputs to derived-stat calculations.
 func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems []FoundryItemDto) CharacterStatisticsInputDto {
 	abilities := make(map[string]AbilityScoreDto)
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
@@ -679,18 +680,6 @@ func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems 
 		score := firstInt(intAt(entry, "value"), intAt(entry, "score"))
 		modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier"))
 		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
-	}
-	if derived := decodeAbilityScoresFromBoosts(system, level, actorItems); len(derived) > 0 {
-		for key, value := range derived {
-			current := abilities[key]
-			if current.Score == nil {
-				current.Score = value.Score
-			}
-			if current.Modifier == nil {
-				current.Modifier = value.Modifier
-			}
-			abilities[key] = current
-		}
 	}
 	proficiencies := objectAt(system, "proficiencies")
 	perceptionRaw := objectAt(proficiencies, "perception")
@@ -723,118 +712,6 @@ func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems 
 			Defenses:   proficiencyMap(defensesRaw, defensesSource),
 		},
 	}
-}
-
-// decodeAbilityScoresFromBoosts reconstructs remaster ability scores only when
-// the Actor snapshot contains the complete level-1 boost selection. It does not
-// execute Rule Elements or infer choices absent from the saved build data.
-func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int, actorItems []FoundryItemDto) map[string]AbilityScoreDto {
-	if level == nil {
-		return nil
-	}
-	buildAttributes := objectAt(objectAt(system, "build"), "attributes")
-	if buildAttributes == nil {
-		return nil
-	}
-	var boosts map[string][]string
-	if json.Unmarshal(buildAttributes["boosts"], &boosts) != nil {
-		return nil
-	}
-	requiredRounds := []int{1}
-	for _, round := range []int{5, 10, 15, 20} {
-		if *level >= round {
-			requiredRounds = append(requiredRounds, round)
-		}
-	}
-	for _, round := range requiredRounds {
-		selected, ok := boosts[strconv.Itoa(round)]
-		if !ok || len(selected) != 4 {
-			return nil
-		}
-		for _, key := range selected {
-			if !isAbilityKey(key) {
-				return nil
-			}
-		}
-	}
-	scores := map[string]int{"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10}
-	flaws := make(map[string][]string)
-	if raw := buildAttributes["flaws"]; len(raw) > 0 && !bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		if json.Unmarshal(raw, &flaws) != nil {
-			var levelOneFlaws []string
-			if json.Unmarshal(raw, &levelOneFlaws) != nil {
-				return nil
-			}
-			flaws["1"] = append(flaws["1"], levelOneFlaws...)
-		}
-	}
-	// Ancestry flaw choices are stored on the Actor's ancestry Item rather
-	// than in system.abilities; apply only an explicit selected value.
-	for _, item := range actorItems {
-		if item.Type != "ancestry" {
-			continue
-		}
-		for _, rawSelection := range objectAt(item.System, "flaws") {
-			var selection map[string]json.RawMessage
-			if json.Unmarshal(rawSelection, &selection) != nil {
-				return nil
-			}
-			selected := stringAt(selection, "selected")
-			if selected != nil && *selected != "" {
-				flaws["1"] = append(flaws["1"], *selected)
-			}
-		}
-		if voluntary := objectAt(item.System, "voluntary"); voluntary != nil {
-			flaws["1"] = append(flaws["1"], stringsAt(voluntary, "flaws")...)
-		}
-	}
-	rounds := make([]int, 0, len(boosts))
-	for rawLevel := range boosts {
-		roundLevel, err := strconv.Atoi(rawLevel)
-		if err != nil || (roundLevel != 1 && roundLevel != 5 && roundLevel != 10 && roundLevel != 15 && roundLevel != 20) {
-			return nil
-		}
-		if roundLevel <= *level {
-			rounds = append(rounds, roundLevel)
-		}
-	}
-	sort.Ints(rounds)
-	for _, roundLevel := range rounds {
-		levelKey := strconv.Itoa(roundLevel)
-		seen := make(map[string]struct{})
-		for _, key := range flaws[levelKey] {
-			if !isAbilityKey(key) {
-				return nil
-			}
-			if _, duplicate := seen[key]; duplicate {
-				continue
-			}
-			seen[key] = struct{}{}
-			scores[key] -= 2
-		}
-		clear(seen)
-		for _, key := range boosts[levelKey] {
-			if !isAbilityKey(key) {
-				return nil
-			}
-			if _, duplicate := seen[key]; duplicate {
-				return nil
-			}
-			seen[key] = struct{}{}
-			if scores[key] >= 18 {
-				scores[key]++
-			} else {
-				scores[key] += 2
-			}
-		}
-	}
-	result := make(map[string]AbilityScoreDto, len(scores))
-	for key, score := range scores {
-		modifier := int(math.Floor(float64(score-10) / 2))
-		scoreValue, modifierValue := score, modifier
-		result[key] = AbilityScoreDto{Score: &scoreValue, Modifier: &modifierValue}
-	}
-	return result
 }
 
 func isAbilityKey(value string) bool {
