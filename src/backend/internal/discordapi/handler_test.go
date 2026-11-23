@@ -7,6 +7,31 @@ import (
 	"testing"
 )
 
+func TestDecodeCharacterRequestsPreservesDiscordOwnerMention(t *testing.T) {
+	t.Run("create character", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, CharacterCreatePath, strings.NewReader(`{"guild_id":"guild-1","discord_user_id":"gm-1","discord_role_ids":["gm-role"],"name":"Андрей","owner_discord_user_id":"player-1"}`))
+		rec := httptest.NewRecorder()
+		var decoded createCharacterRequest
+		if !decodeRequest(rec, req, &decoded) {
+			t.Fatalf("decodeRequest rejected create payload: %s", rec.Body.String())
+		}
+		if decoded.Name != "Андрей" || decoded.OwnerDiscordUserID != "player-1" {
+			t.Fatalf("decoded create request = %+v", decoded)
+		}
+	})
+	t.Run("link character", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, LinkPath, strings.NewReader(`{"guild_id":"guild-1","discord_user_id":"gm-1","actor_uuid":"Actor.test","character_id":"character-1","owner_discord_user_id":"player-1"}`))
+		rec := httptest.NewRecorder()
+		var decoded linkRequest
+		if !decodeRequest(rec, req, &decoded) {
+			t.Fatalf("decodeRequest rejected link payload: %s", rec.Body.String())
+		}
+		if decoded.OwnerDiscordUserID != "player-1" {
+			t.Fatalf("owner Discord ID = %q, want player-1", decoded.OwnerDiscordUserID)
+		}
+	})
+}
+
 func TestServiceTokenMiddleware(t *testing.T) {
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
