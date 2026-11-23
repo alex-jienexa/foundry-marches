@@ -909,13 +909,15 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 		switch item.Type {
 		case "ancestry":
 			hasAncestry = true
-			if !completeSelectedBoosts(objectAt(item.System, "boosts")) ||
+			boosts := objectAt(item.System, "boosts")
+			if boosts == nil || !completeSelectedBoosts(boosts) ||
 				!completeSelectedBoosts(objectAt(item.System, "flaws")) {
 				return nil, false
 			}
 		case "background":
 			hasBackground = true
-			if !completeSelectedBoosts(objectAt(item.System, "boosts")) {
+			boosts := objectAt(item.System, "boosts")
+			if boosts == nil || !completeSelectedBoosts(boosts) {
 				return nil, false
 			}
 		case "class":
@@ -923,7 +925,10 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 			keyAbility := objectAt(item.System, "keyAbility")
 			selected := stringAt(keyAbility, "selected")
 			values := stringsAt(keyAbility, "value")
-			if selected == nil && len(values) != 1 {
+			if selected != nil && *selected != "" && isAbilityKey(*selected) {
+				continue
+			}
+			if len(values) != 1 || !isAbilityKey(values[0]) {
 				return nil, false
 			}
 		}
