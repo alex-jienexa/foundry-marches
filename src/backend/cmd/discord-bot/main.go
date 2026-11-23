@@ -1419,25 +1419,29 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		embed.Title = "💀 МЁРТВ · " + c.Identity.Name
 		embed.Color = 0xED4245
 	}
+	className, ancestryName := "—", "—"
 	if c.Build.Class != nil && strings.TrimSpace(c.Build.Class.Name) != "" {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Класс", Value: c.Build.Class.Name, Inline: true})
+		className = c.Build.Class.Name
 	}
 	if c.Build.Ancestry != nil && strings.TrimSpace(c.Build.Ancestry.Name) != "" {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Родословная", Value: c.Build.Ancestry.Name, Inline: true})
+		ancestryName = c.Build.Ancestry.Name
 	}
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Уровень", Value: intValue(c.Progression.Level), Inline: true})
+	embed.Fields = append(embed.Fields,
+		&discordgo.MessageEmbedField{Name: "Класс", Value: className, Inline: true},
+		&discordgo.MessageEmbedField{Name: "Родословная", Value: ancestryName, Inline: true},
+		&discordgo.MessageEmbedField{Name: "Уровень", Value: intValue(c.Progression.Level), Inline: true},
+	)
+	hp := "— / —"
 	if c.Attributes.HP != nil {
-		hp := intValue(c.Attributes.HP.Current)
+		hp = intValue(c.Attributes.HP.Current) + " / —"
 		if c.Attributes.HP.Max != nil {
-			hp += " / " + strconv.Itoa(*c.Attributes.HP.Max)
-		} else {
-			hp += " / —"
+			hp = intValue(c.Attributes.HP.Current) + " / " + strconv.Itoa(*c.Attributes.HP.Max)
 		}
 		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 {
 			hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp)
 		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "ОЗ", Value: hp, Inline: true})
 	}
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "ОЗ", Value: hp, Inline: true})
 	abilityOrder := []string{"str", "dex", "con", "int", "wis", "cha"}
 	abilityNames := map[string]string{"str": "СИЛ", "dex": "ЛОВ", "con": "ТЕЛ", "int": "ИНТ", "wis": "МДР", "cha": "ХАР"}
 	abilities := make([]string, 0, 6)
