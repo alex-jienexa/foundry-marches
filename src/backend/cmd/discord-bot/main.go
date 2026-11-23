@@ -326,7 +326,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if o["owner"] != "" { ownerText = "<@" + o["owner"] + ">" }
 		b.edit(s, i, fmt.Sprintf("**Черновик персонажа создан**\n\nИмя: **%s**\nВладелец: %s\nСтатус: `draft`\n\nМастер сможет связать его с Foundry Actor командой `/character-link`.", created.Name, ownerText), nil)
 	case "character-draft":
-		b.startSelection(s, i, id, u, "draft")
+		b.startSelection(s, i, id, u, "draft", "")
 	case "character":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		b.startCharacterLookup(s, i, id, u, o["name"])
