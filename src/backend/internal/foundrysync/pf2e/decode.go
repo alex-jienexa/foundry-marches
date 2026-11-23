@@ -418,34 +418,68 @@ func decodeKeyAbility(details map[string]json.RawMessage, items []FoundryItemDto
 
 func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryItemDto) {
 	entries := make(map[string]FoundryItemDto)
+	sources := make(map[string]FoundryItemDto)
 	for _, item := range foundryItems {
+		sources[item.ID] = item
 		if item.Type == "spellcastingEntry" {
 			entries[item.ID] = item
 		}
 	}
 	for i := range items {
-		if items[i].Type != "spell" || items[i].SpellcastingEntryID == nil {
+		if items[i].Type != "spell" {
 			continue
 		}
-		entry, ok := entries[*items[i].SpellcastingEntryID]
-		if !ok {
-			continue
+		source := sources[items[i].ID]
+		entryID := items[i].SpellcastingEntryID
+		if entryID == nil {
+			entryID = firstString(stringAt(source.System, "location"), stringAt(objectAt(source.System, "location"), "value"))
 		}
-		tradition := stringAt(objectAt(entry.System, "tradition"), "value")
-		if tradition == nil {
-			tradition = stringAt(entry.System, "tradition")
+		if entryID != nil {
+			items[i].SpellcastingEntryID = entryID
+			if entry, ok := entries[*entryID]; ok {
+				tradition := firstString(
+					stringAt(objectAt(entry.System, "tradition"), "value"),
+					stringAt(entry.System, "tradition"),
+				)
+				items[i].Tradition = tradition
+				entryName := entry.Name
+				if entryName != "" {
+					items[i].SpellList = &entryName
+				}
+				prepared := firstBool(boolAt(entry.System, "prepared"), boolAt(objectAt(entry.System, "prepared"), "value"))
+				if prepared != nil {
+					items[i].Prepared = prepared
+				}
+			}
 		}
-		items[i].Tradition = tradition
-		entryName := entry.Name
-		if entryName != "" { items[i].SpellList = &entryName }
-		prepared := boolAt(entry.System, "prepared")
-		if prepared == nil {
-			prepared = boolAt(objectAt(entry.System, "prepared"), "value")
+		if items[i].Tradition == nil {
+			items[i].Tradition = firstString(
+				stringAt(objectAt(source.System, "tradition"), "value"),
+				stringAt(source.System, "tradition"),
+			)
 		}
-		if prepared != nil {
-			items[i].Prepared = prepared
+		if items[i].SpellList == nil {
+			items[i].SpellList = firstString(
+				stringAt(objectAt(source.System, "spellList"), "value"),
+				stringAt(source.System, "spellList"),
+			)
+		}
+		if items[i].Prepared == nil {
+			items[i].Prepared = firstBool(
+				boolAt(source.System, "prepared"),
+				boolAt(objectAt(source.System, "prepared"), "value"),
+			)
 		}
 	}
+}
+
+func firstBool(values ...*bool) *bool {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
 }
 
 func decodeResource(raw map[string]json.RawMessage) *ResourceValueDto {
