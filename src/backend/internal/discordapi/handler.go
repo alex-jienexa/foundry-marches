@@ -465,24 +465,42 @@ WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 		return "", false, false
 	}
 
-	var canManage bool
+	var canManage, canViewOwn bool
 	err = h.db.QueryRowContext(ctx, `
-SELECT EXISTS (
-  SELECT 1
-  FROM user_roles ur
-  JOIN role_permissions rp ON rp.role_id = ur.role_id
-  WHERE ur.user_id = $1 AND rp.permission_key = 'foundry.manage'
-  UNION
-  SELECT 1
-  FROM discord_role_map drm
-  JOIN role_permissions rp ON rp.role_id = drm.role_id
-  WHERE drm.guild_id = $2
-    AND drm.discord_role_id = ANY($3)
-    AND rp.permission_key = 'foundry.manage'
-)
-`, userID, h.guildID, pq.Array(req.DiscordRoleIDs)).Scan(&canManage)
+SELECT
+  EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN role_permissions rp ON rp.role_id = ur.role_id
+    WHERE ur.user_id = $1 AND rp.permission_key = 'foundry.manage'
+    UNION
+    SELECT 1
+    FROM discord_role_map drm
+    JOIN role_permissions rp ON rp.role_id = drm.role_id
+    WHERE drm.guild_id = $2
+      AND drm.discord_role_id = ANY($3)
+      AND rp.permission_key = 'foundry.manage'
+  ),
+  EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN role_permissions rp ON rp.role_id = ur.role_id
+    WHERE ur.user_id = $1 AND rp.permission_key = 'characters.create'
+    UNION
+    SELECT 1
+    FROM discord_role_map drm
+    JOIN role_permissions rp ON rp.role_id = drm.role_id
+    WHERE drm.guild_id = $2
+      AND drm.discord_role_id = ANY($3)
+      AND rp.permission_key = 'characters.create'
+  )
+`, userID, h.guildID, pq.Array(req.DiscordRoleIDs)).Scan(&canManage, &canViewOwn)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not evaluate character access")
+		return "", false, false
+	}
+	if !canManage && !canViewOwn {
+		writeError(w, http.StatusForbidden, "missing permission: characters.create")
 		return "", false, false
 	}
 	return userID, canManage, true
