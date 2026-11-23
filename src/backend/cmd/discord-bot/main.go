@@ -1358,7 +1358,13 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 			case item.Prepared == nil:
 				addSpell(item, 1, 2, "Статус подготовки не определён", rank)
 			case *item.Prepared:
-				addSpell(item, 1, 0, "Подготовлено", rank)
+				if len(item.PreparedRanks) > 0 {
+					for _, preparedRank := range item.PreparedRanks {
+						addSpell(item, 1, 0, "Подготовлено", preparedRank)
+					}
+				} else {
+					addSpell(item, 1, 0, "Подготовлено", rank)
+				}
 			default:
 				addSpell(item, 1, 1, "Подготовка", rank)
 			}
