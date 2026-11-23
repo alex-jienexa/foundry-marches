@@ -206,6 +206,44 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	}
 }
 
+func TestResolveFoundryImageURL(t *testing.T) {
+	relative := "systems/pf2e/icons/default-icons/character.svg"
+	got := resolveFoundryImageURL(&relative, "https://foundry.example.test")
+	if got == nil || *got != "https://foundry.example.test/systems/pf2e/icons/default-icons/character.svg" {
+		t.Fatalf("resolved image URL = %v", got)
+	}
+	absolute := "https://cdn.example.test/portrait.webp"
+	got = resolveFoundryImageURL(&absolute, "")
+	if got == nil || *got != absolute {
+		t.Fatalf("absolute image URL = %v", got)
+	}
+	got = resolveFoundryImageURL(&relative, "")
+	if got != nil {
+		t.Fatalf("relative image without public base should be omitted, got %v", *got)
+	}
+}
+
+func TestCharacterEmbedDoesNotRenderMissingHPMaximumAsDash(t *testing.T) {
+	current := 19
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Attributes.HP = &struct {
+		Current *int `json:"current"`
+		Temp    *int `json:"temp"`
+		Max     *int `json:"max"`
+	}{Current: &current}
+	embed := characterEmbed(c)
+	for _, field := range embed.Fields {
+		if field.Name == "Здоровье" {
+			if field.Value != "19 ОЗ" {
+				t.Fatalf("HP field = %q, want current HP without fabricated maximum", field.Value)
+			}
+			return
+		}
+	}
+	t.Fatal("HP field missing")
+}
+
 func TestCharacterInventoryAndSpellEmbeds(t *testing.T) {
 	level := 2
 	quantity := 3
