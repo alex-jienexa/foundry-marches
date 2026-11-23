@@ -858,17 +858,17 @@ func TestDecodeAbilityScoresUseAlternateAncestryBoosts(t *testing.T) {
 		{
 			name: "one selected alternate boost",
 			alt:  `["dex"]`,
-			want: map[string]int{"str": 10, "dex": 14, "con": 14, "int": 10, "wis": 10, "cha": 12},
+			want: map[string]int{"str": 10, "dex": 14, "con": 14, "int": 12, "wis": 10, "cha": 14},
 		},
 		{
 			name: "two selected alternate boosts",
 			alt:  `["dex","con"]`,
-			want: map[string]int{"str": 10, "dex": 14, "con": 16, "int": 10, "wis": 10, "cha": 12},
+			want: map[string]int{"str": 10, "dex": 14, "con": 16, "int": 12, "wis": 10, "cha": 14},
 		},
 		{
 			name: "alternate mode with no selections",
 			alt:  `[]`,
-			want: map[string]int{"str": 10, "dex": 12, "con": 14, "int": 10, "wis": 10, "cha": 12},
+			want: map[string]int{"str": 10, "dex": 12, "con": 14, "int": 12, "wis": 10, "cha": 14},
 		},
 	}
 
@@ -892,7 +892,7 @@ func TestDecodeAbilityScoresUseAlternateAncestryBoosts(t *testing.T) {
 						"1":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}
 					}}}
 				],
-				"system":{"details":{"level":{"value":1}},"build":{"attributes":{"boosts":{"1":["dex","con"]}}},"abilities":null}
+				"system":{"details":{"level":{"value":1}},"build":{"attributes":{"boosts":{"1":["cha","int","con","dex"]}}},"abilities":null}
 			}`)
 			decoded, err := DecodeActor(raw)
 			if err != nil {
