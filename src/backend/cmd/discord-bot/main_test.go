@@ -663,6 +663,40 @@ func TestCharacterEmbedFallsBackToReconstructedAbilityWhenStoredValueEmpty(t *te
 	t.Fatal("ability field missing")
 }
 
+func TestCharacterEmbedMarksPartialGradualAbilityBoosts(t *testing.T) {
+	wisScore, wisModifier := 21, 5
+	chaScore, chaModifier := 19, 4
+	c := characterDetails{}
+	c.Identity.Name = "Персонаж с частичными повышениями"
+	c.Statistics.Abilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{
+		"wis": {Score: &wisScore, Modifier: &wisModifier},
+	}
+	c.Statistics.ReconstructedAbilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{
+		"cha": {Score: &chaScore, Modifier: &chaModifier, Derived: true},
+	}
+	embed := characterEmbed(c)
+	for _, field := range embed.Fields {
+		if field.Name != "Характеристики" {
+			continue
+		}
+		for _, want := range []string{"МДР: +5½", "ХАР: +4½"} {
+			if !strings.Contains(field.Value, want) {
+				t.Errorf("ability field = %q, want partial marker %q", field.Value, want)
+			}
+		}
+		return
+	}
+	t.Fatal("ability field missing")
+}
+
 func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
 	level, xp, hp, maxHP := 2, 400, 2, 24
 	c := characterDetails{}
