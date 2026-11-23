@@ -315,6 +315,25 @@ func TestDecodeAbilityScoresFromBuildBoostSelections(t *testing.T) {
 	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 { t.Fatalf("unexpected class save baseline: %+v", class.SavingThrows) }
 	if class.AdditionalSkills == nil || *class.AdditionalSkills != 3 { t.Fatalf("class additional skill count missing: %+v", class.AdditionalSkills) }
 }
+func TestDecodeAbilityScoresApplyAncestryAndVoluntaryFlaws(t *testing.T) {
+	raw := []byte(`{"_id":"flaws","type":"character","items":[
+		{"_id":"ancestry","type":"ancestry","system":{
+			"boosts":{"0":{"value":["str","dex"],"selected":"str"}},
+			"flaws":{"0":{"value":["dex"],"selected":"dex"}},
+			"voluntary":{"boost":"wis","flaws":["con"]}
+		}},
+		{"_id":"background","type":"background","system":{"boosts":{"0":{"value":["str","dex"],"selected":"dex"}}}},
+		{"_id":"class","type":"class","system":{"keyAbility":{"value":["str"],"selected":null}}}
+	],"system":{"details":{"level":{"value":1}},"build":{"attributes":{"boosts":{"1":["str","dex","con","int"]}}},"abilities":null}}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	want := map[string]int{"str":16,"dex":12,"con":10,"int":12,"wis":12,"cha":10}
+	for ability, score := range want {
+		got := decoded.Character.Statistics.Abilities[ability]
+		if got.Score == nil || *got.Score != score { t.Errorf("%s score = %+v, want %d", ability, got, score) }
+	}
+}
+
 func TestDecodeSkillsIncludesClassAndBackgroundTraining(t *testing.T) {
 	raw := []byte(`{"_id":"skills","type":"character","items":[
 		{"_id":"class","type":"class","system":{"trainedSkills":{"value":["religion"],"additional":2},"rules":[{"key":"ChoiceSet","flag":"skillChoice","selection":"diplomacy"},{"key":"ActiveEffectLike","mode":"upgrade","path":"system.skills.{item|flags.system.rulesSelections.skillChoice}.rank","value":1}]}},
