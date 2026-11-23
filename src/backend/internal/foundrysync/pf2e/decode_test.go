@@ -136,13 +136,13 @@ func TestDecodePostSessionActorSnapshot(t *testing.T) {
 	if character.Build.KeyAbility == nil || *character.Build.KeyAbility != "int" {
 		t.Fatalf("key ability = %+v, want class-defined INT", character.Build.KeyAbility)
 	}
-	if !character.Statistics.AbilitiesDerived || len(character.Statistics.Abilities) != 6 {
-		t.Fatalf("complete post-session build selections should derive six abilities: %+v", character.Statistics)
+	if !character.Statistics.AbilitiesDerived || len(character.Statistics.Abilities) != 0 || len(character.Statistics.ReconstructedAbilities) != 6 {
+		t.Fatalf("complete post-session build selections should derive six display-only abilities: %+v", character.Statistics)
 	}
-	if got := character.Statistics.Abilities["int"]; got.Score == nil || *got.Score != 16 || !got.Derived {
+	if got := character.Statistics.ReconstructedAbilities["int"]; got.Score == nil || *got.Score != 16 || !got.Derived {
 		t.Fatalf("INT = %+v, want derived score 16", got)
 	}
-	if got := character.Statistics.Abilities["cha"]; got.Score == nil || *got.Score != 16 {
+	if got := character.Statistics.ReconstructedAbilities["cha"]; got.Score == nil || *got.Score != 16 {
 		t.Fatalf("CHA = %+v, want score 16", got)
 	}
 
@@ -304,10 +304,10 @@ func TestDecodeAbilityScoresFromBuildBoostSelections(t *testing.T) {
 	decoded, err := DecodeActor(readFixture(t, fixtureActor))
 	if err != nil { t.Fatal(err) }
 	stats := decoded.Character.Statistics
-	if !stats.AbilitiesDerived || len(stats.Abilities) != 6 { t.Fatalf("expected six derived ability scores: %+v", stats) }
+	if !stats.AbilitiesDerived || len(stats.Abilities) != 0 || len(stats.ReconstructedAbilities) != 6 { t.Fatalf("expected six display-only derived ability scores: %+v", stats) }
 	want := map[string]int{"str": 18, "dex": 12, "con": 14, "int": 10, "wis": 14, "cha": 10}
 	for ability, score := range want {
-		got := stats.Abilities[ability]
+		got := stats.ReconstructedAbilities[ability]
 		if got.Score == nil || *got.Score != score || !got.Derived { t.Errorf("%s = %+v, want derived score %d", ability, got, score) }
 	}
 	class := decoded.Character.Build.ClassProficiencies
@@ -341,8 +341,8 @@ func TestDecodeAbilityScoresIncludeClassItemBoostSelections(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 	want := map[string]int{"str":12,"dex":12,"con":12,"int":12,"wis":12,"cha":14}
 	for ability, score := range want {
-		got := decoded.Character.Statistics.Abilities[ability]
-		if got.Score == nil || *got.Score != score { t.Errorf("%s score = %+v, want %d", ability, got, score) }
+		got := decoded.Character.Statistics.ReconstructedAbilities[ability]
+		if got.Score == nil || *got.Score != score || !got.Derived { t.Errorf("%s reconstructed score = %+v, want %d", ability, got, score) }
 	}
 }
 
