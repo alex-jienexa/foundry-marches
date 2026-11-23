@@ -41,9 +41,9 @@ type FoundryDocumentStatsDto struct {
 	Compendium    *string `json:"compendiumSource"`
 }
 
-// CharacterDto is a read-only application projection. It contains only values
-// represented in the persisted Actor document; prepared/calculated PF2e values
-// are deliberately not inferred here.
+// CharacterDto is a read-only application projection. It contains values represented
+// in the persisted Actor document plus narrowly derived values (currently maximum HP)
+// whose complete inputs can be reconstructed without executing PF2e Rule Elements.
 type CharacterDto struct {
 	SchemaVersion int                         `json:"schemaVersion"`
 	Identity      CharacterIdentityDto        `json:"identity"`
@@ -102,8 +102,8 @@ type CharacterItemReferenceDto struct {
 	Image *string `json:"image"`
 }
 
-// HP values are copied only when present in Actor.system.attributes.hp.
-// PF2e's prepared maximum HP is not present in this Actor snapshot.
+// Current and temporary HP are copied from Actor.system.attributes.hp. If max is absent,
+// the decoder derives it only when class, ancestry, level and Constitution are known.
 type CharacterAttributesDto struct {
 	HP    *HitPointsDto       `json:"hp"`
 	Dying *DyingConditionDto  `json:"dying,omitempty"`
