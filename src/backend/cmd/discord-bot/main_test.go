@@ -436,6 +436,7 @@ func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
 	c.Statistics.Abilities = map[string]struct {
 		Score    *int `json:"score"`
 		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
 	}{"int": {Score: &score, Modifier: &modifier}}
 	embed := characterEmbed(c)
 	fields := make(map[string]string, len(embed.Fields))
@@ -479,10 +480,10 @@ func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
 }
 
 func TestCharacterDetailButtonsStayOnOneMessage(t *testing.T) {
-	if got := len(characterDetailComponents("abc123", false)[0].(discordgo.ActionsRow).Components); got != 4 {
+	if got := len(characterDetailComponents("abc123", "overview")[0].(discordgo.ActionsRow).Components); got != 4 {
 		t.Fatalf("overview buttons = %d, want 4 detail sections", got)
 	}
-	if got := len(characterDetailComponents("abc123", true)[0].(discordgo.ActionsRow).Components); got != 5 {
+	if got := len(characterDetailComponents("abc123", "skills")[0].(discordgo.ActionsRow).Components); got != 5 {
 		t.Fatalf("detail buttons = %d, want 4 sections plus overview", got)
 	}
 }
