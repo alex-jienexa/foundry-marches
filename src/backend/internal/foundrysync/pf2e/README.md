@@ -14,15 +14,16 @@ projects verified stored fields into the versioned application Character DTO.
 - Normalized Items expose common fields; type-specific data remains in the raw snapshot.
 - Normalized Items preserve `system.category` and `system.actionType.value` when present, so presentation layers can distinguish feat categories and action kinds without inspecting localized names.
 - Missing and null values remain absent. Ability scores are reconstructed only when the
-  ancestry, background, class key ability and every level-based boost set through the
+  ancestry, background, class boost/key ability and every level-based boost set through the
   current level have complete selections; reconstructed values are explicitly marked
   as derived and never represented as Actor-persisted values.
 - Skill ranks begin with `Actor.system.skills`, then merge explicitly selected
   `trainedSkills.value`/`trainedSkills.lore` from Actor Items and unconditional,
   statically identifiable skill-rank `ActiveEffectLike` upgrades. The decoder does
   not infer the names represented by `trainedSkills.additional`.
-- The persisted Actor document does not contain prepared AC, maximum HP, or
-  prepared Perception in the supplied fixture. This adapter does not calculate them.
+- The supplied fixture does not persist prepared AC or Perception values. The decoder
+  derives maximum HP only when class HP, ancestry HP, level and Constitution are known;
+  it does not calculate AC or replace missing Perception proficiency.
 - The decoder projects Actor.system.skills and augments it with selected skill training
   from class/background/other Actor Items plus unconditional skill-rank upgrades whose
   paths resolve to a concrete skill. Other Rule Elements remain declarative source data;
@@ -31,7 +32,7 @@ projects verified stored fields into the versioned application Character DTO.
   `lore-` prefix; the original key is retained.
 - Compendium references inside class/background Items are not expanded into
   Actor Items.
-- The decoder performs no writes to Foundry and does not execute PF2e rules.
+- The decoder performs no writes to Foundry and does not execute arbitrary PF2e rules; it only extracts the narrow, unconditional skill-rank upgrades described above.
   The sibling calculator package performs only documented, limited rank and
   derived-stat calculations; it is not a replacement for Foundry preparation.
 
