@@ -316,6 +316,46 @@ func TestDecodeAncestryFeatureProgression(t *testing.T) {
 	}
 }
 
+func TestDecodeFocusSpellcastingEntryType(t *testing.T) {
+	raw := []byte(`{
+		"_id":"focus-actor",
+		"name":"Оракул",
+		"type":"character",
+		"system":{"details":{"level":{"value":1}}},
+		"items":[
+			{
+				"_id":"focus-entry",
+				"name":"Фокусные заклинания",
+				"type":"spellcastingEntry",
+				"system":{"category":{"value":"focus"},"prepared":{"value":"prepared"},"tradition":{"value":"divine"}}
+			},
+			{
+				"_id":"focus-spell",
+				"name":"Свет",
+				"type":"spell",
+				"system":{"location":"focus-entry","level":{"value":1},"traits":{"value":["cantrip"]}}
+			}
+		]
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range decoded.Character.Items {
+		if item.ID != "focus-spell" {
+			continue
+		}
+		if item.SpellcastingType == nil || *item.SpellcastingType != "focus" {
+			t.Fatalf("focus spellcasting type = %v, want focus", item.SpellcastingType)
+		}
+		if !item.Cantrip {
+			t.Fatal("focus cantrip classification was not preserved")
+		}
+		return
+	}
+	t.Fatal("focus spell was not decoded")
+}
+
 func TestDecodeStatisticsKeepsMissingValuesUnknown(t *testing.T) {
 	raw := []byte(`{"_id":"unknown","type":"character","items":[],"system":{"abilities":null}}`)
 	decoded, err := DecodeActor(raw)
