@@ -350,9 +350,9 @@ func hpMaxValue(hp *HitPointsDto) *int {
 }
 
 func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, level *int) *int {
-	if level == nil || *level < 1 {
-		logCharacterDiagnostic("hp actor level unavailable; cannot derive maximum HP")
-		return nil
+	levelValue := 0
+	if level != nil && *level > 0 {
+		levelValue = *level
 	}
 	var classHP, ancestryHP *int
 	for _, item := range items {
@@ -363,26 +363,36 @@ func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, 
 			ancestryHP = intAt(item.System, "hp")
 		}
 	}
-	if classHP == nil || ancestryHP == nil {
-		logCharacterDiagnostic("hp derivation unavailable: class_hp_present=%t ancestry_hp_present=%t", classHP != nil, ancestryHP != nil)
-		return nil
+
+	// Keep every known term. An absent class, ancestry, level or CON value
+	// removes only that term from the formula instead of cancelling the result.
+	maximum := 0
+	if ancestryHP != nil {
+		maximum += *ancestryHP
 	}
-	hpModifier, ok := calculateHPModifiers(items, *level)
-	if !ok {
-		logCharacterDiagnostic("hp derivation unavailable: unsupported HP rule element detected")
-		return nil
+	if classHP != nil && levelValue > 0 {
+		maximum += *classHP * levelValue
 	}
-	conModifier, ok := abilityModifierFromActor(system, items, "con", *level)
-	if !ok {
-		logCharacterDiagnostic("hp derivation unavailable: CON modifier could not be resolved")
-		return nil
+	if conModifier, ok := abilityModifierFromActor(system, items, "con", levelValue); ok && levelValue > 0 {
+		maximum += conModifier * levelValue
 	}
-	maximum := *ancestryHP + (*classHP+conModifier)*(*level) + hpModifier
-	logCharacterDiagnostic("hp formula: ancestry_hp=%d + (class_hp=%d + con_modifier=%d) * level=%d + item_hp_modifiers=%d => maximum_hp=%d", *ancestryHP, *classHP, conModifier, *level, hpModifier, maximum)
+	hpModifier, _ := calculateHPModifiers(items, levelValue)
+	maximum += hpModifier
+
+	logCharacterDiagnostic(
+		"hp partial formula: ancestry_hp=%s class_hp=%s level=%d con_modifier_source_available=%t item_hp_modifiers=%d => maximum_hp=%d",
+		diagnosticIntPointer(ancestryHP), diagnosticIntPointer(classHP), levelValue,
+		abilityModifierAvailable(system, items, levelValue), hpModifier, maximum,
+	)
 	if maximum < 1 {
 		return nil
 	}
 	return &maximum
+}
+
+func abilityModifierAvailable(system map[string]json.RawMessage, items []FoundryItemDto, level int) bool {
+	_, ok := abilityModifierFromActor(system, items, "con", level)
+	return ok
 }
 
 func calculateHPModifiers(items []FoundryItemDto, level int) (int, bool) {
@@ -393,30 +403,27 @@ func calculateHPModifiers(items []FoundryItemDto, level int) (int, bool) {
 			continue
 		}
 		for _, rule := range rules {
-			key := stringValue(rule, "key")
-			switch key {
+			switch stringValue(rule, "key") {
 			case "ActiveEffectLike":
-				path := stringValue(rule, "path")
-				if strings.Contains(path, "system.abilities.con") || strings.Contains(path, "system.attributes.hp") {
-					return 0, false
-				}
+				// Unsupported effects are ignored individually. They do not
+				// invalidate supported FlatModifiers from other items.
+				continue
 			case "FlatModifier":
 				if !ruleSelectsHP(rule) {
 					continue
 				}
 				modifierType := stringValue(rule, "type")
 				if modifierType != "" && modifierType != "untyped" {
-					return 0, false
+					continue
 				}
 				predicate := strings.TrimSpace(string(rule["predicate"]))
 				if predicate != "" && predicate != "null" && predicate != "[]" && predicate != "{}" {
-					return 0, false
+					continue
 				}
 				value, ok := simpleHPModifierValue(rule["value"], level)
-				if !ok {
-					return 0, false
+				if ok {
+					total += value
 				}
-				total += value
 			}
 		}
 	}
@@ -495,62 +502,58 @@ func abilityModifierFromActor(system map[string]json.RawMessage, items []Foundry
 }
 
 func reconstructedAbilityScore(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
-	var ancestry, background, class *FoundryItemDto
-	for i := range items {
-		item := &items[i]
+	if !isAbilityKey(ability) || level < 1 {
+		return 0, false
+	}
+
+	// Start from the PF2e baseline and apply each known source independently.
+	// Missing class/background/ancestry data or unresolved choices must not
+	// erase boosts that were already established by other sources.
+	score := 10
+	for _, item := range items {
 		switch item.Type {
 		case "ancestry":
-			if ancestry == nil { ancestry = item }
+			score += 0
+			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
+				score = applyAbilityBoost(score)
+			}
+			voluntary := objectAt(item.System, "voluntary")
+			if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
+				score = applyAbilityBoost(score)
+			}
+			flaws := selectedBoostCount(objectAt(item.System, "flaws"), ability) +
+				stringArrayCount(voluntary, "flaws", ability)
+			score -= flaws * 2
 		case "background":
-			if background == nil { background = item }
+			for range selectedBoostCount(objectAt(item.System, "boosts"), ability) {
+				score = applyAbilityBoost(score)
+			}
 		case "class":
-			if class == nil { class = item }
-		}
-	}
-	if ancestry == nil || background == nil || class == nil {
-		return 0, false
-	}
-
-	score := 10
-	for range selectedBoostCount(objectAt(ancestry.System, "boosts"), ability) {
-		score = applyAbilityBoost(score)
-	}
-	voluntary := objectAt(ancestry.System, "voluntary")
-	if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
-		score = applyAbilityBoost(score)
-	}
-	flaws := selectedBoostCount(objectAt(ancestry.System, "flaws"), ability) +
-		stringArrayCount(voluntary, "flaws", ability)
-	score -= flaws * 2
-
-	for range selectedBoostCount(objectAt(background.System, "boosts"), ability) {
-		score = applyAbilityBoost(score)
-	}
-	classBoosts := objectAt(class.System, "boosts")
-	if classBoosts != nil && hasSelectedBoosts(classBoosts) {
-		for range selectedBoostCount(classBoosts, ability) {
-			score = applyAbilityBoost(score)
-		}
-	} else {
-		keyAbility := objectAt(class.System, "keyAbility")
-		selected := stringAt(keyAbility, "selected")
-		if selected != nil && *selected == ability {
-			score = applyAbilityBoost(score)
-		} else if selected == nil && stringArrayCount(keyAbility, "value", ability) == 1 && len(stringsAt(keyAbility, "value")) == 1 {
-			score = applyAbilityBoost(score)
+			classBoosts := objectAt(item.System, "boosts")
+			if classBoosts != nil {
+				for range selectedBoostCount(classBoosts, ability) {
+					score = applyAbilityBoost(score)
+				}
+			} else {
+				keyAbility := objectAt(item.System, "keyAbility")
+				selected := stringAt(keyAbility, "selected")
+				if selected != nil && *selected == ability {
+					score = applyAbilityBoost(score)
+				} else if selected == nil && len(stringsAt(keyAbility, "value")) == 1 && stringArrayCount(keyAbility, "value", ability) == 1 {
+					score = applyAbilityBoost(score)
+				}
+			}
 		}
 	}
 
-	build := objectAt(system, "build")
-	attributes := objectAt(build, "attributes")
-	rawBoosts := objectAt(attributes, "boosts")
-	if rawBoosts == nil {
-		return 0, false
-	}
+	// Level-based boosts are independent milestones. Missing or malformed
+	// milestones are skipped; known selections from other levels still count.
+	boosts := objectAt(objectAt(objectAt(system, "build"), "attributes"), "boosts")
 	for milestone := 1; milestone <= level; milestone += 4 {
 		var selected []string
-		if json.Unmarshal(rawBoosts[strconv.Itoa(milestone)], &selected) != nil {
-			return 0, false
+		raw := boosts[strconv.Itoa(milestone)]
+		if len(raw) == 0 || json.Unmarshal(raw, &selected) != nil {
+			continue
 		}
 		for _, selectedAbility := range selected {
 			if selectedAbility == ability {
@@ -575,7 +578,7 @@ func selectedBoostCount(raw map[string]json.RawMessage, ability string) int {
 		if json.Unmarshal(value, &entry) != nil {
 			continue
 		}
-		if selected := stringAt(entry, "selected"); selected != nil && *selected == ability {
+		if selectedBoost(entry) == ability {
 			count++
 		}
 	}
@@ -1127,69 +1130,9 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 	if level == nil || *level < 1 {
 		return nil, false
 	}
-	hasAncestry, hasBackground, hasClass := false, false, false
-	for _, item := range items {
-		switch item.Type {
-		case "ancestry":
-			hasAncestry = true
-			boosts := objectAt(item.System, "boosts")
-			if boosts == nil || !completeSelectedBoosts(boosts) ||
-				!completeSelectedBoosts(objectAt(item.System, "flaws")) {
-				return nil, false
-			}
-		case "background":
-			hasBackground = true
-			boosts := objectAt(item.System, "boosts")
-			if boosts == nil || !completeSelectedBoosts(boosts) {
-				return nil, false
-			}
-		case "class":
-			hasClass = true
-			classBoosts := objectAt(item.System, "boosts")
-			if classBoosts != nil && hasSelectedBoosts(classBoosts) {
-				if !completeSelectedBoosts(classBoosts) {
-					return nil, false
-				}
-				continue
-			}
-			keyAbility := objectAt(item.System, "keyAbility")
-			selected := stringAt(keyAbility, "selected")
-			values := stringsAt(keyAbility, "value")
-			if selected != nil && *selected != "" {
-				if !isAbilityKey(*selected) || (len(values) > 0 && !containsString(values, *selected)) {
-					return nil, false
-				}
-				continue
-			}
-			if len(values) != 1 || !isAbilityKey(values[0]) {
-				return nil, false
-			}
-		}
-	}
-	if !hasAncestry || !hasBackground || !hasClass {
-		return nil, false
-	}
-	boosts := objectAt(objectAt(objectAt(system, "build"), "attributes"), "boosts")
-	if boosts == nil {
-		return nil, false
-	}
-	for milestone := 1; milestone <= *level; milestone += 4 {
-		var selected []string
-		if json.Unmarshal(boosts[strconv.Itoa(milestone)], &selected) != nil || len(selected) != 4 {
-			return nil, false
-		}
-		for _, ability := range selected {
-			if !isAbilityKey(ability) {
-				return nil, false
-			}
-		}
-	}
 	result := make(map[string]int, 6)
 	for _, ability := range []string{"str", "dex", "con", "int", "wis", "cha"} {
-		score, ok := reconstructedAbilityScore(system, items, ability, *level)
-		if !ok {
-			return nil, false
-		}
+		score, _ := reconstructedAbilityScore(system, items, ability, *level)
 		result[ability] = score
 	}
 	return result, true
@@ -1217,6 +1160,9 @@ func containsString(values []string, expected string) bool {
 	return false
 }
 
+// completeSelectedBoosts is retained for callers that need to validate a fully
+// selected boost group. Reconstruction itself deliberately does not use it:
+// unresolved choices are skipped independently rather than aborting all scores.
 func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
 	if raw == nil {
 		return true
@@ -1226,22 +1172,37 @@ func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
 		if json.Unmarshal(value, &entry) != nil {
 			continue
 		}
-		if len(entry["value"]) == 0 {
-			continue
-		}
 		var choices []string
-		if json.Unmarshal(entry["value"], &choices) != nil {
-			return false
+		if len(entry["value"]) > 0 && json.Unmarshal(entry["value"], &choices) != nil {
+			continue
 		}
 		if len(choices) == 0 {
 			continue
 		}
-		selected := stringAt(entry, "selected")
-		if selected == nil || !isAbilityKey(*selected) || !containsString(choices, *selected) {
+		selected := selectedBoost(entry)
+		if selected == "" {
 			return false
 		}
 	}
 	return true
+}
+
+// selectedBoost returns the explicit selection, or the only legal choice when
+// Foundry has not materialized selected for a mandatory single-option boost.
+// Ambiguous and empty choices intentionally contribute nothing.
+func selectedBoost(entry map[string]json.RawMessage) string {
+	if selected := stringAt(entry, "selected"); selected != nil && isAbilityKey(*selected) {
+		var choices []string
+		if len(entry["value"]) == 0 || json.Unmarshal(entry["value"], &choices) != nil || len(choices) == 0 || containsString(choices, *selected) {
+			return *selected
+		}
+		return ""
+	}
+	var choices []string
+	if json.Unmarshal(entry["value"], &choices) == nil && len(choices) == 1 && isAbilityKey(choices[0]) {
+		return choices[0]
+	}
+	return ""
 }
 
 func abilityModifierFromScore(score int) int {
