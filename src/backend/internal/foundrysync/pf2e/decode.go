@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -76,6 +77,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 		actor.Items = append(actor.Items, item.Foundry)
 		normalizedItems = append(normalizedItems, item.Character)
 	}
+	enrichSpellcastingItems(normalizedItems, actor.Items)
 
 	system := actor.System
 	details := objectAt(system, "details")
@@ -102,7 +104,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 				Value: intAt(xp, "value"), Min: intAt(xp, "min"), Max: intAt(xp, "max"),
 			},
 		},
-		Attributes: CharacterAttributesDto{HP: decodeHP(hp)},
+		Attributes: decodeAttributes(system, hp, actor.Items, intAt(details, "level", "value")),
 		Statistics: decodeStatistics(system),
 		Resources:  CharacterResourcesDto{HeroPoints: decodeResource(hero)},
 		Skills:     decodeSkills(system["skills"]),
@@ -111,7 +113,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 	}
 	character.Build = buildReferences(normalizedItems)
 	character.Build.ClassProficiencies = decodeClassProficiencies(actor.Items)
-	character.Build.KeyAbility = stringAt(objectAt(details, "keyability"), "value")
+	character.Build.KeyAbility = decodeKeyAbility(details, actor.Items)
 
 	return &DecodedActor{
 		Character:   character,
@@ -161,7 +163,11 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 		ActionType:       stringAt(objectAt(system, "actionType"), "value"),
 		Quantity:         intAt(system, "quantity"),
 		Level:            firstInt(intAt(system, "level", "value"), intAt(system, "level")),
-		Equipped:         decodeEquipped(objectAt(system, "equipped")),
+		Equipped:            decodeEquipped(objectAt(system, "equipped")),
+		ContainerID:         stringAt(system, "containerId"),
+		Usage:               stringAt(objectAt(system, "usage"), "value"),
+		SpellcastingEntryID: stringAt(system, "location"),
+		Prepared:            boolAt(system, "prepared"),
 		Armor:            decodeArmorData(system),
 		Runes:            decodeItemRunes(system),
 		CompendiumSource: stringAt(objectAt(root, "_stats"), "compendiumSource"),
@@ -209,6 +215,209 @@ func decodeHP(raw map[string]json.RawMessage) *HitPointsDto {
 		return nil
 	}
 	return &HitPointsDto{Current: intAt(raw, "value"), Temp: intAt(raw, "temp"), Max: intAt(raw, "max")}
+}
+
+
+func decodeAttributes(system map[string]json.RawMessage, hpRaw map[string]json.RawMessage, items []FoundryItemDto, level *int) CharacterAttributesDto {
+	hp := decodeHP(hpRaw)
+	if hp != nil && hp.Max == nil {
+		hp.Max = deriveMaximumHP(system, items, level)
+	}
+	attributes := objectAt(system, "attributes")
+	return CharacterAttributesDto{
+		HP: hp,
+		Dying: decodeDying(objectAt(attributes, "dying")),
+	}
+}
+
+func decodeDying(raw map[string]json.RawMessage) *DyingConditionDto {
+	if raw == nil {
+		return nil
+	}
+	return &DyingConditionDto{Current: intAt(raw, "value"), Max: intAt(raw, "max")}
+}
+
+func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, level *int) *int {
+	if level == nil || *level < 1 {
+		return nil
+	}
+	var classHP, ancestryHP *int
+	for _, item := range items {
+		switch item.Type {
+		case "class":
+			classHP = intAt(item.System, "hp")
+		case "ancestry":
+			ancestryHP = intAt(item.System, "hp")
+		}
+	}
+	if classHP == nil || ancestryHP == nil {
+		return nil
+	}
+	conModifier, ok := abilityModifierFromActor(system, items, "con", *level)
+	if !ok {
+		return nil
+	}
+	maximum := (*classHP + conModifier) * *level + *ancestryHP
+	if maximum < 1 {
+		return nil
+	}
+	return &maximum
+}
+
+func abilityModifierFromActor(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
+	entry := objectAt(objectAt(system, "abilities"), ability)
+	if entry != nil {
+		if modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier")); modifier != nil {
+			return *modifier, true
+		}
+		if score := firstInt(intAt(entry, "value"), intAt(entry, "score")); score != nil {
+			return (*score - 10) / 2, true
+		}
+	}
+	score, ok := reconstructedAbilityScore(system, items, ability, level)
+	if !ok {
+		return 0, false
+	}
+	return (score - 10) / 2, true
+}
+
+func reconstructedAbilityScore(system map[string]json.RawMessage, items []FoundryItemDto, ability string, level int) (int, bool) {
+	hasAncestry, hasBackground, hasClass := false, false, false
+	boosts := 0
+	flaws := 0
+	for _, item := range items {
+		switch item.Type {
+		case "ancestry":
+			hasAncestry = true
+			boosts += selectedBoostCount(objectAt(item.System, "boosts"), ability)
+			flaws += selectedBoostCount(objectAt(item.System, "flaws"), ability)
+			voluntary := objectAt(item.System, "voluntary")
+			flaws += stringArrayCount(voluntary, "flaws", ability)
+		case "background":
+			hasBackground = true
+			boosts += selectedBoostCount(objectAt(item.System, "boosts"), ability)
+		case "class":
+			hasClass = true
+			keyAbility := objectAt(item.System, "keyAbility")
+			selected := stringAt(keyAbility, "selected")
+			if selected != nil && *selected == ability {
+				boosts++
+			} else if selected == nil && stringArrayCount(keyAbility, "value", ability) == 1 && len(stringsAt(keyAbility, "value")) == 1 {
+				boosts++
+			}
+		}
+	}
+	if !hasAncestry || !hasBackground || !hasClass {
+		return 0, false
+	}
+	build := objectAt(system, "build")
+	attributes := objectAt(build, "attributes")
+	rawBoosts := objectAt(attributes, "boosts")
+	if rawBoosts == nil {
+		return 0, false
+	}
+	for levelKey, raw := range rawBoosts {
+		boostLevel, err := strconv.Atoi(levelKey)
+		if err != nil || boostLevel > level {
+			continue
+		}
+		var selected []string
+		if json.Unmarshal(raw, &selected) == nil {
+			for _, value := range selected {
+				if value == ability {
+					boosts++
+				}
+			}
+		}
+	}
+	score := 10
+	for range boosts {
+		if score >= 18 {
+			score++
+		} else {
+			score += 2
+		}
+	}
+	score -= flaws * 2
+	return score, true
+}
+
+func selectedBoostCount(raw map[string]json.RawMessage, ability string) int {
+	count := 0
+	for _, value := range raw {
+		var entry map[string]json.RawMessage
+		if json.Unmarshal(value, &entry) != nil {
+			continue
+		}
+		if selected := stringAt(entry, "selected"); selected != nil && *selected == ability {
+			count++
+		}
+	}
+	return count
+}
+
+func stringArrayCount(raw map[string]json.RawMessage, key, value string) int {
+	var values []string
+	if raw == nil || json.Unmarshal(raw[key], &values) != nil {
+		return 0
+	}
+	count := 0
+	for _, item := range values {
+		if item == value {
+			count++
+		}
+	}
+	return count
+}
+
+func decodeKeyAbility(details map[string]json.RawMessage, items []FoundryItemDto) *string {
+	for _, item := range items {
+		if item.Type != "class" {
+			continue
+		}
+		keyAbility := objectAt(item.System, "keyAbility")
+		if selected := stringAt(keyAbility, "selected"); selected != nil && *selected != "" {
+			return selected
+		}
+		values := stringsAt(keyAbility, "value")
+		if len(values) == 1 && values[0] != "" {
+			value := values[0]
+			return &value
+		}
+		return nil
+	}
+	return stringAt(objectAt(details, "keyability"), "value")
+}
+
+func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryItemDto) {
+	entries := make(map[string]FoundryItemDto)
+	for _, item := range foundryItems {
+		if item.Type == "spellcastingEntry" {
+			entries[item.ID] = item
+		}
+	}
+	for i := range items {
+		if items[i].Type != "spell" || items[i].SpellcastingEntryID == nil {
+			continue
+		}
+		entry, ok := entries[*items[i].SpellcastingEntryID]
+		if !ok {
+			continue
+		}
+		tradition := stringAt(objectAt(entry.System, "tradition"), "value")
+		if tradition == nil {
+			tradition = stringAt(entry.System, "tradition")
+		}
+		items[i].Tradition = tradition
+		items[i].SpellList = stringAt(entry.System, "name")
+		prepared := boolAt(entry.System, "prepared")
+		if prepared == nil {
+			prepared = boolAt(objectAt(entry.System, "prepared"), "value")
+		}
+		if prepared != nil {
+			items[i].Prepared = prepared
+		}
+	}
 }
 
 func decodeResource(raw map[string]json.RawMessage) *ResourceValueDto {
