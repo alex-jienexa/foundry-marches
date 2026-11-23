@@ -265,7 +265,7 @@ func TestCharacterInventoryAndSpellEmbeds(t *testing.T) {
 		t.Fatalf("unexpected inventory embed: %+v", inventory)
 	}
 	spells := characterSpellsEmbed(c)
-	if len(spells.Fields) != 1 || !strings.Contains(spells.Fields[0].Value, "Огненный снаряд · ранг 2") {
+	if len(spells.Fields) != 1 || !strings.Contains(spells.Fields[0].Name, "ранг 2") || !strings.Contains(spells.Fields[0].Value, "Огненный снаряд") {
 		t.Fatalf("unexpected spell embed: %+v", spells)
 	}
 }
