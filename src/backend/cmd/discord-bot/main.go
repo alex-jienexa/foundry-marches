@@ -496,13 +496,9 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 }
 
 func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, query, mode string) {
-	var result struct {
-		Actors []actor `json:"actors"`
-	}
-	if err := b.post(CharacterSearchPath, struct {
-		identity
-		Query string `json:"query"`
-	}{id, query}, &result); err != nil {
+	var result struct { Actors []actor }
+	payload := map[string]any{"guild_id": id.GuildID, "discord_user_id": id.DiscordUserID, "discord_role_ids": id.DiscordRoleIDs, "query": query}
+	if err := b.post(CharacterSearchPath, payload, &result); err != nil {
 		b.edit(s, i, "Не удалось найти персонажа: "+err.Error(), nil)
 		return
 	}
@@ -510,8 +506,11 @@ func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.Interactio
 		b.edit(s, i, "Персонажи с таким именем не найдены в последней синхронизации Foundry.", nil)
 		return
 	}
-	flow := &selectionFlow{mode: mode, stage: "actor", discordID: u.ID, guildID: i.GuildID,
-		actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
+	if len(result.Actors) == 1 {
+		b.showLookupMatch(s, i, id, u, result.Actors[0], mode)
+		return
+	}
+	flow := &selectionFlow{mode: mode, stage: "actor", discordID: u.ID, guildID: i.GuildID, actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
 	key, err := randomKey()
 	if err != nil {
 		b.edit(s, i, "Не удалось подготовить выбор персонажа.", nil)
@@ -525,19 +524,20 @@ func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.Interactio
 }
 
 func (b *bot) startMyCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User) {
-	var result struct {
-		Actors []actor `json:"actors"`
-	}
+	var result struct { Actors []actor }
 	if err := b.post(MyCharactersPath, id, &result); err != nil {
 		b.edit(s, i, "Не удалось получить твоих персонажей: "+err.Error(), nil)
 		return
 	}
 	if len(result.Actors) == 0 {
-		b.edit(s, i, "У тебя пока нет привязанного и подтверждённого персонажа. Попроси мастера связать персонажа с твоим Discord-аккаунтом через `/character-link`.", nil)
+		b.edit(s, i, "У тебя пока нет привязанного и подтверждённого персонажа. Попроси мастера связать персонажа с твоим Discord-аккаунтом через /character-link.", nil)
 		return
 	}
-	flow := &selectionFlow{mode: "view", stage: "actor", discordID: u.ID, guildID: i.GuildID,
-		actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
+	if len(result.Actors) == 1 {
+		b.showLookupMatch(s, i, id, u, result.Actors[0], "view")
+		return
+	}
+	flow := &selectionFlow{mode: "view", stage: "actor", discordID: u.ID, guildID: i.GuildID, actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
 	key, err := randomKey()
 	if err != nil {
 		b.edit(s, i, "Не удалось подготовить выбор персонажа.", nil)
@@ -552,8 +552,12 @@ func (b *bot) startMyCharacterLookup(s *discordgo.Session, i *discordgo.Interact
 
 func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.MessageComponentData()
-	if strings.HasPrefix(data.CustomID, "fm-link:") {
+	if strings.HasPrefix(data.CustomID, "fm-link:") || strings.HasPrefix(data.CustomID, "fm-unlink-confirm:") {
 		b.handleButton(s, i)
+		return
+	}
+	if strings.HasPrefix(data.CustomID, "fm-detail:") {
+		b.handleCharacterDetailButton(s, i)
 		return
 	}
 	parts := strings.Split(data.CustomID, ":")
@@ -674,7 +678,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			case "spells":
 				b.editEmbeds(s, i, characterSpellsEmbeds(details))
 			default:
-				b.editEmbed(s, i, characterEmbed(details))
+				b.showCharacterCard(s, i, u, chosen.ActorUUID, details)
 			}
 			return
 		}
@@ -743,6 +747,94 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 		}
 		b.edit(s, i, fmt.Sprintf("**Проверьте привязку персонажа**\n\n**Foundry Actor**\n%s\n\n**Персонаж приложения**\n%s\n\n**Владелец**\n%s\n\nПодтверждение закрепит указанного владельца и откроет ему доступ к карточке персонажа.", preview.ActorName, preview.CharacterName, ownerLabel), components)
 	}
+}
+
+func (b *bot) showLookupMatch(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, selected actor, mode string) {
+	if strings.HasPrefix(mode, "unlink:") {
+		pendingKey, err := randomKey()
+		if err != nil { b.edit(s, i, "Не удалось подготовить подтверждение отвязки.", nil); return }
+		ownerDiscordID := strings.TrimPrefix(mode, "unlink:")
+		b.mu.Lock()
+		b.pruneFlowsLocked()
+		b.pendingUnlinks[pendingKey] = pendingUnlink{actorUUID: selected.ActorUUID, actorName: selected.Name, discordID: u.ID, guildID: i.GuildID, ownerDiscordID: ownerDiscordID, expiresAt: time.Now().Add(10 * time.Minute)}
+		b.mu.Unlock()
+		message := "Подтверди отвязку Foundry Actor **" + selected.Name + "**. Персонаж приложения и история сохранятся."
+		if ownerDiscordID != "" { message += "\nНовый владелец: <@" + ownerDiscordID + ">." } else { message += "\nТекущий владелец останется без изменений." }
+		b.edit(s, i, message, unlinkConfirmationComponents(pendingKey))
+		return
+	}
+	var details characterDetails
+	payload := map[string]any{"guild_id": id.GuildID, "discord_user_id": id.DiscordUserID, "discord_role_ids": id.DiscordRoleIDs, "actor_uuid": selected.ActorUUID}
+	if err := b.post(CharacterDetailPath, payload, &details); err != nil {
+		b.edit(s, i, "Не удалось загрузить данные персонажа: "+err.Error(), nil)
+		return
+	}
+	details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
+	switch mode {
+	case "inventory": b.editEmbed(s, i, characterInventoryEmbed(details))
+	case "spells": b.editEmbed(s, i, characterSpellsEmbed(details))
+	default: b.showCharacterCard(s, i, u, selected.ActorUUID, details)
+	}
+}
+
+func (b *bot) showCharacterCard(s *discordgo.Session, i *discordgo.InteractionCreate, u *discordgo.User, actorUUID string, details characterDetails) {
+	key, err := randomKey()
+	if err != nil { b.edit(s, i, "Не удалось подготовить карточку персонажа.", nil); return }
+	flow := &selectionFlow{mode: "detail", stage: "details", discordID: u.ID, guildID: i.GuildID, actorUUID: actorUUID, expiresAt: time.Now().Add(10 * time.Minute)}
+	b.mu.Lock()
+	b.pruneFlowsLocked()
+	b.flows[key] = flow
+	b.mu.Unlock()
+	b.editCharacterCard(s, i, characterEmbed(details), characterDetailComponents(key, false))
+}
+
+func characterDetailComponents(key string, includeOverview bool) []discordgo.MessageComponent {
+	buttons := []discordgo.MessageComponent{
+		discordgo.Button{CustomID: "fm-detail:" + key + ":abilities", Label: "Способности", Style: discordgo.SecondaryButton},
+		discordgo.Button{CustomID: "fm-detail:" + key + ":inventory", Label: "Снаряжение", Style: discordgo.SecondaryButton},
+		discordgo.Button{CustomID: "fm-detail:" + key + ":spells", Label: "Заклинания", Style: discordgo.SecondaryButton},
+		discordgo.Button{CustomID: "fm-detail:" + key + ":metrics", Label: "Метрики кампании", Style: discordgo.SecondaryButton},
+	}
+	if includeOverview { buttons = append(buttons, discordgo.Button{CustomID: "fm-detail:" + key + ":overview", Label: "К карточке", Style: discordgo.PrimaryButton}) }
+	return []discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}}
+}
+
+func (b *bot) editCharacterCard(s *discordgo.Session, i *discordgo.InteractionCreate, embed *discordgo.MessageEmbed, components []discordgo.MessageComponent) {
+	content := ""
+	embeds := []*discordgo.MessageEmbed{embed}
+	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{Content: &content, Embeds: &embeds, Components: &components})
+	if err != nil { log.Printf("Discord character card edit: %v", err) }
+}
+
+func (b *bot) handleCharacterDetailButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	parts := strings.Split(i.MessageComponentData().CustomID, ":")
+	if len(parts) != 3 { return }
+	u := interactionUser(i)
+	if u == nil { b.reply(s, i, "Не удалось определить пользователя.", nil); return }
+	key, section := parts[1], parts[2]
+	b.mu.Lock()
+	flow, ok := b.flows[key]
+	valid := ok && flow.mode == "detail" && flow.stage == "details" && time.Now().Before(flow.expiresAt) && flow.discordID == u.ID && flow.guildID == i.GuildID
+	actorUUID := ""
+	if valid { actorUUID = flow.actorUUID }
+	b.mu.Unlock()
+	if !valid { b.reply(s, i, "Карточка устарела. Выполни команду поиска персонажа заново.", nil); return }
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil { return }
+	id := b.identity(i, u)
+	payload := map[string]any{"guild_id": id.GuildID, "discord_user_id": id.DiscordUserID, "discord_role_ids": id.DiscordRoleIDs, "actor_uuid": actorUUID}
+	var details characterDetails
+	if err := b.post(CharacterDetailPath, payload, &details); err != nil { b.edit(s, i, "Не удалось обновить данные персонажа: "+err.Error(), nil); return }
+	details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
+	var embed *discordgo.MessageEmbed
+	switch section {
+	case "overview": embed = characterEmbed(details)
+	case "abilities": embed = characterAbilitiesEmbed(details)
+	case "inventory": embed = characterInventoryEmbed(details)
+	case "spells": embed = characterSpellsEmbed(details)
+	case "metrics": embed = characterMetricsEmbed(details)
+	default: b.edit(s, i, "Неизвестный раздел карточки.", nil); return
+	}
+	b.editCharacterCard(s, i, embed, characterDetailComponents(key, true))
 }
 
 func (b *bot) actorSelectionComponents(key string, flow *selectionFlow) []discordgo.MessageComponent {
