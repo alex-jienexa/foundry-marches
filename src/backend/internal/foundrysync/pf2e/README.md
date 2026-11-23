@@ -12,6 +12,7 @@ projects verified stored fields into the versioned application Character DTO.
   duplicated in every normalized Item.
 - Item category is an application/UI hint, not a closed PF2e type registry.
 - Normalized Items expose common fields; type-specific data remains in the raw snapshot.
+- Normalized Items preserve `system.category` and `system.actionType.value` when present, so presentation layers can distinguish feat categories and action kinds without inspecting localized names.
 - Missing and null values remain absent; no default quantity, equipment state,
   ability score, skill rank, or derived statistic is fabricated.
 - The persisted Actor document does not contain prepared AC, maximum HP, or
