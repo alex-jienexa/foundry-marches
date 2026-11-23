@@ -100,6 +100,7 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	c.Progression.Level = &level
 	c.Build.ClassProficiencies = &classProficiencyDetails{Features: []classFeatureReference{
 		{Name: "Реагирующий удар", Level: &featureLevel},
+		{Name: "Блок щитом", Level: &featureLevel},
 		{Name: "Храбрость", Level: &futureFeatureLevel},
 	}}
 	c.Items = []characterItem{
