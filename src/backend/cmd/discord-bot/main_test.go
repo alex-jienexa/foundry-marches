@@ -373,18 +373,18 @@ func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
 	inSlot := false
 	invested := false
 	ordinary := characterItem{Type: "equipment", Equipped: &characterEquipped{CarryType: &worn, InSlot: &inSlot, Invested: &invested}}
-	if got := inventoryStateLabel(ordinary); got != "" {
+	if got := inventoryStateLabel(ordinary, nil); got != "" {
 		t.Fatalf("ordinary worn carry state = %q, want no misleading worn label", got)
 	}
 	armorSlot := true
 	armor := characterItem{Type: "armor", Equipped: &characterEquipped{CarryType: &worn, InSlot: &armorSlot}}
-	if got := inventoryStateLabel(armor); got != "НАДЕТО КАК ДОСПЕХ" {
+	if got := inventoryStateLabel(armor, nil); got != "НАДЕТО КАК ДОСПЕХ" {
 		t.Fatalf("armor state = %q", got)
 	}
 	stowed := "stowed"
 	container := "backpack-id"
 	item := characterItem{Type: "equipment", ContainerID: &container, Equipped: &characterEquipped{CarryType: &stowed}}
-	if got := inventoryStateLabel(item); got != "В РЮКЗАКЕ" {
+	if got := inventoryStateLabel(item, map[string]string{container: "Рюкзак"}); got != "В РЮКЗАКЕ" {
 		t.Fatalf("stowed item state = %q", got)
 	}
 }
