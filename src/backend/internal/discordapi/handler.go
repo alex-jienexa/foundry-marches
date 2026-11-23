@@ -809,8 +809,12 @@ func (h *Handler) link(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if strings.TrimSpace(req.OwnerDiscordUserID) == "" {
+		writeError(w, http.StatusBadRequest, "a Discord user mention is required to assign the character owner")
+		return
+	}
 	ownerUserID := ""
-	if req.OwnerDiscordUserID != "" {
+	{
 		err := h.db.QueryRowContext(r.Context(), `
 SELECT da.user_id::text
 FROM discord_accounts da
