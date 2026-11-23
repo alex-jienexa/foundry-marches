@@ -179,6 +179,7 @@ const (
 type CharacterItemDto struct {
 	ID                  string                `json:"id"`
 	Skill               *string               `json:"skill,omitempty"`
+	Cantrip             bool                  `json:"cantrip,omitempty"`
 	PreparedRanks       []int                 `json:"preparedRanks,omitempty"`
 	SpellcastingType    *string               `json:"spellcastingType,omitempty"`
 	Name                string                `json:"name"`
