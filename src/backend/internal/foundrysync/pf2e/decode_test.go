@@ -719,3 +719,63 @@ func TestDecodeActorPreservesFeatAndActionCategories(t *testing.T) {
 		}
 	}
 }
+
+
+func TestDecodeAbilityScoresPreservePartialSourcesAndSingletonBoosts(t *testing.T) {
+	raw := []byte(`{
+		"_id":"partial-boosts","type":"character",
+		"items":[
+			{"_id":"tengu","type":"ancestry","system":{"boosts":{
+				"0":{"value":["dex"],"selected":null},
+				"1":{"value":[],"selected":null},
+				"2":{"value":["str","dex","con","int","wis","cha"],"selected":"wis"}
+			}}},
+			{"_id":"background","type":"background","system":{"boosts":{
+				"0":{"value":["str","con"],"selected":null}
+			}}}
+		],
+		"system":{"details":{"level":{"value":1}},"build":{"attributes":{"boosts":{"1":["str","con"]}}},"abilities":null}
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	got := decoded.Character.Statistics.ReconstructedAbilities
+	if len(got) != 6 { t.Fatalf("partial reconstruction should retain all six computed scores: %+v", got) }
+	want := map[string]int{"str":14,"dex":12,"con":14,"int":10,"wis":12,"cha":10}
+	for ability, score := range want {
+		if got[ability].Score == nil || *got[ability].Score != score {
+			t.Errorf("%s = %+v, want %d", ability, got[ability], score)
+		}
+	}
+}
+
+func TestDecodeAbilityScoresDoNotRequireMissingBackgroundOrClass(t *testing.T) {
+	raw := []byte(`{
+		"_id":"missing-build-components","type":"character",
+		"items":[
+			{"_id":"human","type":"ancestry","system":{"boosts":{"0":{"value":["con"],"selected":"con"}}}}
+		],
+		"system":{"details":{"level":{"value":1}},"abilities":null}
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	got := decoded.Character.Statistics.ReconstructedAbilities
+	if got["con"].Score == nil || *got["con"].Score != 12 {
+		t.Fatalf("ancestry boost should survive missing background and class: %+v", got)
+	}
+	if got["str"].Score == nil || *got["str"].Score != 10 {
+		t.Fatalf("unmodified baseline should remain available: %+v", got["str"])
+	}
+}
+
+func TestDecodeMaximumHPPreservesAvailableTerms(t *testing.T) {
+	raw := []byte(`{
+		"_id":"partial-hp","type":"character",
+		"system":{"details":{"level":{"value":3}},"attributes":{"hp":{"value":10}},"abilities":{"con":{"mod":1}}},
+		"items":[{"_id":"human","type":"ancestry","system":{"hp":8}}]
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	if decoded.Character.Attributes.HP == nil || decoded.Character.Attributes.HP.Max == nil || *decoded.Character.Attributes.HP.Max != 11 {
+		t.Fatalf("ancestry HP plus known CON contribution should be retained without class: %+v", decoded.Character.Attributes.HP)
+	}
+}
