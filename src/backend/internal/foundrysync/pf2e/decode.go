@@ -473,6 +473,12 @@ func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryIte
 			continue
 		}
 		preparedType := stringAt(objectAt(item.System, "prepared"), "value")
+		if category := firstString(
+			stringAt(objectAt(item.System, "category"), "value"),
+			stringAt(item.System, "category"),
+		); category != nil && strings.EqualFold(*category, "focus") {
+			preparedType = category
+		}
 		info := spellcastingEntryInfo{
 			item: item,
 			tradition: firstString(stringAt(objectAt(item.System, "tradition"), "value"), stringAt(item.System, "tradition")),
