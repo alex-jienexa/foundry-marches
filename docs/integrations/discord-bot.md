@@ -140,7 +140,7 @@ Fundamental build choices (ancestry, heritage, background and class) are not rep
 
 Access is enforced by the backend, not only by Discord command visibility:
 - GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
-- An ordinary registered player can search and open only a character whose `characters.owner_user_id` matches their internal user ID, whose linked `foundry_actors.owner_confirmed_at` is set, and whose status is `active`.
+- A registered player with `characters.create` can search and open only a character whose `characters.owner_user_id` matches their internal user ID, whose linked `foundry_actors.owner_confirmed_at` is set, and whose status is `active`.
 - Unlinked, unconfirmed, draft, pending-approval and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
 
 The database already contains the owner and confirmation fields, but the player ownership assignment/confirmation workflow is not part of this change. Until that workflow assigns an owner and records confirmation, a player will see no character results; GMs can continue to inspect synchronized Actors.
@@ -175,7 +175,7 @@ Then test:
 | `/characters` | List application characters and IDs | `foundry.manage` |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link` | Select Actor and application character, preview and confirm a link | `foundry.manage` |
-| `/character` | Search and display character data; GM sees all, players see only their own active confirmed links | Registered account; global access requires `foundry.manage` |
+| `/character` | Search and display character data; GM sees all, players see only their own active confirmed links | `characters.create` for own characters; `foundry.manage` for global access |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
