@@ -1,6 +1,7 @@
 package pf2e
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -284,6 +285,67 @@ func TestDecodeSkillsSeparatesLoreWithoutDerivingIt(t *testing.T) {
 	}
 	if len(skills.Standard) != 2 {
 		t.Fatalf("unexpected standard skills: %+v", skills.Standard)
+	}
+}
+
+func TestDecodeMaximumHPUsesAncestryClassAndConstitutionPerLevel(t *testing.T) {
+	for _, test := range []struct {
+		level int
+		want  int
+	}{
+		{level: 1, want: 19},
+		{level: 3, want: 41},
+	} {
+		raw := []byte(fmt.Sprintf(`{
+			"_id":"hp-actor",
+			"name":"Андрей",
+			"type":"character",
+			"system":{
+				"details":{"level":{"value":%d}},
+				"attributes":{"hp":{"value":19}},
+				"abilities":{"con":{"mod":1}}
+			},
+			"items":[
+				{"_id":"human","name":"Человек","type":"ancestry","system":{"hp":8}},
+				{"_id":"fighter","name":"Воин","type":"class","system":{"hp":10}}
+			]
+		}`, test.level))
+		decoded, err := DecodeActor(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if decoded.Character.Attributes.HP == nil || decoded.Character.Attributes.HP.Max == nil ||
+			*decoded.Character.Attributes.HP.Max != test.want {
+			t.Errorf("level %d maximum HP = %+v, want %d", test.level, decoded.Character.Attributes.HP, test.want)
+		}
+	}
+}
+
+func TestDecodeMaximumHPAddsSimplePerLevelFlatModifier(t *testing.T) {
+	raw := []byte(`{
+		"_id":"toughness-actor",
+		"name":"Персонаж с Живучестью",
+		"type":"character",
+		"system":{
+			"details":{"level":{"value":3}},
+			"attributes":{"hp":{"value":20}},
+			"abilities":{"con":{"mod":1}}
+		},
+		"items":[
+			{"_id":"human","name":"Человек","type":"ancestry","system":{"hp":8}},
+			{"_id":"fighter","name":"Воин","type":"class","system":{"hp":10}},
+			{"_id":"toughness","name":"Живучесть","type":"feat","system":{"rules":[
+				{"key":"FlatModifier","selector":"hp","type":"untyped","value":"@actor.level"}
+			]}}
+		]
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Character.Attributes.HP == nil || decoded.Character.Attributes.HP.Max == nil ||
+		*decoded.Character.Attributes.HP.Max != 44 {
+		t.Fatalf("maximum HP with per-level FlatModifier = %+v, want 44", decoded.Character.Attributes.HP)
 	}
 }
 
