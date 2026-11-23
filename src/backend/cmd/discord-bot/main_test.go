@@ -403,8 +403,8 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 		{Name: "Лечебное растение", Type: "spell", Level: &two, Tradition: &primal, SpellList: &primalList},
 	}
 	embeds := characterSpellsEmbeds(c)
-	if len(embeds) != 1 || len(embeds[0].Fields) != 3 {
-		t.Fatalf("got %d spell embeds with %d fields, want one message with 3 grouped fields", len(embeds), len(embeds[0].Fields))
+	if len(embeds) != 1 || len(embeds[0].Fields) != 4 {
+		t.Fatalf("got %d spell embeds with %d fields, want one message with 4 groups separating prepared spells from the preparation list", len(embeds), len(embeds[0].Fields))
 	}
 	joined := ""
 	for _, embed := range embeds {
