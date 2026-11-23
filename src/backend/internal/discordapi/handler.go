@@ -30,6 +30,7 @@ const (
 	DraftCharacterPath  = "/api/internal/discord/characters/draft"
 	CharacterSearchPath = "/api/internal/discord/characters/search"
 	CharacterDetailPath = "/api/internal/discord/characters/detail"
+	MyCharactersPath   = "/api/internal/discord/characters/mine"
 )
 
 type Handler struct {
@@ -84,6 +85,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.createCharacterDraft(w, r)
 	case CharacterSearchPath:
 		h.searchFoundryCharacters(w, r)
+	case MyCharactersPath:
+		h.listMyCharacters(w, r)
 	case CharacterDetailPath:
 		h.foundryCharacterDetails(w, r)
 	default:
@@ -401,6 +404,55 @@ LIMIT 200
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"characters": items})
+}
+
+// listMyCharacters returns only the caller's linked, explicitly owner-confirmed
+// Foundry Actors. It deliberately shares the same visibility boundary as player search.
+func (h *Handler) listMyCharacters(w http.ResponseWriter, r *http.Request) {
+	var req identityRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	userID, _, ok := h.authorizeCharacterRead(w, r.Context(), req)
+	if !ok {
+		return
+	}
+	rows, err := h.db.QueryContext(r.Context(), `
+SELECT fa.actor_uuid, c.name
+FROM foundry_actors fa
+JOIN characters c ON c.id = fa.character_id
+WHERE fa.world_id = $1
+  AND c.owner_user_id = $2
+  AND c.status IN ('draft', 'pending_approval', 'active')
+  AND fa.owner_confirmed_at IS NOT NULL
+  AND fa.owner_confirmed_at > COALESCE(
+    (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
+    fa.linked_at
+  )
+  AND fa.snapshot->>'type' = 'character'
+ORDER BY c.name, fa.actor_uuid
+LIMIT 25
+`, h.worldID, userID)
+	if err != nil {
+		log.Printf("Discord own character list failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not list your linked characters")
+		return
+	}
+	defer rows.Close()
+	items := make([]foundryCharacterSearchView, 0)
+	for rows.Next() {
+		var item foundryCharacterSearchView
+		if err := rows.Scan(&item.ActorUUID, &item.Name); err != nil {
+			writeError(w, http.StatusInternalServerError, "could not read your linked characters")
+			return
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not read your linked characters")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"actors": items})
 }
 
 // searchFoundryCharacters searches persisted Actor snapshots. It never calls Relay,
