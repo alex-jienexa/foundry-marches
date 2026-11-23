@@ -103,11 +103,9 @@ type characterDetails struct {
 		} `json:"experience"`
 	} `json:"progression"`
 	Build struct {
-		Ancestry   *characterItemReference `json:"ancestry"`
-		Heritage   *characterItemReference `json:"heritage"`
-		Background *characterItemReference `json:"background"`
-		Class      *characterItemReference `json:"class"`
-		KeyAbility *string                 `json:"keyAbility"`
+		ClassProficiencies *struct {
+			Features []classFeatureReference `json:"features"`
+		} `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {
 		HP *struct {
@@ -136,14 +134,19 @@ type characterDetails struct {
 			Rank *int `json:"rank"`
 		} `json:"lore"`
 	} `json:"skills"`
-	Items []struct {
-		Name     string `json:"name"`
-		Type     string `json:"type"`
-		Quantity *int   `json:"quantity"`
-	} `json:"items"`
+	Items []characterItem `json:"items"`
 }
-type characterItemReference struct {
-	Name string `json:"name"`
+type characterItem struct {
+	Name           string  `json:"name"`
+	Type           string  `json:"type"`
+	Category       string  `json:"category"`
+	SystemCategory *string `json:"systemCategory"`
+	ActionType     *string `json:"actionType"`
+	Quantity       *int    `json:"quantity"`
+}
+type classFeatureReference struct {
+	Name  string `json:"name"`
+	Level *int   `json:"level"`
 }
 type healthComponent struct {
 	OK     bool   `json:"ok"`
@@ -706,24 +709,6 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
 	}
 
-	build := make([]string, 0, 4)
-	for _, part := range []struct {
-		label string
-		item  *characterItemReference
-	}{
-		{"Родословная", c.Build.Ancestry},
-		{"Наследие", c.Build.Heritage},
-		{"Предыстория", c.Build.Background},
-		{"Класс", c.Build.Class},
-	} {
-		if part.item != nil && part.item.Name != "" {
-			build = append(build, part.label+": "+part.item.Name)
-		}
-	}
-	if len(build) > 0 {
-		embed.Description = strings.Join(build, "\n")
-	}
-
 	level := "—"
 	if c.Progression.Level != nil {
 		level = strconv.Itoa(*c.Progression.Level)
@@ -773,11 +758,7 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 			abilities = append(abilities, line)
 		}
 	}
-	if len(abilities) > 0 {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name: "Характеристики", Value: strings.Join(abilities, " · "), Inline: false,
-		})
-	}
+	addCharacterListField(embed, "Характеристики", abilities)
 
 	if c.Resources.HeroPoints != nil {
 		hero := intValue(c.Resources.HeroPoints.Value)
@@ -789,74 +770,110 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		})
 	}
 
-	skillNames := map[string]string{
-		"acrobatics":   "Акробатика",
-		"arcana":       "Аркана",
-		"athletics":    "Атлетика",
-		"crafting":     "Ремесло",
-		"deception":    "Обман",
-		"diplomacy":    "Дипломатия",
-		"intimidation": "Запугивание",
-		"medicine":     "Медицина",
-		"nature":       "Природа",
-		"occultism":    "Оккультизм",
-		"performance":  "Выступление",
-		"religion":     "Религия",
-		"society":      "Общество",
-		"stealth":      "Скрытность",
-		"survival":     "Выживание",
-		"thievery":     "Воровство",
-	}
-	skills := make([]string, 0, len(c.Skills.Standard))
-	keys := make([]string, 0, len(c.Skills.Standard))
-	for key := range c.Skills.Standard {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		skill := c.Skills.Standard[key]
-		if skill.Rank == nil {
-			continue
+	classAbilities := make([]string, 0)
+	ancestryAbilities := make([]string, 0)
+	actions := make([]string, 0)
+	classFeatures := make([]string, 0)
+	otherAbilities := make([]string, 0)
+	items := make([]string, 0)
+	seenClassFeatures := make(map[string]struct{})
+
+	if c.Build.ClassProficiencies != nil && c.Progression.Level != nil {
+		for _, feature := range c.Build.ClassProficiencies.Features {
+			if feature.Name == "" || feature.Level == nil || *feature.Level > *c.Progression.Level {
+				continue
+			}
+			appendUniqueCharacterEntry(&classFeatures, seenClassFeatures, feature.Name)
 		}
-		name := skillNames[key]
-		if name == "" {
-			name = key
-		}
-		skills = append(skills, fmt.Sprintf("%s — ранг %d", name, *skill.Rank))
-	}
-	if len(skills) > 0 {
-		if len(skills) > 8 {
-			skills = skills[:8]
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name: "Навыки", Value: strings.Join(skills, "\n"), Inline: false,
-		})
 	}
 
-	items := make([]string, 0, len(c.Items))
 	for _, item := range c.Items {
 		if item.Name == "" {
 			continue
 		}
-		line := item.Name
-		if item.Quantity != nil && *item.Quantity > 1 {
-			line += " × " + strconv.Itoa(*item.Quantity)
+		switch {
+		case item.Category == "equipment":
+			line := item.Name
+			if item.Quantity != nil && *item.Quantity > 1 {
+				line += " × " + strconv.Itoa(*item.Quantity)
+			}
+			items = append(items, line)
+		case item.Type == "action":
+			actions = append(actions, item.Name)
+		case item.Type == "feat":
+			switch stringValue(item.SystemCategory) {
+			case "class":
+				classAbilities = append(classAbilities, item.Name)
+			case "ancestry", "ancestryfeature":
+				ancestryAbilities = append(ancestryAbilities, item.Name)
+			case "classfeature":
+				appendUniqueCharacterEntry(&classFeatures, seenClassFeatures, item.Name)
+			default:
+				otherAbilities = append(otherAbilities, item.Name)
+			}
 		}
-		items = append(items, line)
 	}
-	if len(items) > 0 {
-		if len(items) > 8 {
-			items = items[:8]
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name: "Предметы", Value: strings.Join(items, "\n"), Inline: false,
-		})
-	}
+	addCharacterListField(embed, "Способности класса", classAbilities)
+	addCharacterListField(embed, "Способности родословной", ancestryAbilities)
+	addCharacterListField(embed, "Действия", actions)
+	addCharacterListField(embed, "Особенности класса", classFeatures)
+	addCharacterListField(embed, "Другие способности", otherAbilities)
+
+	skills := characterSkillLines(c.Skills.Standard, c.Skills.Lore)
+	addCharacterListField(embed, "Навыки", skills)
+	addCharacterListField(embed, "Предметы", items)
 
 	embed.Footer = &discordgo.MessageEmbedFooter{
 		Text: "Источник: последний сохранённый снимок Foundry · " + c.Identity.UUID,
 	}
 	return embed
+}
+
+func addCharacterListField(embed *discordgo.MessageEmbed, name string, entries []string) {
+	if len(entries) == 0 {
+		return
+	}
+	const maxEntries = 10
+	if len(entries) > maxEntries {
+		remaining := len(entries) - maxEntries
+		entries = append(append([]string(nil), entries[:maxEntries]...), fmt.Sprintf("… и ещё %d", remaining))
+	}
+	value := strings.Join(entries, "\n")
+	if len(value) > 1024 {
+		value = value[:1000] + "…"
+	}
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+		Name: name, Value: value, Inline: false,
+	})
+}
+
+func appendUniqueCharacterEntry(entries *[]string, seen map[string]struct{}, name string) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return
+	}
+	key := strings.ToLower(name)
+	if slash := strings.Index(key, " / "); slash >= 0 {
+		key = strings.TrimSpace(key[:slash])
+	}
+	if _, exists := seen[key]; exists {
+		return
+	}
+	seen[key] = struct{}{}
+	*entries = append(*entries, name)
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(*value))
+}
+
+func characterSkillLines(standard, lore map[string]struct {
+	Rank *int `json:"rank"`
+}) []string {
+	return nil
 }
 
 func intValue(value *int) string {
