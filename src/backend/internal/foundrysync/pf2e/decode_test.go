@@ -847,3 +847,86 @@ func TestDecodeMaximumHPWhenActorHPObjectIsMissing(t *testing.T) {
 		t.Fatalf("missing Actor HP object should not prevent partial derivation: %+v", decoded.Character.Attributes.HP)
 	}
 }
+
+
+func TestDecodeAbilityScoresUseAlternateAncestryBoosts(t *testing.T) {
+	tests := []struct {
+		name  string
+		alt   string
+		want  map[string]int
+	}{
+		{
+			name: "one selected alternate boost",
+			alt:  `["dex"]`,
+			want: map[string]int{"str": 10, "dex": 14, "con": 14, "int": 10, "wis": 10, "cha": 14},
+		},
+		{
+			name: "two selected alternate boosts",
+			alt:  `["dex","con"]`,
+			want: map[string]int{"str": 10, "dex": 12, "con": 16, "int": 10, "wis": 10, "cha": 12},
+		},
+		{
+			name: "alternate mode with no selections",
+			alt:  `[]`,
+			want: map[string]int{"str": 10, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 12},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			raw := []byte(`{
+				"_id":"alternate-ancestry","type":"character",
+				"items":[
+					{"_id":"elf","type":"ancestry","system":{
+						"alternateAncestryBoosts":`+tt.alt+`,
+						"boosts":{
+							"0":{"value":["dex"],"selected":"dex"},
+							"1":{"value":["int"],"selected":"int"},
+							"2":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}
+						},
+						"flaws":{"0":{"value":["con"],"selected":"con"}},
+						"voluntary":{"legacy":false,"boost":null,"flaws":[]}
+					}},
+					{"_id":"cook","type":"background","system":{"boosts":{
+						"0":{"value":["con","int"],"selected":"con"},
+						"1":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}
+					}}}
+				],
+				"system":{"details":{"level":{"value":1}},"build":{"attributes":{"boosts":{"1":["dex","con"]}}},"abilities":null}
+			}`)
+			decoded, err := DecodeActor(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := decoded.Character.Statistics.ReconstructedAbilities
+			for ability, want := range tt.want {
+				if got[ability].Score == nil || *got[ability].Score != want {
+					t.Errorf("%s = %+v, want %d", ability, got[ability], want)
+				}
+			}
+		})
+	}
+}
+
+func TestAlternateAncestryBoostsNullUsesStandardBoostsAndFlaws(t *testing.T) {
+	raw := []byte(`{
+		"_id":"standard-ancestry","type":"character",
+		"items":[{"_id":"elf","type":"ancestry","system":{
+			"alternateAncestryBoosts":null,
+			"boosts":{"0":{"value":["dex"],"selected":"dex"}},
+			"flaws":{"0":{"value":["con"],"selected":"con"}}
+		}}],
+		"system":{"details":{"level":{"value":1}},"abilities":null}
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := decoded.Character.Statistics.ReconstructedAbilities
+	if got["dex"].Score == nil || *got["dex"].Score != 12 {
+		t.Fatalf("standard ancestry boost was not applied: %+v", got["dex"])
+	}
+	if got["con"].Score == nil || *got["con"].Score != 8 {
+		t.Fatalf("standard ancestry flaw was not applied: %+v", got["con"])
+	}
+}
