@@ -281,14 +281,14 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			b.edit(s, i, "Ошибка: "+err.Error(), nil)
 			return
 		}
-		lines := []string{}
+		lines := make([]string, 0, len(out.Actors))
 		for _, a := range out.Actors {
-			lines = append(lines, fmt.Sprintf("• %s — %s", a.Name, a.ActorUUID))
+			lines = append(lines, a.Name)
 		}
 		if len(lines) == 0 {
-			b.edit(s, i, "Несвязанных Actor типа character нет. Сначала синхронизируйте Foundry.", nil)
+			b.edit(s, i, "✨ **Все персонажи Foundry уже связаны.**\n\nЕсли ожидаемый персонаж отсутствует, запусти синхронизацию мира.", nil)
 		} else {
-			b.edit(s, i, truncateMessage("Несвязанные Actor (до 100):\n"+strings.Join(lines, "\n")), nil)
+			b.editEmbed(s, i, directoryEmbed("Персонажи Foundry", "Актёры, которые ещё не связаны с персонажами приложения. Выбери нужного в команде `/character-link`.", lines, 100))
 		}
 	case "characters":
 		var out struct {
@@ -298,14 +298,14 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			b.edit(s, i, "Ошибка: "+err.Error(), nil)
 			return
 		}
-		lines := []string{}
-		for _, c := range out.Characters {
-			lines = append(lines, fmt.Sprintf("• %s [%s] — %s", c.Name, c.Status, c.ID))
+		lines := make([]string, 0, len(out.Characters))
+		for _, item := range out.Characters {
+			lines = append(lines, fmt.Sprintf("%s · %s", item.Name, characterStatusLabel(item.Status)))
 		}
 		if len(lines) == 0 {
-			b.edit(s, i, "Персонажей приложения пока нет. Foundry sync не создаёт их автоматически.", nil)
+			b.edit(s, i, "📝 **Пока нет персонажей приложения.**\n\nСоздай первого командой `/character-create`.", nil)
 		} else {
-			b.edit(s, i, truncateMessage("Персонажи приложения (до 200):\n"+strings.Join(lines, "\n")), nil)
+			b.editEmbed(s, i, directoryEmbed("Персонажи приложения", "Черновики и зарегистрированные персонажи кампании.", lines, 60))
 		}
 	case "character-link":
 		o := commandOptions(i.ApplicationCommandData().Options)
@@ -863,6 +863,37 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	return embed
 }
 
+func directoryEmbed(title, description string, entries []string, maxShown int) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{Title: title, Description: description, Color: 0x5865F2}
+	shown := entries
+	if len(shown) > maxShown { shown = shown[:maxShown] }
+	const perField = 20
+	for start, fieldNumber := 0, 1; start < len(shown); start, fieldNumber = start+perField, fieldNumber+1 {
+		end := start + perField
+		if end > len(shown) { end = len(shown) }
+		lines := make([]string, 0, end-start)
+		for index, value := range shown[start:end] { lines = append(lines, fmt.Sprintf("%d. %s", start+index+1, value)) }
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: fmt.Sprintf("Список · %d", fieldNumber), Value: strings.Join(lines, "\n"), Inline: false})
+	}
+	footer := fmt.Sprintf("Показано %d из %d", len(shown), len(entries))
+	if len(entries) > len(shown) { footer += fmt.Sprintf(" · ещё %d не показано", len(entries)-len(shown)) }
+	embed.Footer = &discordgo.MessageEmbedFooter{Text: footer}
+	return embed
+}
+
+func characterStatusLabel(status string) string {
+	switch status {
+	case "draft": return "черновик"
+	case "pending_approval": return "ожидает одобрения"
+	case "active": return "активен"
+	case "unavailable": return "недоступен"
+	case "dead": return "погиб"
+	case "retired": return "выведен из игры"
+	case "npc": return "NPC"
+	case "archived": return "архив"
+	default: return status
+	}
+}
 func addCharacterListField(embed *discordgo.MessageEmbed, name string, entries []string) {
 	if len(entries) == 0 {
 		return
