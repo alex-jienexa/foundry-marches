@@ -478,6 +478,40 @@ func TestDecodeAbilityBoostsApplyInLevelOrderAfterAncestryFlaw(t *testing.T) {
 	}
 }
 
+func TestDecodeAbilityScoresIncludeGradualBoostsBeyondCurrentLevel(t *testing.T) {
+	raw := []byte(`{
+		"_id":"gradual-boosts","type":"character",
+		"items":[
+			{"_id":"human","type":"ancestry","system":{"boosts":{
+				"0":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}
+			}}},
+			{"_id":"background","type":"background","system":{"boosts":{
+				"0":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}
+			}}},
+			{"_id":"class","type":"class","system":{"keyAbility":{"value":["cha"],"selected":"cha"}}}
+		],
+		"system":{
+			"details":{"level":{"value":2}},
+			"build":{"attributes":{"boosts":{
+				"1":["cha"],"2":["cha"],"3":["cha"],"5":["cha"],"not-a-level":["str"]
+			}}},
+			"abilities":null
+		}
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := decoded.Character.Statistics.ReconstructedAbilities["cha"]
+	if got.Score == nil || *got.Score != 21 {
+		t.Fatalf("CHA = %+v, want 21 after applying all saved gradual boosts, including levels above current level 2", got)
+	}
+	if got.Modifier == nil || *got.Modifier != 5 {
+		t.Fatalf("CHA modifier = %+v, want +5", got.Modifier)
+	}
+}
+
 func TestDecodeAbilityScoresIncludeClassItemBoostSelections(t *testing.T) {
 	raw := []byte(`{"_id":"class-boosts","type":"character","items":[
 		{"_id":"ancestry","type":"ancestry","system":{"boosts":{"0":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}}}},
