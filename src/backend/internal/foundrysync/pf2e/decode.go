@@ -159,7 +159,7 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	normalized := CharacterItemDto{
 		ID: item.ID, Name: item.Name, Type: item.Type, Image: item.Image,
 		Slug: stringAt(system, "slug"), Category: categoryForItem(item.Type, system),
-		Skill: decodeSkillAssociation(system),
+		Skill: decodeSkillAssociation(system), Cantrip: isCantripSpell(system),
 		SystemCategory:      stringAt(system, "category"),
 		ActionType:          stringAt(objectAt(system, "actionType"), "value"),
 		Quantity:            intAt(system, "quantity"),
@@ -177,6 +177,22 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 	return &DecodedItem{
 		Foundry: item, Character: normalized, RawSnapshot: cloneRaw(payload),
 	}, nil
+}
+
+func isCantripSpell(system map[string]json.RawMessage) bool {
+	category := firstString(
+		stringAt(objectAt(system, "category"), "value"),
+		stringAt(system, "category"),
+	)
+	if category != nil && strings.EqualFold(strings.TrimSpace(*category), "cantrip") {
+		return true
+	}
+	for _, trait := range stringsAt(objectAt(system, "traits"), "value") {
+		if strings.EqualFold(strings.TrimSpace(trait), "cantrip") {
+			return true
+		}
+	}
+	return false
 }
 
 func categoryForItem(kind string, system map[string]json.RawMessage) CharacterItemCategory {
