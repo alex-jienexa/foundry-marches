@@ -133,6 +133,10 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	c.Identity.Name = "Андрей"
 	c.Identity.UUID = "Actor.andrey"
 	c.Progression.Level = &level
+	c.Build.Ancestry = &characterReference{Name: "Человек"}
+	c.Build.Heritage = &characterReference{Name: "Видящий во мраке"}
+	c.Build.Background = &characterReference{Name: "Уличный бродяга"}
+	c.Build.Class = &characterReference{Name: "Воин"}
 	c.Build.ClassProficiencies = &classProficiencyDetails{Features: []classFeatureReference{
 		{Name: "Реагирующий удар", Level: &featureLevel},
 		{Name: "Блок щитом", Level: &featureLevel},
@@ -164,13 +168,10 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	for _, field := range embed.Fields {
 		fields[field.Name] = field.Value
 	}
-	for _, removed := range []string{"Родословная", "Наследие", "Предыстория", "Класс"} {
-		if _, exists := fields[removed]; exists {
-			t.Errorf("fundamental choice %q must not be displayed", removed)
+	for _, shown := range []string{"Родословная", "Наследие", "Предыстория", "Класс"} {
+		if _, exists := fields[shown]; !exists {
+			t.Errorf("fundamental choice %q must be displayed when present", shown)
 		}
-	}
-	if embed.Description != "" {
-		t.Errorf("fundamental choices must not be moved into description: %q", embed.Description)
 	}
 	checks := []struct {
 		field string
@@ -202,6 +203,27 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	}
 	if strings.Count(fields["Особенности класса"], "Реагирующий удар") != 1 {
 		t.Errorf("class feature must not be duplicated: %q", fields["Особенности класса"])
+	}
+}
+
+func TestCharacterInventoryAndSpellEmbeds(t *testing.T) {
+	level := 2
+	quantity := 3
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Items = []characterItem{
+		{Name: "Меч", Type: "weapon", Category: "equipment", Quantity: &quantity},
+		{Name: "Двойной разрез", Type: "feat", Category: "ability"},
+		{Name: "Огненный снаряд", Type: "spell", Level: &level},
+	}
+	inventory := characterInventoryEmbed(c)
+	if !strings.Contains(inventory.Fields[0].Value, "Меч × 3") ||
+		strings.Contains(inventory.Fields[0].Value, "Двойной разрез") {
+		t.Fatalf("unexpected inventory embed: %+v", inventory)
+	}
+	spells := characterSpellsEmbed(c)
+	if len(spells.Fields) != 1 || !strings.Contains(spells.Fields[0].Value, "Огненный снаряд · ранг 2") {
+		t.Fatalf("unexpected spell embed: %+v", spells)
 	}
 }
 
