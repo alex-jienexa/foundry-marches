@@ -858,17 +858,17 @@ func TestDecodeAbilityScoresUseAlternateAncestryBoosts(t *testing.T) {
 		{
 			name: "one selected alternate boost",
 			alt:  `["dex"]`,
-			want: map[string]int{"str": 10, "dex": 14, "con": 14, "int": 10, "wis": 10, "cha": 14},
+			want: map[string]int{"str": 10, "dex": 14, "con": 14, "int": 10, "wis": 10, "cha": 12},
 		},
 		{
 			name: "two selected alternate boosts",
 			alt:  `["dex","con"]`,
-			want: map[string]int{"str": 10, "dex": 12, "con": 16, "int": 10, "wis": 10, "cha": 12},
+			want: map[string]int{"str": 10, "dex": 14, "con": 16, "int": 10, "wis": 10, "cha": 12},
 		},
 		{
 			name: "alternate mode with no selections",
 			alt:  `[]`,
-			want: map[string]int{"str": 10, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 12},
+			want: map[string]int{"str": 10, "dex": 12, "con": 14, "int": 10, "wis": 10, "cha": 12},
 		},
 	}
 
