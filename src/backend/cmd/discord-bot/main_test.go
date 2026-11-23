@@ -206,9 +206,9 @@ func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testin
 	c := characterDetails{}
 	c.Identity.Name = "Маг"
 	c.Items = []characterItem{
-		{Name:"Свет",Type:"spell",Level:intPtr(0),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{0}},
-		{Name:"Магическая стрела",Type:"spell",Level:intPtr(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{1}},
-		{Name:"Щит",Type:"spell",Level:intPtr(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&unprepared},
+		{Name:"Свет",Type:"spell",Level:characterTestIntPointer(0),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{0}},
+		{Name:"Магическая стрела",Type:"spell",Level:characterTestIntPointer(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{1}},
+		{Name:"Щит",Type:"spell",Level:characterTestIntPointer(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&unprepared},
 	}
 	embed := characterSpellsEmbed(c)
 	fields := make(map[string]string)
@@ -224,7 +224,7 @@ func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testin
 	}
 }
 
-func intPtr(value int) *int { return &value }
+func characterTestIntPointer(value int) *int { return &value }
 
 func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
 	components := characterDetailComponents("flow", "skills")
