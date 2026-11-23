@@ -27,6 +27,7 @@ const (
 	CharactersPath        = "/api/internal/discord/characters"
 	PreviewPath           = "/api/internal/discord/link/preview"
 	LinkPath              = "/api/internal/discord/link"
+	UnlinkPath            = "/api/internal/discord/unlink"
 	GrantRolePath         = "/api/internal/discord/roles/grant"
 	MapRolePath           = "/api/internal/discord/roles/map"
 	DraftCharacterPath    = "/api/internal/discord/characters/draft"
@@ -243,6 +244,7 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "register", Description: "Зарегистрироваться в FoundryMarches"},
 		{Name: "foundry-actors", Description: "Показать несвязанных персонажей Foundry"},
 		{Name: "characters", Description: "Показать список персонажей приложения"},
+		{Name: "character-unlink", Description: "Отвязать Foundry Actor; можно явно переназначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Новый владелец (необязательно; иначе текущий сохраняется)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-link", Description: "Связать Foundry Actor с персонажем и назначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "owner", Description: "Владелец персонажа (обязательно)", Type: discordgo.ApplicationCommandOptionUser, Required: true}}},
 		{Name: "character-create", Description: "Создать черновик персонажа для себя или игрока", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Владелец персонажа (для мастера)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
@@ -358,6 +360,9 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "character-link":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		b.startSelection(s, i, id, u, "link", o["owner"])
+	case "character-unlink":
+		o := commandOptions(i.ApplicationCommandData().Options)
+		b.startCharacterLookup(s, i, id, u, o["name"], "unlink:"+o["owner"])
 	case "character-create":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		var created character
@@ -594,6 +599,21 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			return
 		}
 		flow.actorUUID = chosen.ActorUUID
+		if strings.HasPrefix(flow.mode, "unlink:") {
+			ownerDiscordID := strings.TrimPrefix(flow.mode, "unlink:")
+			delete(b.flows, key)
+			b.mu.Unlock()
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil { return }
+			payload := struct { identity; ActorUUID string `json:"actor_uuid"`; OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"` }{b.identity(i, u), chosen.ActorUUID, ownerDiscordID}
+			if err := b.post(UnlinkPath, payload, nil); err != nil {
+				b.edit(s, i, "Не удалось отвязать Foundry Actor: "+err.Error(), nil)
+			} else if ownerDiscordID != "" {
+				b.edit(s, i, "Foundry Actor отвязан. Владелец персонажа явно переназначен на <@"+ownerDiscordID+">; история владения сохранена. Теперь его можно снова связать через `/character-link`.", nil)
+			} else {
+				b.edit(s, i, "Foundry Actor отвязан. Текущий владелец персонажа сохранён. Для повторной привязки используй `/character-link`.", nil)
+			}
+			return
+		}
 		if flow.mode == "view" || flow.mode == "inventory" || flow.mode == "spells" {
 			mode := flow.mode
 			delete(b.flows, key)
