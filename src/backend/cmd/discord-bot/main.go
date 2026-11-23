@@ -922,35 +922,63 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 			containerNames[item.ID] = item.Name
 		}
 	}
-	groupLabels := map[string]string{"weapon":"Оружие","armor":"Доспехи","shield":"Щиты","equipment":"Снаряжение","consumable":"Расходники","backpack":"Контейнеры","treasure":"Сокровища"}
-	order := []string{"weapon","armor","shield","equipment","consumable","backpack","treasure"}
+	groupLabels := map[string]string{
+		"weapon": "Оружие", "armor": "Доспехи", "shield": "Щиты",
+		"equipment": "Снаряжение", "consumable": "Расходники",
+		"backpack": "Контейнеры", "treasure": "Сокровища",
+	}
+	order := []string{"weapon", "armor", "shield", "equipment", "consumable", "backpack", "treasure"}
 	groups := make(map[string][]string)
 	total := 0
 	for _, item := range c.Items {
-		if item.Category != "equipment" || item.Name == "" { continue }
+		if item.Category != "equipment" || item.Name == "" {
+			continue
+		}
 		group := item.Type
-		if groupLabels[group] == "" { group = "equipment" }
+		if groupLabels[group] == "" {
+			group = "equipment"
+		}
 		line := item.Name
-		if item.Quantity != nil && *item.Quantity > 1 { line = appendLocalizedCharacterSuffix(line, " × "+strconv.Itoa(*item.Quantity)) }
-		if state := inventoryStateLabel(item.Equipped); state != "" { line += " · **" + state + "**" }
-		if item.Usage != nil { if usage := inventoryUsageLabel(*item.Usage); usage != "" { line += " · " + usage } }
+		if item.Quantity != nil && *item.Quantity > 1 {
+			line = appendLocalizedCharacterSuffix(line, " × "+strconv.Itoa(*item.Quantity))
+		}
+		if state := inventoryStateLabel(item.Equipped); state != "" {
+			line += " · **" + state + "**"
+		}
+		if item.Usage != nil {
+			if usage := inventoryUsageLabel(*item.Usage); usage != "" {
+				line += " · " + usage
+			}
+		}
 		if item.ContainerID != nil {
-			if name := containerNames[*item.ContainerID]; name != "" { line += " · в " + name } else { line += " · внутри контейнера" }
+			if name := containerNames[*item.ContainerID]; name != "" {
+				line += " · в " + name
+			} else {
+				line += " · внутри контейнера"
+			}
 		}
 		groups[group] = append(groups[group], line)
 		total++
 	}
-	if total == 0 { return []*discordgo.MessageEmbed{{Title:"Инвентарь · "+c.Identity.Name,Description:"В инвентаре нет предметов или они отсутствуют в последней синхронизации.",Color:0x5865F2}} }
+	if total == 0 {
+		return []*discordgo.MessageEmbed{{
+			Title: "Инвентарь · " + c.Identity.Name,
+			Description: "В инвентаре нет предметов или они отсутствуют в последней синхронизации.",
+			Color: 0x5865F2,
+		}}
+	}
+
 	var embeds []*discordgo.MessageEmbed
 	for _, group := range order {
-		lines := groups[group]
-		for start := 0; start < len(lines); start += 12 {
-			end := start + 12
-			if end > len(lines) { end = len(lines) }
-			embed := &discordgo.MessageEmbed{Title:"Инвентарь · "+c.Identity.Name,Color:0x5865F2}
-			embed.Fields = append(embed.Fields,&discordgo.MessageEmbedField{Name:fmt.Sprintf("%s · %d/%d",groupLabels[group],start/12+1,(len(lines)+11)/12),Value:strings.Join(lines[start:end],"\n"),Inline:false})
-			embed.Footer = &discordgo.MessageEmbedFooter{Text:fmt.Sprintf("Всего предметов: %d · данные последней синхронизации Foundry",total)}
-			embeds=append(embeds,embed)
+		chunks := splitCharacterLines(groups[group], 12, 900)
+		for page, chunk := range chunks {
+			embed := &discordgo.MessageEmbed{Title: "Инвентарь · " + c.Identity.Name, Color: 0x5865F2}
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name: fmt.Sprintf("%s · %d/%d", groupLabels[group], page+1, len(chunks)),
+				Value: strings.Join(chunk, "\n"), Inline: false,
+			})
+			embed.Footer = &discordgo.MessageEmbedFooter{Text: fmt.Sprintf("Всего предметов: %d · данные последней синхронизации Foundry", total)}
+			embeds = append(embeds, embed)
 		}
 	}
 	return embeds
@@ -992,41 +1020,105 @@ func characterSpellsEmbed(c characterDetails) *discordgo.MessageEmbed {
 }
 
 func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
-	type spellGroup struct { tradition string; rank int; list string }
-	groups := make(map[spellGroup][]string)
-	keys := make([]spellGroup,0)
-	for _, item := range c.Items {
-		if item.Type != "spell" || item.Name == "" { continue }
-		tradition := "Традиция не указана"
-		if item.Tradition != nil && *item.Tradition != "" { tradition = spellTraditionLabel(*item.Tradition) }
-		rank := 0
-		if item.Level != nil { rank = *item.Level }
-		list := ""
-		if item.SpellList != nil { list = *item.SpellList }
-		key := spellGroup{tradition:tradition,rank:rank,list:list}
-		if _,ok:=groups[key]; !ok { keys=append(keys,key) }
-		line:=item.Name
-		if rank>0 { line+=fmt.Sprintf(" · ранг %d",rank) } else { line+=" · ранг не указан" }
-		if item.Prepared!=nil && *item.Prepared { line+=" · подготовлено" }
-		groups[key]=append(groups[key],line)
+	type spellGroup struct {
+		tradition string
+		rank int
+		list string
 	}
-	if len(keys)==0 { return []*discordgo.MessageEmbed{{Title:"Заклинания · "+c.Identity.Name,Description:"В последней синхронизации Foundry заклинания не найдены.",Color:0x5865F2}} }
-	sort.Slice(keys,func(i,j int)bool{if keys[i].tradition!=keys[j].tradition{return keys[i].tradition<keys[j].tradition};if keys[i].rank!=keys[j].rank{return keys[i].rank<keys[j].rank};return keys[i].list<keys[j].list})
+	groups := make(map[spellGroup][]string)
+	keys := make([]spellGroup, 0)
+	for _, item := range c.Items {
+		if item.Type != "spell" || item.Name == "" {
+			continue
+		}
+		tradition := "Традиция не указана"
+		if item.Tradition != nil && *item.Tradition != "" {
+			tradition = spellTraditionLabel(*item.Tradition)
+		}
+		rank := 0
+		if item.Level != nil {
+			rank = *item.Level
+		}
+		list := ""
+		if item.SpellList != nil {
+			list = *item.SpellList
+		}
+		key := spellGroup{tradition: tradition, rank: rank, list: list}
+		if _, ok := groups[key]; !ok {
+			keys = append(keys, key)
+		}
+		line := item.Name
+		if rank > 0 {
+			line += fmt.Sprintf(" · ранг %d", rank)
+		} else {
+			line += " · ранг не указан"
+		}
+		if item.Prepared != nil && *item.Prepared {
+			line += " · подготовлено"
+		}
+		groups[key] = append(groups[key], line)
+	}
+	if len(keys) == 0 {
+		return []*discordgo.MessageEmbed{{
+			Title: "Заклинания · " + c.Identity.Name,
+			Description: "В последней синхронизации Foundry заклинания не найдены.",
+			Color: 0x5865F2,
+		}}
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].tradition != keys[j].tradition {
+			return keys[i].tradition < keys[j].tradition
+		}
+		if keys[i].rank != keys[j].rank {
+			return keys[i].rank < keys[j].rank
+		}
+		return keys[i].list < keys[j].list
+	})
 	var embeds []*discordgo.MessageEmbed
-	for _,key:=range keys {
-		lines:=groups[key]
-		for start:=0;start<len(lines);start+=12 {
-			end:=start+12;if end>len(lines){end=len(lines)}
-			field:=key.tradition
-			if key.rank>0 { field+=fmt.Sprintf(" · ранг %d",key.rank) } else { field+=" · ранг не указан" }
-			if key.list!="" { field+=" · "+key.list }
-			embed:=&discordgo.MessageEmbed{Title:"Заклинания · "+c.Identity.Name,Color:0x5865F2}
-			embed.Fields=append(embed.Fields,&discordgo.MessageEmbedField{Name:field,Value:strings.Join(lines[start:end],"\n"),Inline:false})
-			embed.Footer=&discordgo.MessageEmbedFooter{Text:fmt.Sprintf("Всего групп: %d · данные последней синхронизации Foundry",len(keys))}
-			embeds=append(embeds,embed)
+	for _, key := range keys {
+		chunks := splitCharacterLines(groups[key], 12, 900)
+		for page, chunk := range chunks {
+			field := key.tradition
+			if key.rank > 0 {
+				field += fmt.Sprintf(" · ранг %d", key.rank)
+			} else {
+				field += " · ранг не указан"
+			}
+			if key.list != "" {
+				field += " · " + key.list
+			}
+			if len(chunks) > 1 {
+				field += fmt.Sprintf(" · %d/%d", page+1, len(chunks))
+			}
+			embed := &discordgo.MessageEmbed{Title: "Заклинания · " + c.Identity.Name, Color: 0x5865F2}
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name: field, Value: strings.Join(chunk, "\n"), Inline: false,
+			})
+			embed.Footer = &discordgo.MessageEmbedFooter{Text: fmt.Sprintf("Всего групп: %d · данные последней синхронизации Foundry", len(keys))}
+			embeds = append(embeds, embed)
 		}
 	}
 	return embeds
+}
+
+func splitCharacterLines(lines []string, maxLines, maxRunes int) [][]string {
+	var chunks [][]string
+	current := make([]string, 0, maxLines)
+	currentRunes := 0
+	for _, line := range lines {
+		lineRunes := len([]rune(line))
+		if len(current) > 0 && (len(current) >= maxLines || currentRunes+lineRunes+1 > maxRunes) {
+			chunks = append(chunks, current)
+			current = make([]string, 0, maxLines)
+			currentRunes = 0
+		}
+		current = append(current, line)
+		currentRunes += lineRunes + 1
+	}
+	if len(current) > 0 {
+		chunks = append(chunks, current)
+	}
+	return chunks
 }
 
 func spellTraditionLabel(value string) string {
