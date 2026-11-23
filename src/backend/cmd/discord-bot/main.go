@@ -804,12 +804,14 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 			switch stringValue(item.SystemCategory) {
 			case "class":
 				classAbilities = append(classAbilities, item.Name)
-			case "ancestry", "ancestryfeature":
+			case "ancestry", "ancestryfeature", "heritage":
 				ancestryAbilities = append(ancestryAbilities, item.Name)
 			case "classfeature":
 				appendUniqueCharacterEntry(&classFeatures, seenClassFeatures, item.Name)
 			default:
-				otherAbilities = append(otherAbilities, item.Name)
+				if _, isClassFeature := seenClassFeatures[characterEntryKey(item.Name)]; !isClassFeature {
+					otherAbilities = append(otherAbilities, item.Name)
+				}
 			}
 		}
 	}
@@ -852,15 +854,20 @@ func appendUniqueCharacterEntry(entries *[]string, seen map[string]struct{}, nam
 	if name == "" {
 		return
 	}
-	key := strings.ToLower(name)
-	if slash := strings.Index(key, " / "); slash >= 0 {
-		key = strings.TrimSpace(key[:slash])
-	}
+	key := characterEntryKey(name)
 	if _, exists := seen[key]; exists {
 		return
 	}
 	seen[key] = struct{}{}
 	*entries = append(*entries, name)
+}
+
+func characterEntryKey(name string) string {
+	key := strings.ToLower(strings.TrimSpace(name))
+	if slash := strings.Index(key, " / "); slash >= 0 {
+		key = strings.TrimSpace(key[:slash])
+	}
+	return key
 }
 
 func actionDisplayName(item characterItem) string {
