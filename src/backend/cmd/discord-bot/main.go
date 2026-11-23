@@ -127,12 +127,8 @@ type characterDetails struct {
 		} `json:"heroPoints"`
 	} `json:"resources"`
 	Skills struct {
-		Standard map[string]struct {
-			Rank *int `json:"rank"`
-		} `json:"standard"`
-		Lore map[string]struct {
-			Rank *int `json:"rank"`
-		} `json:"lore"`
+		Standard map[string]characterSkill `json:"standard"`
+		Lore     map[string]characterSkill `json:"lore"`
 	} `json:"skills"`
 	Items []characterItem `json:"items"`
 }
@@ -147,6 +143,9 @@ type characterItem struct {
 type classFeatureReference struct {
 	Name  string `json:"name"`
 	Level *int   `json:"level"`
+}
+type characterSkill struct {
+	Rank *int `json:"rank"`
 }
 type healthComponent struct {
 	OK     bool   `json:"ok"`
@@ -839,8 +838,8 @@ func addCharacterListField(embed *discordgo.MessageEmbed, name string, entries [
 		entries = append(append([]string(nil), entries[:maxEntries]...), fmt.Sprintf("… и ещё %d", remaining))
 	}
 	value := strings.Join(entries, "\n")
-	if len(value) > 1024 {
-		value = value[:1000] + "…"
+	if len([]rune(value)) > 1024 {
+		value = string([]rune(value)[:1023]) + "…"
 	}
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 		Name: name, Value: value, Inline: false,
@@ -870,10 +869,113 @@ func stringValue(value *string) string {
 	return strings.ToLower(strings.TrimSpace(*value))
 }
 
-func characterSkillLines(standard, lore map[string]struct {
-	Rank *int `json:"rank"`
-}) []string {
-	return nil
+func characterSkillLines(standard, lore map[string]characterSkill) []string {
+	names := map[string]string{
+		"acrobatics":   "Акробатика",
+		"arcana":       "Аркана",
+		"athletics":    "Атлетика",
+		"crafting":     "Ремесло",
+		"deception":    "Обман",
+		"diplomacy":    "Дипломатия",
+		"intimidation": "Запугивание",
+		"medicine":     "Медицина",
+		"nature":       "Природа",
+		"occultism":    "Оккультизм",
+		"performance":  "Выступление",
+		"religion":     "Религия",
+		"society":      "Общество",
+		"stealth":      "Скрытность",
+		"survival":     "Выживание",
+		"thievery":     "Воровство",
+	}
+	keys := make([]string, 0, len(standard))
+	for key := range standard {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	lines := make([]string, 0, len(standard)+len(lore))
+	for _, key := range keys {
+		skill := standard[key]
+		label := proficiencyLabel(skill.Rank)
+		if label == "" {
+			continue
+		}
+		name := names[key]
+		if name == "" {
+			name = humanizeSkillKey(key)
+		}
+		lines = append(lines, fmt.Sprintf("%s — %s", name, label))
+	}
+
+	loreKeys := make([]string, 0, len(lore))
+	for key := range lore {
+		loreKeys = append(loreKeys, key)
+	}
+	sort.Strings(loreKeys)
+	for _, key := range loreKeys {
+		label := proficiencyLabel(lore[key].Rank)
+		if label == "" {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%s — %s", loreSkillName(key), label))
+	}
+	return lines
+}
+
+func proficiencyLabel(rank *int) string {
+	if rank == nil {
+		return ""
+	}
+	switch *rank {
+	case 1:
+		return "Обучен"
+	case 2:
+		return "Эксперт"
+	case 3:
+		return "Мастер"
+	case 4:
+		return "Легенда"
+	default:
+		return ""
+	}
+}
+
+func loreSkillName(key string) string {
+	key = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(key)), "lore-")
+	known := map[string]string{
+		"architecture": "Знания архитектуры",
+		"art":          "Знания искусства",
+		"astronomy":    "Знания астрономии",
+		"farming":      "Знания земледелия",
+		"fishing":      "Знания рыболовства",
+		"games":        "Знания игр",
+		"genealogy":    "Знания генеалогии",
+		"herbalism":    "Знания травничества",
+		"hunting":      "Знания охоты",
+		"legal":        "Знания права",
+		"library":      "Знания библиотечного дела",
+		"mercantile":   "Знания торговли",
+		"mining":       "Знания горного дела",
+		"sailing":      "Знания мореплавания",
+		"scouting":     "Знания разведки",
+		"warfare":      "Знания военного дела",
+	}
+	if name := known[key]; name != "" {
+		return name
+	}
+	return "Знания: " + humanizeSkillKey(key)
+}
+
+func humanizeSkillKey(key string) string {
+	key = strings.ReplaceAll(strings.ReplaceAll(key, "-", " "), "_", " ")
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return "Неизвестный навык"
+	}
+	runes := []rune(key)
+	runes[0] = []rune(strings.ToUpper(string(runes[0])))[0]
+	return string(runes)
 }
 
 func intValue(value *int) string {
