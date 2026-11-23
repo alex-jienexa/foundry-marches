@@ -57,7 +57,7 @@ docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 \
   < docs/database/migrations/0002_discord_bot_auth.sql
 ```
 
-The migration is safe to re-run. It seeds permissions for the existing `player`, `gm`, `admin` and `owner` roles and grants the API database role the minimum additional access needed for registration, role assignment, role mapping, draft character creation and audit inserts. It does not delete or recreate data and does not touch the PostgreSQL volume.
+The migration is safe to re-run. It seeds permissions for the existing `player`, `gm`, `admin` and `owner` roles and grants the API database role the minimum additional access needed for registration, role assignment, role mapping, draft character creation, ownership-scoped character reads and audit inserts. It does not delete or recreate data and does not touch the PostgreSQL volume.
 
 ## 5. Build and start
 
