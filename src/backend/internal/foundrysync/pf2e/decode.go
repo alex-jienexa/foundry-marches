@@ -339,6 +339,11 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 			boosts += selectedBoostCount(objectAt(item.System, "boosts"), ability)
 		case "class":
 			hasClass = true
+			classBoosts := objectAt(item.System, "boosts")
+			if classBoosts != nil {
+				boosts += selectedBoostCount(classBoosts, ability)
+				continue
+			}
 			keyAbility := objectAt(item.System, "keyAbility")
 			selected := stringAt(keyAbility, "selected")
 			if selected != nil && *selected == ability {
@@ -943,6 +948,13 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 			}
 		case "class":
 			hasClass = true
+			classBoosts := objectAt(item.System, "boosts")
+			if classBoosts != nil {
+				if !completeSelectedBoosts(classBoosts) {
+					return nil, false
+				}
+				continue
+			}
 			keyAbility := objectAt(item.System, "keyAbility")
 			selected := stringAt(keyAbility, "selected")
 			values := stringsAt(keyAbility, "value")
