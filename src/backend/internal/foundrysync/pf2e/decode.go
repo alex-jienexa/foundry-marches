@@ -883,9 +883,20 @@ func decodeStatistics(system map[string]json.RawMessage, items []FoundryItemDto,
 		}
 		score := firstInt(intAt(entry, "value"), intAt(entry, "score"))
 		modifier := firstInt(intAt(entry, "mod"), intAt(entry, "modifier"))
-		abilities[key] = AbilityScoreDto{Score: score, Modifier: modifier}
+		ability := AbilityScoreDto{Score: score, Modifier: modifier}
+		if ability.Score != nil && ability.Modifier == nil {
+			ability.Modifier = intPointerValue(abilityModifierFromScore(*ability.Score))
+			ability.Derived = true
+		}
+		abilities[key] = ability
 	}
 	derived := false
+	for _, ability := range abilities {
+		if ability.Derived {
+			derived = true
+			break
+		}
+	}
 	if scores, ok := reconstructAbilityScores(system, items, level); ok {
 		for key, score := range scores {
 			current := abilities[key]
