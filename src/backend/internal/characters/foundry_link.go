@@ -75,7 +75,8 @@ func (r *FoundryRepository) LinkActorWithOwner(ctx context.Context, worldID, act
 		return ErrCharacterOwnerRequired
 	}
 	if !currentOwnerID.Valid && ownerUserID != "" {
-		if _, err = tx.ExecContext(ctx, "SELECT set_config('app.user_id', $1, true), set_config('app.reason', 'Discord GM assigned character owner during Foundry link', true)", linkedByUserID); err != nil {
+		var configuredUserID, configuredReason string
+		if err = tx.QueryRowContext(ctx, "SELECT set_config('app.user_id', $1, true), set_config('app.reason', 'Discord GM assigned character owner during Foundry link', true)", linkedByUserID).Scan(&configuredUserID, &configuredReason); err != nil {
 			return fmt.Errorf("set ownership audit context: %w", err)
 		}
 		if _, err = tx.ExecContext(ctx, "UPDATE characters SET owner_user_id = $2, updated_at = now() WHERE id = $1 AND owner_user_id IS NULL", characterID, ownerUserID); err != nil {
