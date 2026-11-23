@@ -71,11 +71,11 @@ func TestDecodeActorRealFixture(t *testing.T) {
 	if _, ok := c.Skills.Standard["thievery"]; !ok {
 		t.Fatal("thievery skill missing")
 	}
-	if _, ok := c.Skills.Standard["athletics"]; ok {
-		t.Fatal("decoder must not synthesize Athletics from class Rule Elements or background")
+	if skill, ok := c.Skills.Standard["athletics"]; !ok || skill.Rank == nil || *skill.Rank != 1 {
+		t.Fatalf("background trainedSkills.value must grant trained Athletics: %+v", c.Skills.Standard)
 	}
-	if len(c.Skills.Lore) != 0 {
-		t.Fatalf("unexpected Lore skills synthesized from Background: %+v", c.Skills.Lore)
+	if skill, ok := c.Skills.Lore["lore-warfare"]; !ok || skill.Rank == nil || *skill.Rank != 1 {
+		t.Fatalf("background trainedSkills.lore must grant trained Warfare Lore: %+v", c.Skills.Lore)
 	}
 	if c.Biography.Age == nil || *c.Biography.Age != "" {
 		t.Fatalf("empty but present age should be preserved: %+v", c.Biography.Age)
@@ -207,7 +207,7 @@ func TestDecodeItemUnknownTypeIsPreserved(t *testing.T) {
 
 func TestDecodeSpellcastingTraditionAndList(t *testing.T) {
 	raw := []byte(`{"_id":"spellcaster","name":"Spellcaster","type":"character","items":[
-		{"_id":"entry1","name":"Арканная книга","type":"spellcastingEntry","system":{"tradition":{"value":"arcane"},"prepared":{"value":true}}},
+		{"_id":"entry1","name":"Арканная книга","type":"spellcastingEntry","system":{"tradition":{"value":"arcane"},"prepared":{"value":"prepared"},"slots":{"slot1":{"prepared":[{"id":"spell1"}]}}}},
 		{"_id":"spell1","name":"Магическая стрела","type":"spell","system":{"location":"entry1","level":{"value":1}}}
 	]}`)
 	decoded, err := DecodeActor(raw)
