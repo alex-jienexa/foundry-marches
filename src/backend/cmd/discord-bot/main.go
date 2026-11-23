@@ -127,10 +127,7 @@ type characterDetails struct {
 			Temp    *int `json:"temp"`
 			Max     *int `json:"max"`
 		} `json:"hp"`
-		Dying *struct {
-			Current *int `json:"current"`
-			Max     *int `json:"max"`
-		} `json:"dying"`
+		Dying *characterDying `json:"dying"`
 	} `json:"attributes"`
 	Statistics struct {
 		Abilities map[string]struct {
@@ -150,6 +147,11 @@ type characterDetails struct {
 	} `json:"skills"`
 	Items []characterItem `json:"items"`
 }
+type characterDying struct {
+	Current *int `json:"current"`
+	Max *int `json:"max"`
+}
+
 type characterItem struct {
 	ID                  string             `json:"id"`
 	Name                string             `json:"name"`
