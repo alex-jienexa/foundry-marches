@@ -618,6 +618,17 @@ func mergeSkillRuleRanks(skills *CharacterSkillsDto, item FoundryItemDto) {
 	if json.Unmarshal(item.System["rules"], &rules) != nil {
 		return
 	}
+	selections := make(map[string]string)
+	for _, raw := range rules {
+		var rule map[string]json.RawMessage
+		if json.Unmarshal(raw, &rule) != nil || stringValue(rule, "key") != "ChoiceSet" {
+			continue
+		}
+		flag, selection := stringValue(rule, "flag"), stringValue(rule, "selection")
+		if flag != "" && selection != "" {
+			selections[flag] = selection
+		}
+	}
 	for _, raw := range rules {
 		var rule map[string]json.RawMessage
 		if json.Unmarshal(raw, &rule) != nil ||
@@ -637,9 +648,12 @@ func mergeSkillRuleRanks(skills *CharacterSkillsDto, item FoundryItemDto) {
 				continue
 			}
 			flag := path[start+len(marker) : start+end]
-			selectionRaw := ruleSelection(item.Flags, flag)
-			var selection string
-			if json.Unmarshal(selectionRaw, &selection) != nil || selection == "" {
+			selection := selections[flag]
+			if selection == "" {
+				selectionRaw := ruleSelection(item.Flags, flag)
+				_ = json.Unmarshal(selectionRaw, &selection)
+			}
+			if selection == "" {
 				continue
 			}
 			path = strings.Replace(path, path[start:start+end+1], selection, 1)
