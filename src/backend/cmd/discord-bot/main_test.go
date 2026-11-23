@@ -157,6 +157,7 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 		{Name: "Реагирующий удар / Reactive Strike", Type: "action", ActionType: &reaction},
 		{Name: "Реагирующий удар / Reactive Strike", Type: "feat", SystemCategory: &classFeatureCategory},
 		{Name: "Блок щитом / Shield Block", Type: "feat", SystemCategory: &generalCategory},
+		{Name: "Стойкий / Diehard", Type: "feat", SystemCategory: &generalCategory},
 		{Name: "Сильный носильщик / Hefty Hauler", Type: "feat", SystemCategory: &skillCategory},
 		{Name: "Длинный меч / Longsword", Type: "weapon", Category: "equipment"},
 		{Name: "Золотые монеты / Gold Pieces", Type: "treasure", Category: "equipment"},
