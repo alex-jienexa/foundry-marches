@@ -335,7 +335,6 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 	}
 }
 
-
 func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
 	level, xp, hp, maxHP := 2, 400, 2, 24
 	c := characterDetails{}
@@ -346,25 +345,31 @@ func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
 	c.Progression.Experience.Value = &xp
 	c.Attributes.HP = &struct {
 		Current *int `json:"current"`
-		Temp *int `json:"temp"`
-		Max *int `json:"max"`
+		Temp    *int `json:"temp"`
+		Max     *int `json:"max"`
 	}{Current: &hp, Max: &maxHP}
 	score, modifier := 12, 1
 	c.Statistics.Abilities = map[string]struct {
-		Score *int `json:"score"`
+		Score    *int `json:"score"`
 		Modifier *int `json:"modifier"`
 	}{"int": {Score: &score, Modifier: &modifier}}
 	embed := characterEmbed(c)
 	fields := make(map[string]string, len(embed.Fields))
-	for _, field := range embed.Fields { fields[field.Name] = field.Value }
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+	}
 	for _, name := range []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"} {
-		if fields[name] == "" { t.Errorf("summary card is missing %q", name) }
+		if fields[name] == "" {
+			t.Errorf("summary card is missing %q", name)
+		}
 	}
 	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: 12 (+1)") || fields["Опыт"] != "400" {
 		t.Fatalf("summary card fields = %#v", fields)
 	}
 	for _, name := range []string{"Способности класса", "Действия", "Навыки", "Предметы"} {
-		if fields[name] != "" { t.Errorf("detailed field %q should not be in summary card", name) }
+		if fields[name] != "" {
+			t.Errorf("detailed field %q should not be in summary card", name)
+		}
 	}
 }
 
@@ -388,7 +393,6 @@ func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
 		t.Fatalf("stowed item state = %q", got)
 	}
 }
-
 
 func TestCharacterDetailButtonsStayOnOneMessage(t *testing.T) {
 	if got := len(characterDetailComponents("abc123", false)[0].(discordgo.ActionsRow).Components); got != 4 {

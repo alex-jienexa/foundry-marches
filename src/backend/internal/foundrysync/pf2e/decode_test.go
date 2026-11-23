@@ -143,7 +143,9 @@ func TestDecodePostSessionActorSnapshot(t *testing.T) {
 			continue
 		}
 		wantModifier := 0
-		if want > 10 { wantModifier = 1 }
+		if want > 10 {
+			wantModifier = 1
+		}
 		if got.Modifier == nil || *got.Modifier != wantModifier {
 			t.Errorf("%s modifier = %+v, want %d", ability, got.Modifier, wantModifier)
 		}
