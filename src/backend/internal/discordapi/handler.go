@@ -22,6 +22,7 @@ const (
 	RegisterPath        = "/api/internal/discord/register"
 	ActorsPath          = "/api/internal/discord/actors"
 	CharactersPath      = "/api/internal/discord/characters"
+	CharacterCreatePath = "/api/internal/discord/characters/create"
 	PreviewPath         = "/api/internal/discord/link/preview"
 	LinkPath            = "/api/internal/discord/link"
 	GrantRolePath       = "/api/internal/discord/roles/grant"
@@ -69,6 +70,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.listActors(w, r)
 	case CharactersPath:
 		h.listCharacters(w, r)
+	case CharacterCreatePath:
+		h.createCharacter(w, r)
 	case PreviewPath:
 		h.previewLink(w, r)
 	case LinkPath:
@@ -113,8 +116,15 @@ type characterView struct {
 
 type linkRequest struct {
 	identityRequest
-	ActorUUID   string `json:"actor_uuid"`
+	ActorUUID string `json:"actor_uuid"`
 	CharacterID string `json:"character_id"`
+	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
+}
+
+type createCharacterRequest struct {
+	identityRequest
+	Name string `json:"name"`
+	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 }
 
 type createCharacterDraftRequest struct {
@@ -243,6 +253,70 @@ VALUES (
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"user_id": userID, "status": "registered"})
+}
+
+func (h *Handler) createCharacter(w http.ResponseWriter, r *http.Request) {
+	var req createCharacterRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	userID, canManage, ok := h.authorizeCharacterRead(w, r.Context(), req.identityRequest)
+	if !ok {
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" || len([]rune(name)) > 80 {
+		writeError(w, http.StatusBadRequest, "character name must contain 1..80 characters")
+		return
+	}
+	ownerID := userID
+	if canManage {
+		if strings.TrimSpace(req.OwnerDiscordUserID) == "" {
+			writeError(w, http.StatusBadRequest, "a GM must explicitly select the character owner")
+			return
+		}
+	} else if req.OwnerDiscordUserID != "" {
+		writeError(w, http.StatusForbidden, "players can create characters only for their own account")
+		return
+	}
+	if req.OwnerDiscordUserID != "" {
+		err := h.db.QueryRowContext(r.Context(), `
+SELECT da.user_id::text
+FROM discord_accounts da
+JOIN users u ON u.id = da.user_id
+WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
+`, req.OwnerDiscordUserID).Scan(&ownerID)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "the selected owner must register with /register first")
+			return
+		}
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "could not resolve selected character owner")
+			return
+		}
+	}
+	var created characterView
+	err := h.db.QueryRowContext(r.Context(), `
+INSERT INTO characters (owner_user_id, name, status)
+VALUES ($1, $2, 'draft')
+RETURNING id::text, name, status
+`, ownerID, name).Scan(&created.ID, &created.Name, &created.Status)
+	if err != nil {
+		log.Printf("Discord character creation failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not create character draft")
+		return
+	}
+	_, err = h.db.ExecContext(r.Context(), `
+INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, new_value)
+VALUES ($1, 'user', 'character.draft.created', 'character', $2,
+        jsonb_build_object('source', 'discord', 'owner_user_id', $3::text, 'name', $4::text))
+`, userID, created.ID, ownerID, name)
+	if err != nil {
+		log.Printf("Discord character creation audit failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "character was created but its audit record failed")
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
 }
 
 func (h *Handler) listActors(w http.ResponseWriter, r *http.Request) {
@@ -692,15 +766,33 @@ func (h *Handler) link(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	err := h.foundry.LinkActor(r.Context(), h.worldID, req.ActorUUID, req.CharacterID, userID)
+	ownerUserID := ""
+	if req.OwnerDiscordUserID != "" {
+		err := h.db.QueryRowContext(r.Context(), `
+SELECT da.user_id::text
+FROM discord_accounts da
+JOIN users u ON u.id = da.user_id
+WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
+`, req.OwnerDiscordUserID).Scan(&ownerUserID)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "the selected owner must register with /register first")
+			return
+		}
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "could not resolve selected character owner")
+			return
+		}
+	}
+	err := h.foundry.LinkActorWithOwner(r.Context(), h.worldID, req.ActorUUID, req.CharacterID, userID, ownerUserID)
 	switch {
 	case err == nil:
 		writeJSON(w, http.StatusOK, map[string]string{"status": "linked"})
 	case errors.Is(err, characters.ErrActorNotFound), errors.Is(err, characters.ErrCharacterNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, characters.ErrActorNotCharacter), errors.Is(err, characters.ErrActorAlreadyLinked), errors.Is(err, characters.ErrCharacterAlreadyLinked):
+	case errors.Is(err, characters.ErrActorNotCharacter), errors.Is(err, characters.ErrActorAlreadyLinked), errors.Is(err, characters.ErrCharacterAlreadyLinked), errors.Is(err, characters.ErrCharacterOwnerRequired), errors.Is(err, characters.ErrCharacterOwnerConflict):
 		writeError(w, http.StatusConflict, err.Error())
 	default:
+		log.Printf("Discord Foundry Actor link failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "could not link Foundry Actor")
 	}
 }
