@@ -15,6 +15,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/alex-jienexa/foundry-marches/internal/characters"
+	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
 )
 
 const (
@@ -26,6 +27,8 @@ const (
 	GrantRolePath      = "/api/internal/discord/roles/grant"
 	MapRolePath        = "/api/internal/discord/roles/map"
 	DraftCharacterPath = "/api/internal/discord/characters/draft"
+	CharacterSearchPath = "/api/internal/discord/characters/search"
+	CharacterDetailPath = "/api/internal/discord/characters/detail"
 )
 
 type Handler struct {
@@ -76,6 +79,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.mapRole(w, r)
 	case DraftCharacterPath:
 		h.createCharacterDraft(w, r)
+	case CharacterSearchPath:
+		h.searchFoundryCharacters(w, r)
+	case CharacterDetailPath:
+		h.foundryCharacterDetails(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -113,6 +120,21 @@ type linkRequest struct {
 type createCharacterDraftRequest struct {
 	identityRequest
 	ActorUUID string `json:"actor_uuid"`
+}
+
+type characterSearchRequest struct {
+	identityRequest
+	Query string `json:"query"`
+}
+
+type characterDetailRequest struct {
+	identityRequest
+	ActorUUID string `json:"actor_uuid"`
+}
+
+type foundryCharacterSearchView struct {
+	ActorUUID string `json:"actor_uuid"`
+	Name      string `json:"name"`
 }
 
 type linkPreview struct {
@@ -293,6 +315,96 @@ LIMIT 200
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"characters": items})
+}
+
+// searchFoundryCharacters searches persisted Actor snapshots. It never calls Relay,
+// so repeated Discord lookups do not create additional Foundry requests.
+func (h *Handler) searchFoundryCharacters(w http.ResponseWriter, r *http.Request) {
+	var req characterSearchRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	if _, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage"); !ok {
+		return
+	}
+	query := strings.TrimSpace(req.Query)
+	if len([]rune(query)) < 2 {
+		writeError(w, http.StatusBadRequest, "search query must contain at least two characters")
+		return
+	}
+
+	rows, err := h.db.QueryContext(r.Context(), `
+SELECT actor_uuid, COALESCE(snapshot->>'name', actor_uuid)
+FROM foundry_actors
+WHERE world_id = $1
+  AND snapshot->>'type' = 'character'
+  AND snapshot->>'name' ILIKE $2
+ORDER BY snapshot->>'name', actor_uuid
+LIMIT 25
+`, h.worldID, "%"+query+"%")
+	if err != nil {
+		log.Printf("Discord Foundry character search failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not search Foundry characters")
+		return
+	}
+	defer rows.Close()
+
+	items := make([]foundryCharacterSearchView, 0)
+	for rows.Next() {
+		var item foundryCharacterSearchView
+		if err := rows.Scan(&item.ActorUUID, &item.Name); err != nil {
+			writeError(w, http.StatusInternalServerError, "could not read Foundry character search results")
+			return
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not read Foundry character search results")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"actors": items})
+}
+
+// foundryCharacterDetails decodes the already stored raw Actor snapshot into the
+// same DTO used by the sync pipeline. The endpoint is GM/admin-only.
+func (h *Handler) foundryCharacterDetails(w http.ResponseWriter, r *http.Request) {
+	var req characterDetailRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	if _, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage"); !ok {
+		return
+	}
+	if strings.TrimSpace(req.ActorUUID) == "" {
+		writeError(w, http.StatusBadRequest, "Actor UUID is required")
+		return
+	}
+
+	var snapshot []byte
+	err := h.db.QueryRowContext(r.Context(), `
+SELECT snapshot
+FROM foundry_actors
+WHERE world_id = $1
+  AND actor_uuid = $2
+  AND snapshot->>'type' = 'character'
+`, h.worldID, req.ActorUUID).Scan(&snapshot)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "Foundry character was not found in the latest synchronized snapshots")
+		return
+	}
+	if err != nil {
+		log.Printf("Discord Foundry character snapshot read failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not read Foundry character snapshot")
+		return
+	}
+
+	decoded, err := pf2e.DecodeActor(snapshot)
+	if err != nil {
+		log.Printf("Discord Foundry character decode failed for %s: %v", req.ActorUUID, err)
+		writeError(w, http.StatusUnprocessableEntity, "stored Foundry character snapshot cannot be decoded")
+		return
+	}
+	writeJSON(w, http.StatusOK, decoded.Character)
 }
 
 func (h *Handler) createCharacterDraft(w http.ResponseWriter, r *http.Request) {
