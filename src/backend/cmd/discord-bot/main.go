@@ -1285,7 +1285,11 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Уровень", Value: intValue(c.Progression.Level), Inline: true})
 	if c.Attributes.HP != nil {
 		hp := intValue(c.Attributes.HP.Current)
-		if c.Attributes.HP.Max != nil { hp += " / " + strconv.Itoa(*c.Attributes.HP.Max) }
+		if c.Attributes.HP.Max != nil {
+			hp += " / " + strconv.Itoa(*c.Attributes.HP.Max)
+		} else {
+			hp += " ОЗ"
+		}
 		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 { hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp) }
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "ОЗ", Value: hp, Inline: true})
 	}
