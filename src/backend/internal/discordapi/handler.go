@@ -295,8 +295,14 @@ WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 			return
 		}
 	}
+	tx, err := h.db.BeginTx(r.Context(), nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not start character creation")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
 	var created characterView
-	err := h.db.QueryRowContext(r.Context(), `
+	err = tx.QueryRowContext(r.Context(), `
 INSERT INTO characters (owner_user_id, name, status)
 VALUES ($1, $2, 'draft')
 RETURNING id::text, name, status
@@ -306,14 +312,18 @@ RETURNING id::text, name, status
 		writeError(w, http.StatusInternalServerError, "could not create character draft")
 		return
 	}
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, new_value)
 VALUES ($1, 'user', 'character.draft.created', 'character', $2,
         jsonb_build_object('source', 'discord', 'owner_user_id', $3::text, 'name', $4::text))
 `, userID, created.ID, ownerID, name)
 	if err != nil {
 		log.Printf("Discord character creation audit failed: %v", err)
-		writeError(w, http.StatusInternalServerError, "character was created but its audit record failed")
+		writeError(w, http.StatusInternalServerError, "could not write character creation audit record")
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not commit character creation")
 		return
 	}
 	writeJSON(w, http.StatusCreated, created)
