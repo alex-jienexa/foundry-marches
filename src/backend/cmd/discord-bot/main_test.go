@@ -269,6 +269,68 @@ func TestCharacterInventoryAndSpellEmbeds(t *testing.T) {
 	}
 }
 
+
+func TestCharacterInventoryIncludesAllPhysicalItemTypesAndState(t *testing.T) {
+	one := 1
+	worn := "worn"
+	stowed := "stowed"
+	inSlot := true
+	invested := true
+	container := "pack"
+	c := characterDetails{}
+	c.Identity.Name = "Малахия"
+	c.Items = []characterItem{
+		{ID:"weapon",Name:"Кинжал",Type:"weapon",Category:"equipment",Quantity:&one,Equipped:&characterEquipped{CarryType:&worn,InSlot:&inSlot}},
+		{ID:"armor",Name:"Кожаный доспех",Type:"armor",Category:"equipment",Equipped:&characterEquipped{CarryType:&worn,InSlot:&inSlot,Invested:&invested}},
+		{ID:"gear",Name:"Верёвка",Type:"equipment",Category:"equipment",ContainerID:&container,Equipped:&characterEquipped{CarryType:&worn}},
+		{ID:"potion",Name:"Зелье",Type:"consumable",Category:"equipment",Quantity:&one,Equipped:&characterEquipped{CarryType:&stowed}},
+		{ID:"pack",Name:"Рюкзак",Type:"backpack",Category:"equipment"},
+		{ID:"coin",Name:"Монеты",Type:"treasure",Category:"equipment",Quantity:&one},
+	}
+	embeds := characterInventoryEmbeds(c)
+	if len(embeds) < 5 {
+		t.Fatalf("got %d grouped inventory embeds, want all physical item types", len(embeds))
+	}
+	joined := ""
+	for _, embed := range embeds {
+		for _, field := range embed.Fields { joined += field.Name + "\n" + field.Value + "\n" }
+	}
+	for _, want := range []string{"Кинжал","Кожаный доспех","Верёвка","Зелье","Рюкзак","Монеты","НАДЕТО","ИНВЕСТИРОВАНО","УБРАНО","в Рюкзак"} {
+		if !strings.Contains(joined,want) { t.Errorf("inventory output missing %q: %s",want,joined) }
+	}
+}
+
+func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
+	one, two := 1, 2
+	arcane, primal := "arcane", "primal"
+	arcaneList, primalList := "Арканная книга", "Природная книга"
+	prepared := true
+	c := characterDetails{}
+	c.Identity.Name = "Заклинатель"
+	c.Items = []characterItem{
+		{Name:"Щит",Type:"spell",Level:&one,Tradition:&arcane,SpellList:&arcaneList,Prepared:&prepared},
+		{Name:"Магическая стрела",Type:"spell",Level:&one,Tradition:&arcane,SpellList:&arcaneList},
+		{Name:"Лечебное растение",Type:"spell",Level:&two,Tradition:&primal,SpellList:&primalList},
+	}
+	embeds := characterSpellsEmbeds(c)
+	if len(embeds) != 2 { t.Fatalf("got %d spell groups, want 2",len(embeds)) }
+	joined := ""
+	for _, embed := range embeds { for _, field := range embed.Fields { joined += field.Name + "\n" + field.Value + "\n" } }
+	for _, want := range []string{"Арканная традиция","Природная традиция","ранг 1","ранг 2","подготовлено","Магическая стрела","Лечебное растение"} {
+		if !strings.Contains(joined,want) { t.Errorf("spell output missing %q: %s",want,joined) }
+	}
+}
+
+func TestCharacterEmbedMarksDyingAtMaximum(t *testing.T) {
+	current, maximum := 4, 4
+	c := characterDetails{}
+	c.Identity.Name = "Павший"
+	c.Attributes.Dying = &characterDying{Current:&current,Max:&maximum}
+	embed := characterEmbed(c)
+	if !strings.Contains(embed.Title,"МЁРТВ") { t.Fatalf("title = %q, want death marker",embed.Title) }
+	if embed.Color != 0xED4245 { t.Fatalf("color = %#x, want death color",embed.Color) }
+}
+
 func TestCharacterSkillLinesUseProficiencyNamesAndHideUntrained(t *testing.T) {
 	trained, expert, master, legendary, untrained := 1, 2, 3, 4, 0
 	lines := characterSkillLines(
