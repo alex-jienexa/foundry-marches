@@ -401,13 +401,16 @@ func TestCharacterCardUsesIdenticalCoreLayoutForMissingData(t *testing.T) {
 
 func TestCharacterSkillLinesSortByHighestProficiencyFirst(t *testing.T) {
 	trained, expert, master, legendary := 1, 2, 3, 4
+	loreMaster := 3
 	lines := characterSkillLines(map[string]characterSkill{
 		"athletics": {Rank: &trained},
 		"crafting": {Rank: &expert},
 		"intimidation": {Rank: &legendary},
 		"thievery": {Rank: &master},
-	}, map[string]characterSkill{})
-	want := []string{"Запугивание — Легенда", "Воровство — Мастер", "Ремесло — Эксперт", "Атлетика — Обучен"}
+	}, map[string]characterSkill{
+		"lore-warfare": {Rank: &loreMaster},
+	})
+	want := []string{"Запугивание — Легенда", "Воровство — Мастер", "Знания военного дела — Мастер", "Ремесло — Эксперт", "Атлетика — Обучен"}
 	if len(lines) != len(want) {
 		t.Fatalf("skill lines = %v, want %v", lines, want)
 	}
