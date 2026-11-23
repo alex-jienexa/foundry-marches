@@ -40,7 +40,7 @@ func TestTruncateLabel(t *testing.T) {
 	}
 }
 
-func TestCharacterEmbedUsesDecodedFieldsAndOmitsMissingValues(t *testing.T) {
+func TestCharacterEmbedUsesDecodedFields(t *testing.T) {
 	level := 2
 	currentHP, maxHP := 18, 24
 	c := characterDetails{}
