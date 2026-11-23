@@ -227,9 +227,10 @@ type DecodedActor struct {
 // ability scores reconstructed from complete PF2e boost selections. Missing source
 // data remains nil; proficiency is never inferred from incomplete progression data.
 type CharacterStatisticsInputDto struct {
-	Abilities        map[string]AbilityScoreDto `json:"abilities"`
-	AbilitiesDerived bool                       `json:"abilitiesDerived,omitempty"`
-	Proficiencies    CharacterProficienciesDto  `json:"proficiencies"`
+	Abilities              map[string]AbilityScoreDto `json:"abilities"`
+	ReconstructedAbilities map[string]AbilityScoreDto `json:"reconstructedAbilities,omitempty"`
+	AbilitiesDerived       bool                       `json:"abilitiesDerived,omitempty"`
+	Proficiencies          CharacterProficienciesDto  `json:"proficiencies"`
 }
 
 // AbilityScoreDto distinguishes the score and modifier; Derived marks values
