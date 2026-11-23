@@ -602,7 +602,6 @@ func applyAbilityBoost(score int) int {
 	return score + 2
 }
 
-
 func alternateAncestryBoosts(system map[string]json.RawMessage) ([]string, bool) {
 	raw, exists := system["alternateAncestryBoosts"]
 	if !exists || len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
