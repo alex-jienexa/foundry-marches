@@ -196,3 +196,31 @@ func TestClientDoesNotFollowRedirectsWithAPIKey(t *testing.T) {
 		t.Fatalf("redirect target received %d requests; want none", targetRequests)
 	}
 }
+
+func TestPingRelayAcceptsReachableServiceAndRejectsServerFailure(t *testing.T) {
+	t.Run("reachable even when base route is not registered", func(t *testing.T) {
+		server := httptest.NewServer(http.NotFoundHandler())
+		defer server.Close()
+		client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := client.PingRelay(context.Background()); err != nil {
+			t.Fatalf("PingRelay() error = %v", err)
+		}
+	})
+
+	t.Run("server failure", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+		client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := client.PingRelay(context.Background()); err == nil {
+			t.Fatal("PingRelay() error = nil, want server failure")
+		}
+	})
+}
