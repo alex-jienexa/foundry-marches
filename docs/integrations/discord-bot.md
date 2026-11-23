@@ -97,7 +97,7 @@ Character creation and linking support both players and GMs:
 - `/character-create name:<имя>` lets a player create an application draft owned by their own registered account.
 - A GM uses `/character-create name:<имя> owner:@игрок`. The selected player must already have run `/register`; the backend resolves the mention to that player's internal account and stores explicit ownership.
 - `/character-draft` remains available to GMs who want to create a draft from a selected unlinked Foundry Actor. The draft is initially unowned.
-- `/character-link owner:@игрок` lets a GM select an unlinked Foundry Actor and an application character, then preview and confirm the link. The owner mention is optional only when the character already has an owner; an unowned draft cannot be linked without explicitly selecting one.
+- `/character-link owner:@игрок` lets a GM select an unlinked Foundry Actor and an application character, then preview and confirm the link. The owner mention is mandatory for every link; if the character already has a different owner, the backend rejects the operation rather than silently transferring it.
 - On link confirmation, the backend atomically links the Actor, assigns the selected owner if the character was unowned, records the ownership transfer/audit context, and marks ownership confirmed for that link. A conflicting existing owner is never silently replaced.
 - A player-created draft is already assigned to that player; when a GM links its Foundry Actor, the existing owner is preserved and confirmed.
 - The confirmation is bound to the initiating Discord user and guild.
