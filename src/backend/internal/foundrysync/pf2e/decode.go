@@ -113,6 +113,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 	}
 	character.Build = buildReferences(normalizedItems)
 	character.Build.ClassProficiencies = decodeClassProficiencies(actor.Items)
+	character.Build.AncestryFeatures = decodeAncestryFeatureReferences(actor.Items)
 	character.Build.KeyAbility = decodeKeyAbility(details, actor.Items)
 
 	return &DecodedActor{
@@ -1148,6 +1149,15 @@ func decodeClassProficiencies(items []FoundryItemDto) *ClassProficiencyProfileDt
 // decodeClassFeatureReferences retains links from the class progression table.
 // The linked compendium documents must be fetched separately before their rules
 // can be interpreted; names and levels alone never imply a proficiency upgrade.
+func decodeAncestryFeatureReferences(items []FoundryItemDto) []ClassFeatureReferenceDto {
+	for _, item := range items {
+		if item.Type == "ancestry" {
+			return decodeClassFeatureReferences(objectAt(item.System, "items"))
+		}
+	}
+	return nil
+}
+
 func decodeClassFeatureReferences(raw map[string]json.RawMessage) []ClassFeatureReferenceDto {
 	if raw == nil {
 		return nil
