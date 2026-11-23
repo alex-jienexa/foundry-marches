@@ -124,6 +124,7 @@ type characterDetails struct {
 		Background         *characterReference      `json:"background"`
 		Class              *characterReference      `json:"class"`
 		KeyAbility         *string                  `json:"keyAbility"`
+		AncestryFeatures   []classFeatureReference   `json:"ancestryFeatures"`
 		ClassProficiencies *classProficiencyDetails `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {
@@ -1586,6 +1587,21 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 	skillAbilities := make([]characterLevelEntry, 0)
 	otherAbilities := make([]characterLevelEntry, 0)
 	seenClassFeatures := make(map[string]struct{})
+	seenAncestryFeatures := make(map[string]struct{})
+
+	if c.Progression.Level != nil {
+		for _, feature := range c.Build.AncestryFeatures {
+			if feature.Name == "" || feature.Level == nil || *feature.Level > *c.Progression.Level {
+				continue
+			}
+			key := characterEntryKey(feature.Name)
+			if _, exists := seenAncestryFeatures[key]; exists {
+				continue
+			}
+			seenAncestryFeatures[key] = struct{}{}
+			ancestryFeatures = append(ancestryFeatures, characterLevelEntry{name: feature.Name, level: feature.Level})
+		}
+	}
 
 	if c.Build.ClassProficiencies != nil && c.Progression.Level != nil {
 		for _, feature := range c.Build.ClassProficiencies.Features {
@@ -1622,7 +1638,11 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 				classFeatures = append(classFeatures, entry)
 			}
 		case "ancestryfeature":
-			ancestryFeatures = append(ancestryFeatures, entry)
+			key := characterEntryKey(item.Name)
+			if _, exists := seenAncestryFeatures[key]; !exists {
+				seenAncestryFeatures[key] = struct{}{}
+				ancestryFeatures = append(ancestryFeatures, entry)
+			}
 		case "ancestry", "heritage":
 			ancestryAbilities = append(ancestryAbilities, entry)
 		case "skill":
