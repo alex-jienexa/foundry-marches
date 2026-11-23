@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -89,6 +90,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	discordHandler.SetSyncService(syncService)
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/internal/discord/integration-status", discordapi.ServiceTokenMiddleware(discordBotToken, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +138,26 @@ func run() error {
 		_ = json.NewEncoder(w).Encode(status)
 	})))
 	mux.Handle(httpapi.SyncPath, bearerTokenMiddleware(syncToken, syncHandler))
+
+	mux.Handle("/api/internal/discord/foundry-sync/startup", discordapi.ServiceTokenMiddleware(discordBotToken, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		report, err := syncService.SyncAll(r.Context())
+		if err != nil {
+			status := http.StatusBadGateway
+			if errors.Is(err, foundrysync.ErrSyncInProgress) { status = http.StatusConflict }
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(status)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		_ = json.NewEncoder(w).Encode(report)
+	})))
 	mux.Handle("/api/internal/discord/", discordapi.ServiceTokenMiddleware(discordBotToken, discordHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -160,6 +182,9 @@ func run() error {
 
 	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	syncInterval, err := foundrySyncInterval()
+	if err != nil { return err }
+	go runPeriodicFoundrySync(stopCtx, syncService, syncInterval)
 	serverErr := make(chan error, 1)
 	go func() {
 		log.Printf("Foundry integration API listening on %s", address)
@@ -176,6 +201,45 @@ func run() error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		return server.Shutdown(shutdownCtx)
+	}
+}
+
+
+func foundrySyncInterval() (time.Duration, error) {
+	seconds := 300
+	if raw := strings.TrimSpace(os.Getenv("FOUNDRY_SYNC_INTERVAL_SECONDS")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 30 || parsed > 86400 {
+			return 0, errors.New("FOUNDRY_SYNC_INTERVAL_SECONDS must be between 30 and 86400")
+		}
+		seconds = parsed
+	}
+	return time.Duration(seconds) * time.Second, nil
+}
+
+func runPeriodicFoundrySync(ctx context.Context, syncer interface {
+	SyncAll(context.Context) (foundrysync.SyncReport, error)
+}, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	log.Printf("Foundry periodic sync enabled; interval=%s", interval)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			syncCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+			report, err := syncer.SyncAll(syncCtx)
+			cancel()
+			if err != nil {
+				if !errors.Is(err, foundrysync.ErrSyncInProgress) {
+					log.Printf("Periodic Foundry sync failed: %v", err)
+				}
+				continue
+			}
+			log.Printf("Periodic Foundry sync finished: discovered=%d characters=%d snapshots=%d failed=%d",
+				report.Discovered, report.CharactersSynced, report.SnapshotsOnly, report.Failed)
+		}
 	}
 }
 
