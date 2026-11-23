@@ -317,7 +317,7 @@ func TestDecodeAbilityScoresFromBuildBoostSelections(t *testing.T) {
 }
 func TestDecodeSkillsIncludesClassAndBackgroundTraining(t *testing.T) {
 	raw := []byte(`{"_id":"skills","type":"character","items":[
-		{"_id":"class","type":"class","system":{"trainedSkills":{"value":["religion"],"additional":2},"rules":[{"key":"ActiveEffectLike","mode":"upgrade","path":"system.skills.diplomacy.rank","value":1}]}},
+		{"_id":"class","type":"class","system":{"trainedSkills":{"value":["religion"],"additional":2},"rules":[{"key":"ChoiceSet","flag":"skillChoice","selection":"diplomacy"},{"key":"ActiveEffectLike","mode":"upgrade","path":"system.skills.{item|flags.system.rulesSelections.skillChoice}.rank","value":1}]}},
 		{"_id":"background","type":"background","system":{"trainedSkills":{"value":["athletics"],"lore":["Warfare Lore"]}}}
 	],"system":{"skills":{}}}`)
 	decoded, err := DecodeActor(raw)
