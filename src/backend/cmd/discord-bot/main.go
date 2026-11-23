@@ -124,7 +124,7 @@ type characterDetails struct {
 		Background         *characterReference      `json:"background"`
 		Class              *characterReference      `json:"class"`
 		KeyAbility         *string                  `json:"keyAbility"`
-		AncestryFeatures   []classFeatureReference   `json:"ancestryFeatures"`
+		AncestryFeatures   []classFeatureReference  `json:"ancestryFeatures"`
 		ClassProficiencies *classProficiencyDetails `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {
@@ -137,15 +137,15 @@ type characterDetails struct {
 	} `json:"attributes"`
 	Statistics struct {
 		AbilitiesDerived bool `json:"abilitiesDerived"`
-		Abilities map[string]struct {
-			Score    *int  `json:"score"`
-			Modifier *int  `json:"modifier"`
-			Derived  bool  `json:"derived"`
+		Abilities        map[string]struct {
+			Score    *int `json:"score"`
+			Modifier *int `json:"modifier"`
+			Derived  bool `json:"derived"`
 		} `json:"abilities"`
 		ReconstructedAbilities map[string]struct {
-			Score    *int  `json:"score"`
-			Modifier *int  `json:"modifier"`
-			Derived  bool  `json:"derived"`
+			Score    *int `json:"score"`
+			Modifier *int `json:"modifier"`
+			Derived  bool `json:"derived"`
 		} `json:"reconstructedAbilities"`
 	} `json:"statistics"`
 	Resources struct {
@@ -814,7 +814,7 @@ func (b *bot) showCharacterCard(s *discordgo.Session, i *discordgo.InteractionCr
 }
 
 func characterDetailComponents(key, activeSection string) []discordgo.MessageComponent {
-	sections := []struct { id, label string }{
+	sections := []struct{ id, label string }{
 		{"overview", "Карточка"}, {"abilities", "Способности"}, {"skills", "Навыки"},
 		{"inventory", "Снаряжение"}, {"spells", "Заклинания"}, {"metrics", "Метрики кампании"},
 	}
@@ -826,7 +826,7 @@ func characterDetailComponents(key, activeSection string) []discordgo.MessageCom
 		}
 		buttons = append(buttons, discordgo.Button{
 			CustomID: "fm-detail:" + key + ":" + section.id,
-			Label: section.label, Style: style, Disabled: disabled,
+			Label:    section.label, Style: style, Disabled: disabled,
 		})
 	}
 	return []discordgo.MessageComponent{
@@ -1510,15 +1510,18 @@ func spellTraditionLabel(value string) string {
 	}
 }
 
-
 func logCharacterCardDiagnostics(c characterDetails) {
 	value := strings.TrimSpace(os.Getenv("FOUNDRY_CHARACTER_DIAGNOSTICS"))
 	if !strings.EqualFold(value, "1") && !strings.EqualFold(value, "true") {
 		return
 	}
 	className, ancestryName := "", ""
-	if c.Build.Class != nil { className = c.Build.Class.Name }
-	if c.Build.Ancestry != nil { ancestryName = c.Build.Ancestry.Name }
+	if c.Build.Class != nil {
+		className = c.Build.Class.Name
+	}
+	if c.Build.Ancestry != nil {
+		ancestryName = c.Build.Ancestry.Name
+	}
 	hpCurrent, hpMaximum := (*int)(nil), (*int)(nil)
 	if c.Attributes.HP != nil {
 		hpCurrent, hpMaximum = c.Attributes.HP.Current, c.Attributes.HP.Max
@@ -1544,13 +1547,17 @@ func logCharacterCardDiagnostics(c characterDetails) {
 }
 
 func diagnosticInt(value *int) string {
-	if value == nil { return "<nil>" }
+	if value == nil {
+		return "<nil>"
+	}
 	return strconv.Itoa(*value)
 }
 
 func sortedAbilityKeys[T any](values map[string]T) []string {
 	keys := make([]string, 0, len(values))
-	for key := range values { keys = append(keys, key) }
+	for key := range values {
+		keys = append(keys, key)
+	}
 	sort.Strings(keys)
 	return keys
 }
@@ -1810,8 +1817,12 @@ func characterSkillDisplayName(slug string) string {
 		"occultism": "Оккультизм", "performance": "Выступление", "religion": "Религия",
 		"society": "Общество", "stealth": "Скрытность", "survival": "Выживание", "thievery": "Воровство",
 	}
-	if name := names[strings.ToLower(strings.TrimSpace(slug))]; name != "" { return name }
-	if strings.HasPrefix(strings.ToLower(slug), "lore-") { return loreSkillName(slug) }
+	if name := names[strings.ToLower(strings.TrimSpace(slug))]; name != "" {
+		return name
+	}
+	if strings.HasPrefix(strings.ToLower(slug), "lore-") {
+		return loreSkillName(slug)
+	}
 	return humanizeSkillKey(slug)
 }
 

@@ -281,7 +281,6 @@ func decodeDying(raw map[string]json.RawMessage) *DyingConditionDto {
 	return &DyingConditionDto{Current: intAt(raw, "value"), Max: intAt(raw, "max")}
 }
 
-
 func characterDiagnosticsEnabled() bool {
 	value := strings.TrimSpace(os.Getenv("FOUNDRY_CHARACTER_DIAGNOSTICS"))
 	return strings.EqualFold(value, "1") || strings.EqualFold(value, "true")
@@ -334,12 +333,16 @@ func logActorDecodeDiagnostics(actor FoundryActorDto, character CharacterDto, ra
 }
 
 func diagnosticIntPointer(value *int) string {
-	if value == nil { return "<nil>" }
+	if value == nil {
+		return "<nil>"
+	}
 	return strconv.Itoa(*value)
 }
 
 func rawJSONValue(value json.RawMessage) string {
-	if len(value) == 0 { return "<absent>" }
+	if len(value) == 0 {
+		return "<absent>"
+	}
 	return strings.TrimSpace(string(value))
 }
 
@@ -353,12 +356,16 @@ func rawObjectKeys(raw map[string]json.RawMessage) []string {
 }
 
 func hpCurrentValue(hp *HitPointsDto) *int {
-	if hp == nil { return nil }
+	if hp == nil {
+		return nil
+	}
 	return hp.Current
 }
 
 func hpMaxValue(hp *HitPointsDto) *int {
-	if hp == nil { return nil }
+	if hp == nil {
+		return nil
+	}
 	return hp.Max
 }
 
@@ -653,9 +660,9 @@ func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryIte
 			preparedType = category
 		}
 		info := spellcastingEntryInfo{
-			item: item,
-			tradition: firstString(stringAt(objectAt(item.System, "tradition"), "value"), stringAt(item.System, "tradition")),
-			preparedType: preparedType,
+			item:          item,
+			tradition:     firstString(stringAt(objectAt(item.System, "tradition"), "value"), stringAt(item.System, "tradition")),
+			preparedType:  preparedType,
 			preparedRanks: make(map[string][]int),
 		}
 		if preparedType != nil && *preparedType == "prepared" {
@@ -888,7 +895,10 @@ func decodeSkillAssociation(system map[string]json.RawMessage) *string {
 	if prerequisites == nil || json.Unmarshal(prerequisites["value"], &entries) != nil {
 		return nil
 	}
-	known := []struct{ slug string; terms []string }{
+	known := []struct {
+		slug  string
+		terms []string
+	}{
 		{"acrobatics", []string{"acrobatics", "акробатик"}},
 		{"arcana", []string{"arcana", "аркан"}},
 		{"athletics", []string{"athletics", "атлетик"}},

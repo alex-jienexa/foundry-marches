@@ -238,9 +238,9 @@ type CharacterStatisticsInputDto struct {
 // AbilityScoreDto distinguishes the score and modifier; Derived marks values
 // reconstructed from build selections rather than stored on the Actor.
 type AbilityScoreDto struct {
-	Score    *int  `json:"score"`
-	Modifier *int  `json:"modifier"`
-	Derived  bool  `json:"derived,omitempty"`
+	Score    *int `json:"score"`
+	Modifier *int `json:"modifier"`
+	Derived  bool `json:"derived,omitempty"`
 }
 
 type CharacterProficienciesDto struct {

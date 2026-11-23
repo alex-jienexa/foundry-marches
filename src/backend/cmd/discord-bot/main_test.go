@@ -224,18 +224,26 @@ func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testin
 	c := characterDetails{}
 	c.Identity.Name = "Маг"
 	c.Items = []characterItem{
-		{Name:"Свет",Type:"spell",Level:characterTestIntPointer(0),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{0}},
-		{Name:"Магическая стрела",Type:"spell",Level:characterTestIntPointer(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&prepared,PreparedRanks:[]int{1}},
-		{Name:"Щит",Type:"spell",Level:characterTestIntPointer(1),SpellcastingType:&preparedType,Tradition:&tradition,SpellList:&list,Prepared:&unprepared},
+		{Name: "Свет", Type: "spell", Level: characterTestIntPointer(0), SpellcastingType: &preparedType, Tradition: &tradition, SpellList: &list, Prepared: &prepared, PreparedRanks: []int{0}},
+		{Name: "Магическая стрела", Type: "spell", Level: characterTestIntPointer(1), SpellcastingType: &preparedType, Tradition: &tradition, SpellList: &list, Prepared: &prepared, PreparedRanks: []int{1}},
+		{Name: "Щит", Type: "spell", Level: characterTestIntPointer(1), SpellcastingType: &preparedType, Tradition: &tradition, SpellList: &list, Prepared: &unprepared},
 	}
 	embed := characterSpellsEmbed(c)
 	fields := make(map[string]string)
-	for _, field := range embed.Fields { fields[field.Name] = field.Value }
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+	}
 	var cantripPrepared, rankOnePrepared, rankOneBook bool
 	for name, value := range fields {
-		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "чары") && strings.Contains(value, "Свет") { cantripPrepared = true }
-		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Магическая стрела") { rankOnePrepared = true }
-		if strings.Contains(name, "ПОДГОТОВКА") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Щит") { rankOneBook = true }
+		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "чары") && strings.Contains(value, "Свет") {
+			cantripPrepared = true
+		}
+		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Магическая стрела") {
+			rankOnePrepared = true
+		}
+		if strings.Contains(name, "ПОДГОТОВКА") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Щит") {
+			rankOneBook = true
+		}
 	}
 	if !cantripPrepared || !rankOnePrepared || !rankOneBook {
 		t.Fatalf("prepared/book groups incorrect: %+v", fields)
@@ -252,11 +260,15 @@ func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
 		t.Fatalf("initial card button should be first, highlighted and disabled: %+v", initialCard)
 	}
 	components := characterDetailComponents("flow", "skills")
-	if len(components) != 2 { t.Fatalf("navigation rows = %d, want 2", len(components)) }
+	if len(components) != 2 {
+		t.Fatalf("navigation rows = %d, want 2", len(components))
+	}
 	first := components[0].(discordgo.ActionsRow)
 	second := components[1].(discordgo.ActionsRow)
 	buttons := append(append([]discordgo.MessageComponent{}, first.Components...), second.Components...)
-	if len(buttons) != 6 { t.Fatalf("navigation buttons = %d, want 6", len(buttons)) }
+	if len(buttons) != 6 {
+		t.Fatalf("navigation buttons = %d, want 6", len(buttons))
+	}
 	labels := make([]string, 0, len(buttons))
 	activeFound := false
 	for _, component := range buttons {
@@ -268,9 +280,13 @@ func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
 		if button.Label == "Карточка" && (button.Style != discordgo.SecondaryButton || button.Disabled) {
 			t.Fatalf("inactive card button should remain enabled and secondary: %+v", button)
 		}
-		if button.Label == "К карточке" { t.Fatal("legacy return button must not be present") }
+		if button.Label == "К карточке" {
+			t.Fatal("legacy return button must not be present")
+		}
 	}
-	if !activeFound { t.Fatalf("active skills button was not highlighted and disabled: %v", labels) }
+	if !activeFound {
+		t.Fatalf("active skills button was not highlighted and disabled: %v", labels)
+	}
 }
 
 func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
@@ -286,7 +302,9 @@ func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
 	}
 	embed := characterSkillsEmbed(c)
 	fields := make(map[string]string)
-	for _, field := range embed.Fields { fields[field.Name] = field.Value }
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+	}
 	if !strings.Contains(fields["Все навыки"], "Дипломатия — Обучен") {
 		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Все навыки"])
 	}
@@ -403,10 +421,10 @@ func TestCharacterSkillLinesSortByHighestProficiencyFirst(t *testing.T) {
 	trained, expert, master, legendary := 1, 2, 3, 4
 	loreMaster := 3
 	lines := characterSkillLines(map[string]characterSkill{
-		"athletics": {Rank: &trained},
-		"crafting": {Rank: &expert},
+		"athletics":    {Rank: &trained},
+		"crafting":     {Rank: &expert},
 		"intimidation": {Rank: &legendary},
-		"thievery": {Rank: &master},
+		"thievery":     {Rank: &master},
 	}, map[string]characterSkill{
 		"lore-warfare": {Rank: &loreMaster},
 	})
@@ -624,14 +642,14 @@ func TestCharacterEmbedFallsBackToReconstructedAbilityWhenStoredValueEmpty(t *te
 	c := characterDetails{}
 	c.Identity.Name = "Персонаж с восстановленными характеристиками"
 	c.Statistics.Abilities = map[string]struct {
-		Score    *int  `json:"score"`
-		Modifier *int  `json:"modifier"`
-		Derived  bool  `json:"derived"`
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
 	}{"wis": {Score: emptyScore, Modifier: emptyModifier}}
 	c.Statistics.ReconstructedAbilities = map[string]struct {
-		Score    *int  `json:"score"`
-		Modifier *int  `json:"modifier"`
-		Derived  bool  `json:"derived"`
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
 	}{"wis": {Score: &score, Modifier: &modifier, Derived: true}}
 	embed := characterEmbed(c)
 	for _, field := range embed.Fields {

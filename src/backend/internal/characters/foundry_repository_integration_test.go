@@ -326,7 +326,6 @@ func TestFoundryRepositorySyncDiscoveredLinkedCharacter(t *testing.T) {
 	}
 }
 
-
 func TestFoundryRepositoryLinkActorPostgresIntegration(t *testing.T) {
 	db := openFoundryIntegrationDB(t)
 	ctx := context.Background()
