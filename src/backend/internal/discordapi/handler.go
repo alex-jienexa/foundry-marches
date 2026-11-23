@@ -15,6 +15,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/alex-jienexa/foundry-marches/internal/characters"
+	"github.com/alex-jienexa/foundry-marches/internal/foundrysync"
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync/pf2e"
 )
 
@@ -32,6 +33,7 @@ const (
 	CharacterSearchPath = "/api/internal/discord/characters/search"
 	CharacterDetailPath = "/api/internal/discord/characters/detail"
 	MyCharactersPath    = "/api/internal/discord/characters/mine"
+	FoundrySyncPath     = "/api/internal/discord/foundry-sync"
 )
 
 type Handler struct {
@@ -40,6 +42,7 @@ type Handler struct {
 	guildID      string
 	worldID      string
 	adminUserIDs map[string]struct{}
+	syncer       interface { SyncAll(context.Context) (foundrysync.SyncReport, error) }
 }
 
 func NewHandler(db *sql.DB, foundry *characters.FoundryRepository, apiToken, guildID, worldID string, adminUserIDs []string) (*Handler, error) {
@@ -57,6 +60,10 @@ func NewHandler(db *sql.DB, foundry *characters.FoundryRepository, apiToken, gui
 		}
 	}
 	return &Handler{db: db, foundry: foundry, guildID: guildID, worldID: worldID, adminUserIDs: admins}, nil
+}
+
+func (h *Handler) SetSyncService(syncer interface { SyncAll(context.Context) (foundrysync.SyncReport, error) }) {
+	h.syncer = syncer
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +99,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.listMyCharacters(w, r)
 	case CharacterDetailPath:
 		h.foundryCharacterDetails(w, r)
+	case FoundrySyncPath:
+		h.syncFoundryWorld(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -905,6 +914,32 @@ WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 	}
 }
 
+
+
+func (h *Handler) syncFoundryWorld(w http.ResponseWriter, r *http.Request) {
+	var req identityRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	if _, ok := h.authorize(w, r.Context(), req, "foundry.manage"); !ok {
+		return
+	}
+	if h.syncer == nil {
+		writeError(w, http.StatusServiceUnavailable, "Foundry sync service is unavailable")
+		return
+	}
+	report, err := h.syncer.SyncAll(r.Context())
+	if err != nil {
+		if errors.Is(err, foundrysync.ErrSyncInProgress) {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
+		log.Printf("Discord-triggered Foundry sync failed: %v", err)
+		writeError(w, http.StatusBadGateway, "Foundry sync failed: "+err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, report)
+}
 
 func (h *Handler) unlinkActor(w http.ResponseWriter, r *http.Request) {
 	var req unlinkRequest
