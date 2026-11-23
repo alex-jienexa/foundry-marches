@@ -162,9 +162,12 @@ docker compose logs --tail=100 discord-bot
 ```
 
 Then test:
-1. Run `/character name:Андрей` as a GM/admin and select Андрей.
-2. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
-3. Do not deliberately disconnect the production Relay or Foundry session just to test alerts. Verify recovery notifications during a planned maintenance window or in a separate staging environment.
+1. Run `/character name:Андрей` as a GM/admin and select Андрей; the card should show abilities, actions, class features, trained skills and equipment in separate fields.
+2. Run `/character name:<имя>` as a player with a linked, active, owner-confirmed character; only that player's character should be returned.
+3. Search for another player's character as the same player; it must not appear. A direct request using another Actor UUID must also return 404.
+4. If no ownership has been assigned and confirmed yet, an ordinary player should receive no character results. Do not change production ownership fields solely to make this test pass.
+5. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
+6. Do not deliberately disconnect the production Relay or Foundry session just to test alerts. Verify recovery notifications during a planned maintenance window or in a separate staging environment.
 
 ## Current command reference
 
