@@ -130,7 +130,7 @@ The `/character name:<имя>` command searches the latest Actor snapshots store
 
 For the initial release, `/character` requires the existing `foundry.manage` permission (GM/admin/owner). It is intentionally not exposed to ordinary players until character ownership and player-facing visibility rules are implemented.
 
-The `/integration-status` command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when the overall state changes. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
+The `/integration-status` command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when one or more component states change. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
 
 The admin channel receives:
 - integration outage and recovery notifications;
@@ -149,7 +149,7 @@ docker compose logs --tail=100 discord-bot
 Then test:
 1. Run `/character name:Андрей` as a GM/admin and select Андрей.
 2. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
-3. Temporarily stop only the Relay service (if it is separately managed) and verify that the admin channel receives one outage alert, then a recovery alert after Relay returns. Do not stop or restart PostgreSQL or delete any volumes for this test.
+3. Do not deliberately disconnect the production Relay or Foundry session just to test alerts. Verify recovery notifications during a planned maintenance window or in a separate staging environment.
 
 ## Current command reference
 
