@@ -148,8 +148,8 @@ Fundamental build choices (ancestry, heritage, background and class) are not rep
 
 Access is enforced by the backend, not only by Discord command visibility:
 - GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
-- A registered player with `characters.create` can search and open only a character whose `characters.owner_user_id` matches their internal user ID, whose linked `foundry_actors.owner_confirmed_at` is set after the latest ownership transfer (or after the original link if there was no transfer), and whose status is `active`.
-- Unlinked, unconfirmed, draft, pending-approval and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
+- A registered player with `characters.create` can search and open only their own `draft`, `pending_approval` or `active` character, whose linked `foundry_actors.owner_confirmed_at` is set after the latest ownership transfer (or after the original link if there was no transfer).
+- Unlinked, unconfirmed, archived, retired and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
 
 Character ownership is assigned explicitly during `/character-create` or `/character-link`. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A linked character becomes visible to its assigned player only after the explicit owner assignment is committed and `owner_confirmed_at` is recorded for that link.
 
@@ -171,7 +171,7 @@ docker compose logs --tail=100 discord-bot
 
 Then test:
 1. Run `/character name:Андрей` as a GM/admin and select Андрей; the card should show abilities, actions, class features, trained skills and equipment in separate fields.
-2. Run `/character name:<имя>` as a player with a linked, active, owner-confirmed character; only that player's character should be returned.
+2. Run `/character name:<имя>` as a player with a linked, owner-confirmed character in `draft`, `pending_approval` or `active`; only that player's character should be returned.
 3. Search for another player's character as the same player; it must not appear. A direct request using another Actor UUID must also return 404.
 4. If no ownership has been assigned and confirmed yet, an ordinary player should receive no character results. Do not change production ownership fields solely to make this test pass.
 5. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
