@@ -816,15 +816,15 @@ func (b *bot) checkIntegrationStatus(s *discordgo.Session) {
 		b.reportAdminError("integration health check", err)
 		return
 	}
-	state := "healthy"
-	if !status.Database.OK || !status.Relay.OK || !status.Foundry.OK { state = "degraded" }
+	allHealthy := status.Database.OK && status.Relay.OK && status.Foundry.OK
+	state := fmt.Sprintf("database=%t;relay=%t;foundry=%t", status.Database.OK, status.Relay.OK, status.Foundry.OK)
 	b.reportMu.Lock()
 	changed := b.lastHealthState != state
 	b.lastHealthState = state
 	b.reportMu.Unlock()
 	if changed {
 		embed := integrationStatusEmbed(status)
-		if state == "healthy" { embed.Title = "Интеграции восстановлены" } else { embed.Title = "Обнаружена проблема интеграции" }
+		if allHealthy { embed.Title = "Интеграции доступны или восстановлены" } else { embed.Title = "Изменилось состояние интеграций" }
 		b.sendAdminEmbed(s, embed)
 	}
 }
