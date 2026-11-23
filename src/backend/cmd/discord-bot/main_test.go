@@ -17,6 +17,16 @@ func TestCommandOptionsReadDiscordUserMention(t *testing.T) {
 	}
 }
 
+func TestCommandOptionsReadStringValue(t *testing.T) {
+	options := []*discordgo.ApplicationCommandInteractionDataOption{
+		{Name: "name", Type: discordgo.ApplicationCommandOptionString, Value: "Андрей"},
+	}
+	got := commandOptions(options)
+	if got["name"] != "Андрей" {
+		t.Fatalf("name option = %q, want Андрей", got["name"])
+	}
+}
+
 func TestDirectoryEmbedUsesReadableStatusesAndCounts(t *testing.T) {
 	embed := directoryEmbed("Персонажи", "Список", []string{"Андрей · " + characterStatusLabel("draft"), "Вихорь · " + characterStatusLabel("active")}, 1)
 	if embed.Title != "Персонажи" || len(embed.Fields) != 1 {
