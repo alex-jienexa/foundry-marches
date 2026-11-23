@@ -107,10 +107,10 @@ After linking, the existing Foundry sync path fills Foundry-owned character fiel
 1. Ensure the Foundry world is synchronized after any PF2e system update. If needed, run the existing sync endpoint using the existing `FOUNDRY_SYNC_API_TOKEN`:
    `POST http://127.0.0.1:8080/api/integrations/foundry/sync`.
 2. In Discord, run `/foundry-actors` and confirm Андрей's Actor is present.
-3. Run `/character-draft`. Select Андрей in the dropdown. The bot should report a new `draft` character and its application ID. No owner is assigned.
+3. Run `/character-draft`. Select Андрей in the dropdown. The bot creates a `draft`; it has no owner until the link operation.
 4. Run `/characters`. Confirm the new Андрей draft appears.
-5. Run `/character-link`. Select Андрей's Foundry Actor, then select the newly created Андрей application character.
-6. Review the ephemeral confirmation message and click **Подтвердить привязку**.
+5. Run `/character-link owner:@игрок`. Mention the Discord account that will own Андрей, then select Андрей's Foundry Actor and the application character. The mentioned player must have completed `/register`.
+6. Review the ephemeral confirmation message. Verify the displayed owner mention, then click **Подтвердить привязку**.
 7. Run `/foundry-actors` again. Андрей's Actor should no longer be in the unlinked list.
 8. Run the Foundry sync again. Verify that Foundry-owned fields are populated from the Actor snapshot.
 9. Verify the relation with a read-only SQL query:
@@ -123,7 +123,7 @@ JOIN characters c ON c.id = fa.character_id
 WHERE c.name ILIKE '%Андрей%';
 ```
 
-The draft creation operation writes one `characters` row and one audit event. The subsequent link operation changes the Foundry link and link timestamps and adds its audit event. Neither operation sets `characters.owner_user_id` or `foundry_actors.owner_confirmed_at`, and neither writes to Foundry.
+The draft creation operation writes one `characters` row and one audit event. The link operation atomically associates the Foundry Actor, assigns the explicitly mentioned owner if the character is still unowned, records the transfer when needed, marks `owner_confirmed_at`, and adds its audit event. Neither operation writes to Foundry.
 
 ### If Андрей is missing
 
