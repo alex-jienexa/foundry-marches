@@ -196,6 +196,26 @@ func TestDecodeItemUnknownTypeIsPreserved(t *testing.T) {
 	}
 }
 
+
+func TestDecodeSpellcastingTraditionAndList(t *testing.T) {
+	raw := []byte(`{"_id":"spellcaster","name":"Spellcaster","type":"character","items":[
+		{"_id":"entry1","name":"Арканная книга","type":"spellcastingEntry","system":{"tradition":{"value":"arcane"},"prepared":{"value":true}}},
+		{"_id":"spell1","name":"Магическая стрела","type":"spell","system":{"location":"entry1","level":{"value":1}}}
+	]}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	if len(decoded.Character.Items) != 2 { t.Fatalf("items = %d, want spell entry and spell",len(decoded.Character.Items)) }
+	var spell *CharacterItemDto
+	for i := range decoded.Character.Items {
+		if decoded.Character.Items[i].Type == "spell" { spell = &decoded.Character.Items[i] }
+	}
+	if spell == nil { t.Fatal("spell Item missing") }
+	if spell.Level == nil || *spell.Level != 1 { t.Fatalf("spell rank = %+v",spell.Level) }
+	if spell.Tradition == nil || *spell.Tradition != "arcane" { t.Fatalf("spell tradition = %+v",spell.Tradition) }
+	if spell.SpellList == nil || *spell.SpellList != "Арканная книга" { t.Fatalf("spell list = %+v",spell.SpellList) }
+	if spell.Prepared == nil || !*spell.Prepared { t.Fatalf("prepared state = %+v",spell.Prepared) }
+}
+
 func TestDecodeActorRejectsIncompleteItemsCollection(t *testing.T) {
 	for _, raw := range []string{
 		`{"_id":"a1","type":"character"}`,
