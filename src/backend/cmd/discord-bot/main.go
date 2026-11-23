@@ -1648,6 +1648,12 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 			continue
 		}
 		entry := characterLevelEntry{name: item.Name, level: item.Level}
+		// Class progression references may identify an owned feat whose Foundry
+		// category is still "general". Suppress that Actor Item here as well,
+		// otherwise the same class feature is rendered again under other abilities.
+		if _, exists := seenClassFeatures[characterEntryKey(item.Name)]; exists {
+			continue
+		}
 		switch stringValue(item.SystemCategory) {
 		case "class":
 			classAbilities = append(classAbilities, entry)
