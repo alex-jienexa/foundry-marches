@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -109,6 +110,56 @@ func TestDecodeActorRealFixture(t *testing.T) {
 	}
 	if coin == nil || coin.Quantity == nil || *coin.Quantity != 34 {
 		t.Fatalf("coin quantity not decoded: %+v", coin)
+	}
+}
+
+
+func TestDecodePostSessionActorSnapshot(t *testing.T) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(file), "testdata", "actor-after-session.json"))
+	if err != nil {
+		t.Fatalf("read post-session Actor fixture: %v", err)
+	}
+	decoded, err := DecodeActor(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	character := decoded.Character
+	if character.Progression.Level == nil || *character.Progression.Level != 2 {
+		t.Fatalf("level = %+v, want 2", character.Progression.Level)
+	}
+	if character.Progression.Experience.Value == nil || *character.Progression.Experience.Value != 400 {
+		t.Fatalf("XP = %+v, want 400", character.Progression.Experience.Value)
+	}
+	if character.Build.KeyAbility == nil || *character.Build.KeyAbility != "int" {
+		t.Fatalf("key ability = %+v, want class-defined INT", character.Build.KeyAbility)
+	}
+	if character.Attributes.HP == nil || character.Attributes.HP.Current == nil || *character.Attributes.HP.Current != 2 {
+		t.Fatalf("current HP = %+v, want 2", character.Attributes.HP)
+	}
+	if character.Attributes.HP.Max == nil || *character.Attributes.HP.Max != 24 {
+		t.Fatalf("derived maximum HP = %+v, want 24", character.Attributes.HP)
+	}
+	if len(character.Items) != 46 {
+		t.Fatalf("decoded Actor Items = %d, want 46", len(character.Items))
+	}
+	inventoryCount := 0
+	for _, item := range character.Items {
+		if item.Category == ItemCategoryEquipment {
+			inventoryCount++
+		}
+	}
+	if inventoryCount != 16 {
+		t.Fatalf("inventory item count = %d, want 16 across equipment, consumables, backpack and treasure", inventoryCount)
+	}
+	if character.Attributes.Dying != nil {
+		t.Fatalf("snapshot has no dying condition and must not synthesize one: %+v", character.Attributes.Dying)
+	}
+	if character.Identity.Image == nil || !strings.Contains(*character.Identity.Image, "nm26zlUZr0rpxk6pxyttyDXHAOl5w6N1GDsJrYdm") {
+		t.Fatalf("portrait path was not preserved: %+v", character.Identity.Image)
 	}
 }
 
