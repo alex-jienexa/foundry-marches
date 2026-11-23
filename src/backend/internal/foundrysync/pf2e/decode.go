@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -115,6 +117,7 @@ func DecodeActor(payload []byte) (*DecodedActor, error) {
 	character.Build.ClassProficiencies = decodeClassProficiencies(actor.Items)
 	character.Build.AncestryFeatures = decodeAncestryFeatureReferences(actor.Items)
 	character.Build.KeyAbility = decodeKeyAbility(details, actor.Items)
+	logActorDecodeDiagnostics(actor, character, itemsRaw, actor.Items)
 
 	return &DecodedActor{
 		Character:   character,
@@ -262,8 +265,73 @@ func decodeDying(raw map[string]json.RawMessage) *DyingConditionDto {
 	return &DyingConditionDto{Current: intAt(raw, "value"), Max: intAt(raw, "max")}
 }
 
+
+func characterDiagnosticsEnabled() bool {
+	value := strings.TrimSpace(os.Getenv("FOUNDRY_CHARACTER_DIAGNOSTICS"))
+	return strings.EqualFold(value, "1") || strings.EqualFold(value, "true")
+}
+
+func logCharacterDiagnostic(format string, args ...any) {
+	if characterDiagnosticsEnabled() {
+		log.Printf("[character-diagnostics] "+format, args...)
+	}
+}
+
+func logActorDecodeDiagnostics(actor FoundryActorDto, character CharacterDto, rawItems json.RawMessage, items []FoundryItemDto) {
+	if !characterDiagnosticsEnabled() {
+		return
+	}
+	var className, ancestryName, backgroundName string
+	var classHP, ancestryHP *int
+	for _, item := range items {
+		switch item.Type {
+		case "class":
+			className, classHP = item.Name, intAt(item.System, "hp")
+		case "ancestry":
+			ancestryName, ancestryHP = item.Name, intAt(item.System, "hp")
+		case "background":
+			backgroundName = item.Name
+		}
+	}
+	system := actor.System
+	details := objectAt(system, "details")
+	xp := objectAt(details, "xp")
+	attributes := objectAt(system, "attributes")
+	abilities := objectAt(system, "abilities")
+	logCharacterDiagnostic(
+		"decode actor_uuid=%q name=%q type=%q items=%d raw_fields={details:%t,details.level:%t,details.xp.value:%t,details.xp.max:%t,attributes:%t,attributes.hp:%t,abilities:%t} decoded={level:%v,xp:%v/%v,hp:%v/%v,class:%q,class_hp:%v,ancestry:%q,ancestry_hp:%v,background:%q,ability_keys:%v}",
+		"Actor."+actor.ID, actor.Name, actor.Type, len(items),
+		system["details"] != nil, details["level"] != nil, xp["value"] != nil, xp["max"] != nil,
+		system["attributes"] != nil, attributes["hp"] != nil, abilities != nil,
+		character.Progression.Level, character.Progression.Experience.Value, character.Progression.Experience.Max,
+		hpCurrentValue(character.Attributes.HP), hpMaxValue(character.Attributes.HP),
+		className, classHP, ancestryName, ancestryHP, backgroundName, rawObjectKeys(abilities),
+	)
+	_ = rawItems
+}
+
+func rawObjectKeys(raw map[string]json.RawMessage) []string {
+	keys := make([]string, 0, len(raw))
+	for key := range raw {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func hpCurrentValue(hp *HitPointsDto) *int {
+	if hp == nil { return nil }
+	return hp.Current
+}
+
+func hpMaxValue(hp *HitPointsDto) *int {
+	if hp == nil { return nil }
+	return hp.Max
+}
+
 func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, level *int) *int {
 	if level == nil || *level < 1 {
+		logCharacterDiagnostic("hp actor level unavailable; cannot derive maximum HP")
 		return nil
 	}
 	var classHP, ancestryHP *int
@@ -276,17 +344,21 @@ func deriveMaximumHP(system map[string]json.RawMessage, items []FoundryItemDto, 
 		}
 	}
 	if classHP == nil || ancestryHP == nil {
+		logCharacterDiagnostic("hp derivation unavailable: class_hp_present=%t ancestry_hp_present=%t", classHP != nil, ancestryHP != nil)
 		return nil
 	}
 	hpModifier, ok := calculateHPModifiers(items, *level)
 	if !ok {
+		logCharacterDiagnostic("hp derivation unavailable: unsupported HP rule element detected")
 		return nil
 	}
 	conModifier, ok := abilityModifierFromActor(system, items, "con", *level)
 	if !ok {
+		logCharacterDiagnostic("hp derivation unavailable: CON modifier could not be resolved")
 		return nil
 	}
 	maximum := *ancestryHP + (*classHP+conModifier)*(*level) + hpModifier
+	logCharacterDiagnostic("hp formula: ancestry_hp=%d + (class_hp=%d + con_modifier=%d) * level=%d + item_hp_modifiers=%d => maximum_hp=%d", *ancestryHP, *classHP, conModifier, *level, hpModifier, maximum)
 	if maximum < 1 {
 		return nil
 	}
