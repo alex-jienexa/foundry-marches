@@ -227,6 +227,12 @@ func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testin
 func characterTestIntPointer(value int) *int { return &value }
 
 func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
+	initial := characterDetailComponents("flow", "overview")
+	initialFirst := initial[0].(discordgo.ActionsRow)
+	initialCard := initialFirst.Components[0].(discordgo.Button)
+	if initialCard.Label != "Карточка" || initialCard.Style != discordgo.PrimaryButton || !initialCard.Disabled {
+		t.Fatalf("initial card button should be first, highlighted and disabled: %+v", initialCard)
+	}
 	components := characterDetailComponents("flow", "skills")
 	if len(components) != 2 { t.Fatalf("navigation rows = %d, want 2", len(components)) }
 	first := components[0].(discordgo.ActionsRow)
