@@ -120,6 +120,10 @@ func run() error {
 
 		foundryCtx, foundryCancel := context.WithTimeout(r.Context(), 8*time.Second)
 		actors, err := relayClient.ListActors(foundryCtx, worldID)
+		if errors.Is(err, relay.ErrActorListLimitReached) {
+			// A full result page still proves that Foundry answered the search.
+			err = nil
+		}
 		if err != nil {
 			status.Foundry = componentStatus{Detail: err.Error()}
 		} else {
