@@ -682,9 +682,14 @@ func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems 
 	}
 	if derived := decodeAbilityScoresFromBoosts(system, level, actorItems); len(derived) > 0 {
 		for key, value := range derived {
-			if _, exists := abilities[key]; !exists {
-				abilities[key] = value
+			current := abilities[key]
+			if current.Score == nil {
+				current.Score = value.Score
 			}
+			if current.Modifier == nil {
+				current.Modifier = value.Modifier
+			}
+			abilities[key] = current
 		}
 	}
 	proficiencies := objectAt(system, "proficiencies")
