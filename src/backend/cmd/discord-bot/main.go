@@ -1235,7 +1235,15 @@ func interactionUser(i *discordgo.InteractionCreate) *discordgo.User {
 func commandOptions(options []*discordgo.ApplicationCommandInteractionDataOption) map[string]string {
 	out := map[string]string{}
 	for _, o := range options {
-		out[o.Name] = o.StringValue()
+		switch o.Type {
+		case discordgo.ApplicationCommandOptionString, discordgo.ApplicationCommandOptionUser:
+			// Discord sends both string values and user snowflake IDs as strings.
+			// Do not call StringValue for User options: discordgo panics on a type mismatch.
+			value, ok := o.Value.(string)
+			if ok {
+				out[o.Name] = value
+			}
+		}
 	}
 	return out
 }
