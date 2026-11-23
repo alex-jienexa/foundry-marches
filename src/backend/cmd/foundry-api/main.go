@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/subtle"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"errors"
 	"log"
 	"net/http"
@@ -89,6 +91,46 @@ func run() error {
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle("/api/internal/discord/integration-status", discordapi.ServiceTokenMiddleware(discordBotToken, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type componentStatus struct {
+			OK     bool   `json:"ok"`
+			Detail string `json:"detail,omitempty"`
+		}
+		status := struct {
+			Database componentStatus `json:"database"`
+			Relay    componentStatus `json:"relay"`
+			Foundry  componentStatus `json:"foundry"`
+		}{}
+
+		dbCtx, dbCancel := context.WithTimeout(r.Context(), 2*time.Second)
+		if err := db.PingContext(dbCtx); err != nil {
+			status.Database = componentStatus{Detail: err.Error()}
+		} else {
+			status.Database = componentStatus{OK: true, Detail: "PostgreSQL доступен"}
+		}
+		dbCancel()
+
+		relayCtx, relayCancel := context.WithTimeout(r.Context(), 4*time.Second)
+		if err := relayClient.PingRelay(relayCtx); err != nil {
+			status.Relay = componentStatus{Detail: err.Error()}
+		} else {
+			status.Relay = componentStatus{OK: true, Detail: "HTTP-сервис Relay отвечает"}
+		}
+		relayCancel()
+
+		foundryCtx, foundryCancel := context.WithTimeout(r.Context(), 8*time.Second)
+		actors, err := relayClient.ListActors(foundryCtx, worldID)
+		if err != nil {
+			status.Foundry = componentStatus{Detail: err.Error()}
+		} else {
+			status.Foundry = componentStatus{OK: true, Detail: fmt.Sprintf("Foundry отвечает; Actor найдено: %d", len(actors))}
+		}
+		foundryCancel()
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		_ = json.NewEncoder(w).Encode(status)
+	})))
 	mux.Handle(httpapi.SyncPath, bearerTokenMiddleware(syncToken, syncHandler))
 	mux.Handle("/api/internal/discord/", discordapi.ServiceTokenMiddleware(discordBotToken, discordHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
