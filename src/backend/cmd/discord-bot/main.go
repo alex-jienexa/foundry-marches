@@ -209,7 +209,7 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "register", Description: "Зарегистрироваться в FoundryMarches"},
 		{Name: "foundry-actors", Description: "Показать несвязанных персонажей Foundry"},
 		{Name: "characters", Description: "Показать персонажей приложения и их ID"},
-		{Name: "character-link", Description: "Связать Foundry Actor с персонажем и назначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "owner", Description: "Владелец персонажа", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
+		{Name: "character-link", Description: "Связать Foundry Actor с персонажем и назначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "owner", Description: "Владелец персонажа (обязательно)", Type: discordgo.ApplicationCommandOptionUser, Required: true}}},
 		{Name: "character-create", Description: "Создать черновик персонажа для себя или игрока", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Владелец персонажа (для мастера)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
 		{Name: "character", Description: "Найти своего персонажа (GM видит всех) и показать данные Foundry", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
@@ -272,7 +272,12 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				return
 			}
 		}
-		b.edit(s, i, "Добро пожаловать в FoundryMarches! Регистрация завершена, доступ к каналам кампании выдан.", nil)
+		if b.campaignRoleID == "" {
+			log.Printf("DISCORD_CAMPAIGN_ROLE_ID is not configured; campaign channel role was not assigned")
+			b.edit(s, i, "Регистрация завершена. Автоматическая выдача роли доступа к каналам пока не настроена; сообщи мастеру.", nil)
+		} else {
+			b.edit(s, i, "Добро пожаловать в FoundryMarches! Регистрация завершена, доступ к каналам кампании выдан.", nil)
+		}
 	case "foundry-actors":
 		var out struct {
 			Actors []actor `json:"actors"`
@@ -384,7 +389,7 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 			return
 		}
 		if len(characterResult.Characters) == 0 {
-			b.edit(s, i, "Персонажей приложения пока нет. Сначала используй /character-draft, чтобы создать черновик из Foundry Actor.", nil)
+			b.edit(s, i, "Персонажей приложения пока нет. Создай персонажа командой /character-create или черновик из Foundry через /character-draft.", nil)
 			return
 		}
 		flow.characters = characterResult.Characters
