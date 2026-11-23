@@ -249,14 +249,19 @@ func decodeHP(raw map[string]json.RawMessage) *HitPointsDto {
 func decodeAttributes(system map[string]json.RawMessage, hpRaw map[string]json.RawMessage, items []FoundryItemDto, level *int) CharacterAttributesDto {
 	hp := decodeHP(hpRaw)
 	if hp == nil {
-		// Preserve nil when the Actor has no HP object at all. Partial
-		// derivation applies only when HP data exists but its maximum is absent.
-		return CharacterAttributesDto{
-			HP:    nil,
-			Dying: decodeDying(objectAt(objectAt(system, "attributes"), "dying")),
+		// An absent Actor HP object does not block derivation when enough
+		// independent inputs exist, but must remain nil when no result can
+		// be derived.
+		logCharacterDiagnostic("hp source=actor object=<absent>; attempting partial derivation")
+		maxHP := deriveMaximumHP(system, items, level)
+		if maxHP == nil {
+			return CharacterAttributesDto{
+				HP:    nil,
+				Dying: decodeDying(objectAt(objectAt(system, "attributes"), "dying")),
+			}
 		}
-	}
-	if hp.Max == nil {
+		hp = &HitPointsDto{Max: maxHP}
+	} else if hp.Max == nil {
 		logCharacterDiagnostic("hp source=actor max=<absent>; attempting partial derivation")
 		hp.Max = deriveMaximumHP(system, items, level)
 	} else {
