@@ -136,20 +136,10 @@ func TestDecodePostSessionActorSnapshot(t *testing.T) {
 	if character.Build.KeyAbility == nil || *character.Build.KeyAbility != "int" {
 		t.Fatalf("key ability = %+v, want class-defined INT", character.Build.KeyAbility)
 	}
-	for ability, want := range map[string]int{"str": 10, "dex": 12, "con": 10, "int": 12, "wis": 12, "cha": 12} {
-		got, ok := character.Statistics.Abilities[ability]
-		if !ok || got.Score == nil || *got.Score != want {
-			t.Errorf("%s score = %+v, want %d from saved level-1 boosts", ability, got.Score, want)
-			continue
-		}
-		wantModifier := 0
-		if want > 10 {
-			wantModifier = 1
-		}
-		if got.Modifier == nil || *got.Modifier != wantModifier {
-			t.Errorf("%s modifier = %+v, want %d", ability, got.Modifier, wantModifier)
-		}
+	if len(character.Statistics.Abilities) != 0 {
+		t.Fatalf("null Actor.system.abilities must remain unknown even when build selections exist: %+v", character.Statistics.Abilities)
 	}
+
 	if character.Attributes.HP == nil || character.Attributes.HP.Current == nil || *character.Attributes.HP.Current != 2 {
 		t.Fatalf("current HP = %+v, want 2", character.Attributes.HP)
 	}
