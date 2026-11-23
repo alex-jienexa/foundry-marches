@@ -81,9 +81,10 @@ type actor struct {
 	Name      string `json:"name"`
 }
 type character struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	OwnerName string `json:"owner_name,omitempty"`
 }
 type linkPreview struct {
 	ActorUUID     string `json:"actor_uuid"`
@@ -106,6 +107,10 @@ type characterDetails struct {
 		} `json:"experience"`
 	} `json:"progression"`
 	Build struct {
+		Ancestry   *characterReference `json:"ancestry"`
+		Heritage   *characterReference `json:"heritage"`
+		Background *characterReference `json:"background"`
+		Class      *characterReference `json:"class"`
 		ClassProficiencies *classProficiencyDetails `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {
@@ -141,6 +146,10 @@ type characterItem struct {
 	ActionType     *string `json:"actionType"`
 	Quantity       *int    `json:"quantity"`
 }
+type characterReference struct {
+	Name string `json:"name"`
+}
+
 type classProficiencyDetails struct {
 	Features []classFeatureReference `json:"features"`
 }
@@ -305,7 +314,13 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		lines := make([]string, 0, len(out.Characters))
 		for _, item := range out.Characters {
-			lines = append(lines, fmt.Sprintf("%s · %s", truncateLabel(item.Name), characterStatusLabel(item.Status)))
+			line := fmt.Sprintf("%s · %s", truncateLabel(item.Name), characterStatusLabel(item.Status))
+			if item.OwnerName != "" {
+				line += " · владелец: " + truncateLabel(item.OwnerName)
+			} else {
+				line += " · владелец не назначен"
+			}
+			lines = append(lines, line)
 		}
 		if len(lines) == 0 {
 			b.edit(s, i, "📝 **Пока нет персонажей приложения.**\n\nСоздай первого командой `/character-create`.", nil)
@@ -748,6 +763,16 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
 	}
 
+	addBuildField := func(label string, ref *characterReference) {
+		if ref != nil && strings.TrimSpace(ref.Name) != "" {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: label, Value: ref.Name, Inline: true})
+		}
+	}
+	addBuildField("Родословная", c.Build.Ancestry)
+	addBuildField("Наследие", c.Build.Heritage)
+	addBuildField("Предыстория", c.Build.Background)
+	addBuildField("Класс", c.Build.Class)
+
 	level := "—"
 	if c.Progression.Level != nil {
 		level = strconv.Itoa(*c.Progression.Level)
@@ -756,7 +781,12 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		Name: "Уровень", Value: level, Inline: true,
 	})
 	if c.Attributes.HP != nil {
-		hp := fmt.Sprintf("%s / %s", intValue(c.Attributes.HP.Current), intValue(c.Attributes.HP.Max))
+		hp := intValue(c.Attributes.HP.Current)
+		if c.Attributes.HP.Max != nil {
+			hp += " / " + strconv.Itoa(*c.Attributes.HP.Max)
+		} else {
+			hp += " ОЗ"
+		}
 		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 {
 			hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp)
 		}
