@@ -42,7 +42,7 @@ type FoundryDocumentStatsDto struct {
 }
 
 // CharacterDto is a read-only application projection. It contains values represented
-// in the persisted Actor document plus narrowly derived values (currently maximum HP)
+// in the persisted Actor document plus narrowly derived ability scores and maximum HP
 // whose complete inputs can be reconstructed without executing PF2e Rule Elements.
 type CharacterDto struct {
 	SchemaVersion int                         `json:"schemaVersion"`
@@ -223,16 +223,17 @@ type DecodedActor struct {
 	RawSnapshot json.RawMessage
 }
 
-// CharacterStatisticsInputDto contains normalized, explicitly persisted inputs
-// that may be used by the optional derived-stat calculator. Missing source data
-// remains nil; the decoder never reconstructs ability scores or proficiency.
+// CharacterStatisticsInputDto contains normalized Actor inputs and explicitly marked
+// ability scores reconstructed from complete PF2e boost selections. Missing source
+// data remains nil; proficiency is never inferred from incomplete progression data.
 type CharacterStatisticsInputDto struct {
 	Abilities        map[string]AbilityScoreDto `json:"abilities"`
 	AbilitiesDerived bool                       `json:"abilitiesDerived,omitempty"`
 	Proficiencies    CharacterProficienciesDto  `json:"proficiencies"`
 }
 
-// AbilityScoreDto distinguishes the stored score from a stored modifier.
+// AbilityScoreDto distinguishes the score and modifier; Derived marks values
+// reconstructed from build selections rather than stored on the Actor.
 type AbilityScoreDto struct {
 	Score    *int  `json:"score"`
 	Modifier *int  `json:"modifier"`
