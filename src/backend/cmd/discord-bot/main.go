@@ -1529,12 +1529,12 @@ func logCharacterCardDiagnostics(c characterDetails) {
 		diagnosticInt(c.Progression.Experience.Value), diagnosticInt(c.Progression.Experience.Max),
 		sortedAbilityKeys(c.Statistics.Abilities), sortedAbilityKeys(c.Statistics.ReconstructedAbilities))
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
-		if actorValue, ok := c.Statistics.Abilities[key]; ok {
+		if actorValue, ok := c.Statistics.Abilities[key]; ok && (actorValue.Score != nil || actorValue.Modifier != nil) {
 			log.Printf("[character-diagnostics] discord-card ability=%s source=actor score=%s modifier=%s derived=%t",
 				key, diagnosticInt(actorValue.Score), diagnosticInt(actorValue.Modifier), actorValue.Derived)
 			continue
 		}
-		if reconstructed, ok := c.Statistics.ReconstructedAbilities[key]; ok {
+		if reconstructed, ok := c.Statistics.ReconstructedAbilities[key]; ok && (reconstructed.Score != nil || reconstructed.Modifier != nil) {
 			log.Printf("[character-diagnostics] discord-card ability=%s source=reconstructed score=%s modifier=%s derived=%t",
 				key, diagnosticInt(reconstructed.Score), diagnosticInt(reconstructed.Modifier), reconstructed.Derived)
 			continue
