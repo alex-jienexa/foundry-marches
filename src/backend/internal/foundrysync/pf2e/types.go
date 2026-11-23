@@ -105,7 +105,13 @@ type CharacterItemReferenceDto struct {
 // HP values are copied only when present in Actor.system.attributes.hp.
 // PF2e's prepared maximum HP is not present in this Actor snapshot.
 type CharacterAttributesDto struct {
-	HP *HitPointsDto `json:"hp"`
+	HP    *HitPointsDto       `json:"hp"`
+	Dying *DyingConditionDto  `json:"dying,omitempty"`
+}
+
+type DyingConditionDto struct {
+	Current *int `json:"current"`
+	Max     *int `json:"max"`
 }
 
 type HitPointsDto struct {
@@ -181,8 +187,14 @@ type CharacterItemDto struct {
 	ActionType       *string               `json:"actionType,omitempty"`
 	Quantity         *int                  `json:"quantity"`
 	Level            *int                  `json:"level"`
-	Equipped         *CharacterEquippedDto `json:"equipped"`
-	CompendiumSource *string               `json:"compendiumSource"`
+	Equipped            *CharacterEquippedDto `json:"equipped"`
+	ContainerID         *string               `json:"containerId,omitempty"`
+	Usage               *string               `json:"usage,omitempty"`
+	SpellcastingEntryID *string               `json:"spellcastingEntryId,omitempty"`
+	Tradition           *string               `json:"tradition,omitempty"`
+	SpellList           *string               `json:"spellList,omitempty"`
+	Prepared            *bool                 `json:"prepared,omitempty"`
+	CompendiumSource    *string               `json:"compendiumSource"`
 	RuleElements     []RuleElementDto      `json:"ruleElements,omitempty"`
 	Armor            *ArmorItemDataDto     `json:"armor,omitempty"`
 	Runes            *ItemRuneDataDto      `json:"runes,omitempty"`
