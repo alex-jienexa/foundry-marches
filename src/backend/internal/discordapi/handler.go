@@ -18,13 +18,14 @@ import (
 )
 
 const (
-	RegisterPath   = "/api/internal/discord/register"
-	ActorsPath     = "/api/internal/discord/actors"
-	CharactersPath = "/api/internal/discord/characters"
-	PreviewPath    = "/api/internal/discord/link/preview"
-	LinkPath       = "/api/internal/discord/link"
-	GrantRolePath  = "/api/internal/discord/roles/grant"
-	MapRolePath    = "/api/internal/discord/roles/map"
+	RegisterPath       = "/api/internal/discord/register"
+	ActorsPath         = "/api/internal/discord/actors"
+	CharactersPath     = "/api/internal/discord/characters"
+	PreviewPath        = "/api/internal/discord/link/preview"
+	LinkPath           = "/api/internal/discord/link"
+	GrantRolePath      = "/api/internal/discord/roles/grant"
+	MapRolePath        = "/api/internal/discord/roles/map"
+	DraftCharacterPath = "/api/internal/discord/characters/draft"
 )
 
 type Handler struct {
@@ -73,6 +74,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.grantRole(w, r)
 	case MapRolePath:
 		h.mapRole(w, r)
+	case DraftCharacterPath:
+		h.createCharacterDraft(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -105,6 +108,11 @@ type linkRequest struct {
 	identityRequest
 	ActorUUID   string `json:"actor_uuid"`
 	CharacterID string `json:"character_id"`
+}
+
+type createCharacterDraftRequest struct {
+	identityRequest
+	ActorUUID string `json:"actor_uuid"`
 }
 
 type linkPreview struct {
@@ -285,6 +293,146 @@ LIMIT 200
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"characters": items})
+}
+
+func (h *Handler) createCharacterDraft(w http.ResponseWriter, r *http.Request) {
+	var req createCharacterDraftRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+
+	userID, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage")
+	if !ok {
+		return
+	}
+
+	if strings.TrimSpace(req.ActorUUID) == "" {
+		writeError(w, http.StatusBadRequest, "Actor UUID is required")
+		return
+	}
+
+	tx, err := h.db.BeginTx(r.Context(), nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not start character creation")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var actorName string
+	var portraitURL sql.NullString
+
+	err = tx.QueryRowContext(r.Context(), `
+SELECT
+    COALESCE(snapshot->>'name', actor_uuid),
+    NULLIF(snapshot->>'img', '')
+FROM foundry_actors
+WHERE world_id = $1
+  AND actor_uuid = $2
+  AND character_id IS NULL
+  AND snapshot->>'type' = 'character'
+FOR UPDATE
+`, h.worldID, req.ActorUUID).Scan(&actorName, &portraitURL)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusConflict, "Actor is unavailable, already linked, or has an incompatible type")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not read Foundry Actor")
+		return
+	}
+
+	// A retry must not create another draft for the same still-unlinked Actor.
+	// The Actor row is locked above, so concurrent requests serialize here.
+	var existing characterView
+	err = tx.QueryRowContext(r.Context(), `
+SELECT c.id::text, c.name, c.status
+FROM audit_log al
+JOIN characters c ON c.id::text = al.entity_id
+WHERE al.action = 'character.draft.created'
+  AND al.entity_type = 'character'
+  AND al.new_value->>'actor_uuid' = $1
+  AND al.new_value->>'world_id' = $2
+ORDER BY al.created_at DESC
+LIMIT 1
+`, req.ActorUUID, h.worldID).Scan(&existing.ID, &existing.Name, &existing.Status)
+	if err == nil {
+		if err = tx.Commit(); err != nil {
+			writeError(w, http.StatusInternalServerError, "could not finish character draft lookup")
+			return
+		}
+		writeJSON(w, http.StatusOK, existing)
+		return
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusInternalServerError, "could not check for an existing character draft")
+		return
+	}
+
+	var characterID string
+
+	err = tx.QueryRowContext(r.Context(), `
+INSERT INTO characters (
+    name,
+    portrait_url,
+    status
+)
+VALUES ($1, $2, 'draft')
+RETURNING id::text
+`, actorName, nullableSQLString(portraitURL)).Scan(&characterID)
+
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not create character draft")
+		return
+	}
+
+	_, err = tx.ExecContext(r.Context(), `
+INSERT INTO audit_log (
+    actor_user_id,
+    actor_kind,
+    action,
+    entity_type,
+    entity_id,
+    new_value
+)
+VALUES (
+    $1,
+    'user',
+    'character.draft.created',
+    'character',
+    $2,
+    jsonb_build_object(
+        'source', 'foundry',
+        'actor_uuid', $3::text,
+        'world_id', $4::text,
+        'status', 'draft'
+    )
+)
+`, userID, characterID, req.ActorUUID, h.worldID)
+
+	if err != nil {
+		log.Printf("Discord character draft audit insert failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not write character draft audit record")
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not commit character draft")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, characterView{
+		ID:     characterID,
+		Name:   actorName,
+		Status: "draft",
+	})
+}
+
+func nullableSQLString(value sql.NullString) any {
+	if !value.Valid {
+		return nil
+	}
+	return value.String
 }
 
 func (h *Handler) previewLink(w http.ResponseWriter, r *http.Request) {

@@ -84,10 +84,28 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 	}
 
 	_, err = tx.ExecContext(ctx, `
-INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, old_value, new_value)
-VALUES ($1, 'user', 'foundry.actor.linked', 'foundry_actor', $2,
-        jsonb_build_object('character_id', NULL),
-        jsonb_build_object('world_id', $3, 'actor_uuid', $2, 'character_id', $4))
+INSERT INTO audit_log (
+    actor_user_id,
+    actor_kind,
+    action,
+    entity_type,
+    entity_id,
+    old_value,
+    new_value
+)
+VALUES (
+    $1,
+    'user',
+    'foundry.actor.linked',
+    'foundry_actor',
+    $2::text,
+    jsonb_build_object('character_id', NULL),
+    jsonb_build_object(
+        'world_id', $3::text,
+        'actor_uuid', $2::text,
+        'character_id', $4::text
+    )
+)
 `, linkedByUserID, actorUUID, worldID, characterID)
 	if err != nil {
 		return fmt.Errorf("write Foundry Actor link audit record: %w", err)

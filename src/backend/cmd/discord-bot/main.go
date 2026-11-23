@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,13 +20,14 @@ import (
 )
 
 const (
-	RegisterPath   = "/api/internal/discord/register"
-	ActorsPath     = "/api/internal/discord/actors"
-	CharactersPath = "/api/internal/discord/characters"
-	PreviewPath    = "/api/internal/discord/link/preview"
-	LinkPath       = "/api/internal/discord/link"
-	GrantRolePath  = "/api/internal/discord/roles/grant"
-	MapRolePath    = "/api/internal/discord/roles/map"
+	RegisterPath       = "/api/internal/discord/register"
+	ActorsPath         = "/api/internal/discord/actors"
+	CharactersPath     = "/api/internal/discord/characters"
+	PreviewPath        = "/api/internal/discord/link/preview"
+	LinkPath           = "/api/internal/discord/link"
+	GrantRolePath      = "/api/internal/discord/roles/grant"
+	MapRolePath        = "/api/internal/discord/roles/map"
+	DraftCharacterPath = "/api/internal/discord/characters/draft"
 )
 
 type bot struct {
@@ -33,9 +35,17 @@ type bot struct {
 	client                    *http.Client
 	mu                        sync.Mutex
 	pending                   map[string]pendingLink
+	flows                     map[string]*selectionFlow
 }
 type pendingLink struct {
 	actorUUID, characterID, discordID, guildID string
+	expiresAt                                  time.Time
+}
+type selectionFlow struct {
+	mode, stage, discordID, guildID, actorUUID string
+	actors                                     []actor
+	characters                                 []character
+	page                                       int
 	expiresAt                                  time.Time
 }
 type identity struct {
@@ -73,7 +83,7 @@ func main() {
 	token, appID := requiredEnv("DISCORD_BOT_TOKEN"), requiredEnv("DISCORD_APPLICATION_ID")
 	guildID, apiToken := requiredEnv("DISCORD_GUILD_ID"), requiredEnv("DISCORD_BOT_API_TOKEN")
 	b := &bot{apiURL: strings.TrimRight(requiredEnv("BACKEND_INTERNAL_URL"), "/"), apiToken: apiToken,
-		guildID: guildID, client: &http.Client{Timeout: 8 * time.Second}, pending: make(map[string]pendingLink)}
+		guildID: guildID, client: &http.Client{Timeout: 8 * time.Second}, pending: make(map[string]pendingLink), flows: make(map[string]*selectionFlow)}
 	if len(apiToken) < 32 {
 		log.Fatal("DISCORD_BOT_API_TOKEN must contain at least 32 characters")
 	}
@@ -99,10 +109,8 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "register", Description: "Зарегистрироваться в FoundryMarches"},
 		{Name: "foundry-actors", Description: "Показать несвязанных персонажей Foundry"},
 		{Name: "characters", Description: "Показать персонажей приложения и их ID"},
-		{Name: "character-link", Description: "Подготовить привязку Actor к персонажу",
-			Options: []*discordgo.ApplicationCommandOption{
-				{Name: "actor_uuid", Description: "UUID из /foundry-actors", Type: discordgo.ApplicationCommandOptionString, Required: true},
-				{Name: "character_id", Description: "ID из /characters", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
+		{Name: "character-link", Description: "Выбрать Foundry Actor и персонажа приложения для привязки"},
+		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
 		{Name: "role-grant", Description: "Назначить роль зарегистрированному участнику",
 			Options: []*discordgo.ApplicationCommandOption{
 				{Name: "discord_user_id", Description: "Discord ID участника", Type: discordgo.ApplicationCommandOptionString, Required: true},
@@ -128,7 +136,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if i.Type == discordgo.InteractionMessageComponent {
-		b.handleButton(s, i)
+		b.handleComponent(s, i)
 		return
 	}
 	if i.Type != discordgo.InteractionApplicationCommand {
@@ -190,29 +198,9 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			b.edit(s, i, truncateMessage("Персонажи приложения (до 200):\n"+strings.Join(lines, "\n")), nil)
 		}
 	case "character-link":
-		o := commandOptions(i.ApplicationCommandData().Options)
-		p := linkPayload{identity: id, ActorUUID: o["actor_uuid"], CharacterID: o["character_id"]}
-		var preview linkPreview
-		if err := b.post(PreviewPath, p, &preview); err != nil {
-			b.edit(s, i, "Нельзя подготовить привязку: "+err.Error(), nil)
-			return
-		}
-		key, err := randomKey()
-		if err != nil {
-			b.edit(s, i, "Не удалось создать подтверждение.", nil)
-			return
-		}
-		b.mu.Lock()
-		for token, pending := range b.pending {
-			if time.Now().After(pending.expiresAt) {
-				delete(b.pending, token)
-			}
-		}
-		b.pending[key] = pendingLink{p.ActorUUID, p.CharacterID, u.ID, i.GuildID, time.Now().Add(10 * time.Minute)}
-		b.mu.Unlock()
-		components := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{
-			discordgo.Button{Label: "Подтвердить привязку", Style: discordgo.SuccessButton, CustomID: "fm-link:" + key}}}}
-		b.edit(s, i, fmt.Sprintf("Проверьте привязку:\nFoundry: %s (%s)\nПерсонаж: %s (%s)\nВладелец персонажа не изменится.", preview.ActorName, preview.ActorUUID, preview.CharacterName, preview.CharacterID), components)
+		b.startSelection(s, i, id, u, "link")
+	case "character-draft":
+		b.startSelection(s, i, id, u, "draft")
 	case "role-grant":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		payload := struct {
@@ -242,6 +230,275 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
+func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, mode string) {
+	var actorResult struct {
+		Actors []actor `json:"actors"`
+	}
+	if err := b.post(ActorsPath, id, &actorResult); err != nil {
+		b.edit(s, i, "Не удалось получить список Foundry Actor: "+err.Error(), nil)
+		return
+	}
+	if len(actorResult.Actors) == 0 {
+		b.edit(s, i, "Нет несвязанных Actor типа character. Сначала синхронизируйте Foundry.", nil)
+		return
+	}
+	flow := &selectionFlow{mode: mode, stage: "actor", discordID: u.ID, guildID: i.GuildID,
+		actors: actorResult.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
+	if mode == "link" {
+		var characterResult struct {
+			Characters []character `json:"characters"`
+		}
+		if err := b.post(CharactersPath, id, &characterResult); err != nil {
+			b.edit(s, i, "Не удалось получить список персонажей: "+err.Error(), nil)
+			return
+		}
+		if len(characterResult.Characters) == 0 {
+			b.edit(s, i, "Персонажей приложения пока нет. Сначала используй /character-draft, чтобы создать черновик из Foundry Actor.", nil)
+			return
+		}
+		flow.characters = characterResult.Characters
+	}
+	key, err := randomKey()
+	if err != nil {
+		b.edit(s, i, "Не удалось подготовить выбор.", nil)
+		return
+	}
+	b.mu.Lock()
+	b.pruneFlowsLocked()
+	b.flows[key] = flow
+	b.mu.Unlock()
+	components := b.actorSelectionComponents(key, flow)
+	label := "Выбери Foundry Actor, из которого создать черновик:"
+	if mode == "link" {
+		label = "Выбери Foundry Actor для привязки:"
+	}
+	b.edit(s, i, label, components)
+}
+
+func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	data := i.MessageComponentData()
+	if strings.HasPrefix(data.CustomID, "fm-link:") {
+		b.handleButton(s, i)
+		return
+	}
+	parts := strings.Split(data.CustomID, ":")
+	if len(parts) < 2 {
+		return
+	}
+	u := interactionUser(i)
+	if u == nil {
+		b.reply(s, i, "Не удалось определить пользователя.", nil)
+		return
+	}
+	key := parts[1]
+	b.mu.Lock()
+	flow, ok := b.flows[key]
+	if !ok || time.Now().After(flow.expiresAt) || flow.discordID != u.ID || flow.guildID != i.GuildID {
+		if ok {
+			delete(b.flows, key)
+		}
+		b.mu.Unlock()
+		b.reply(s, i, "Выбор недействителен или истёк. Запусти команду заново.", nil)
+		return
+	}
+	if flow.stage == "actor" && !strings.HasPrefix(data.CustomID, "fm-actor:") && !strings.HasPrefix(data.CustomID, "fm-page:") {
+		b.mu.Unlock()
+		b.reply(s, i, "Этот выбор уже недействителен. Запусти команду заново.", nil)
+		return
+	}
+	if flow.stage == "character" && !strings.HasPrefix(data.CustomID, "fm-character:") && !strings.HasPrefix(data.CustomID, "fm-page:") {
+		b.mu.Unlock()
+		b.reply(s, i, "Этот выбор уже недействителен. Запусти команду заново.", nil)
+		return
+	}
+	if strings.HasPrefix(data.CustomID, "fm-page:") {
+		if len(parts) != 4 || parts[2] != flow.stage {
+			b.mu.Unlock()
+			return
+		}
+		page, err := strconv.Atoi(parts[3])
+		maxPage := (len(flow.actors) - 1) / 25
+		if flow.stage == "character" {
+			maxPage = (len(flow.characters) - 1) / 25
+		}
+		if err != nil || page < 0 || page > maxPage {
+			b.mu.Unlock()
+			return
+		}
+		flow.page = page
+		components := b.selectionComponents(key, flow)
+		b.mu.Unlock()
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseUpdateMessage, Data: &discordgo.InteractionResponseData{Components: components}})
+		return
+	}
+	if len(data.Values) != 1 {
+		b.mu.Unlock()
+		return
+	}
+	selected := data.Values[0]
+	if flow.stage == "actor" {
+		var chosen *actor
+		for n := range flow.actors {
+			if flow.actors[n].ActorUUID == selected {
+				chosen = &flow.actors[n]
+				break
+			}
+		}
+		if chosen == nil {
+			b.mu.Unlock()
+			b.reply(s, i, "Выбранный Actor отсутствует в списке. Запусти команду заново.", nil)
+			return
+		}
+		flow.actorUUID = chosen.ActorUUID
+		if flow.mode == "draft" {
+			delete(b.flows, key)
+			b.mu.Unlock()
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
+				return
+			}
+			var created character
+			err := b.post(DraftCharacterPath, struct {
+				identity
+				ActorUUID string `json:"actor_uuid"`
+			}{b.identity(i, u), chosen.ActorUUID}, &created)
+			if err != nil {
+				b.edit(s, i, "Не удалось создать черновик: "+err.Error(), nil)
+				return
+			}
+			b.edit(s, i, fmt.Sprintf("Создан черновик персонажа **%s**. ID: `%s`. Статус: draft. Владелец не назначен. Следующий шаг — /character-link для привязки.", created.Name, created.ID), nil)
+			return
+		}
+		flow.stage, flow.page = "character", 0
+		components := b.characterSelectionComponents(key, flow)
+		b.mu.Unlock()
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseUpdateMessage, Data: &discordgo.InteractionResponseData{Content: "Теперь выбери персонажа приложения:", Components: components}})
+		return
+	}
+	if flow.stage == "character" {
+		var chosen *character
+		for n := range flow.characters {
+			if flow.characters[n].ID == selected {
+				chosen = &flow.characters[n]
+				break
+			}
+		}
+		if chosen == nil {
+			b.mu.Unlock()
+			b.reply(s, i, "Выбранный персонаж отсутствует в списке. Запусти команду заново.", nil)
+			return
+		}
+		actorUUID := flow.actorUUID
+		delete(b.flows, key)
+		b.mu.Unlock()
+		if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
+			return
+		}
+		payload := linkPayload{identity: b.identity(i, u), ActorUUID: actorUUID, CharacterID: chosen.ID}
+		var preview linkPreview
+		if err := b.post(PreviewPath, payload, &preview); err != nil {
+			b.edit(s, i, "Нельзя подготовить привязку: "+err.Error(), nil)
+			return
+		}
+		confirmKey, err := randomKey()
+		if err != nil {
+			b.edit(s, i, "Не удалось создать подтверждение.", nil)
+			return
+		}
+		b.mu.Lock()
+		b.prunePendingLocked()
+		b.pending[confirmKey] = pendingLink{payload.ActorUUID, payload.CharacterID, u.ID, i.GuildID, time.Now().Add(10 * time.Minute)}
+		b.mu.Unlock()
+		components := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.Button{Label: "Подтвердить привязку", Style: discordgo.SuccessButton, CustomID: "fm-link:" + confirmKey}}}}
+		b.edit(s, i, fmt.Sprintf("Проверьте привязку:\nFoundry: %s (%s)\nПерсонаж: %s (%s)\nВладелец персонажа не изменится.", preview.ActorName, preview.ActorUUID, preview.CharacterName, preview.CharacterID), components)
+	}
+}
+
+func (b *bot) actorSelectionComponents(key string, flow *selectionFlow) []discordgo.MessageComponent {
+	start, end := pageBounds(len(flow.actors), flow.page)
+	minValues := 1
+	options := make([]discordgo.SelectMenuOption, 0, end-start)
+	for _, item := range flow.actors[start:end] {
+		options = append(options, discordgo.SelectMenuOption{Label: truncateLabel(item.Name), Value: item.ActorUUID, Description: truncateLabel(item.ActorUUID)})
+	}
+	rows := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{MenuType: discordgo.StringSelectMenu, CustomID: "fm-actor:" + key, Placeholder: "Выбери Foundry Actor", MinValues: &minValues, MaxValues: 1, Options: options}}}}
+	if len(flow.actors) > 25 {
+		rows = append(rows, pageButtons("fm-page:"+key+":"+flow.stage, flow.page, len(flow.actors)))
+	}
+	return rows
+}
+
+func (b *bot) characterSelectionComponents(key string, flow *selectionFlow) []discordgo.MessageComponent {
+	start, end := pageBounds(len(flow.characters), flow.page)
+	minValues := 1
+	options := make([]discordgo.SelectMenuOption, 0, end-start)
+	for _, item := range flow.characters[start:end] {
+		options = append(options, discordgo.SelectMenuOption{Label: truncateLabel(item.Name + " [" + item.Status + "]"), Value: item.ID, Description: truncateLabel(item.ID)})
+	}
+	rows := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{MenuType: discordgo.StringSelectMenu, CustomID: "fm-character:" + key, Placeholder: "Выбери персонажа приложения", MinValues: &minValues, MaxValues: 1, Options: options}}}}
+	if len(flow.characters) > 25 {
+		rows = append(rows, pageButtons("fm-page:"+key+":"+flow.stage, flow.page, len(flow.characters)))
+	}
+	return rows
+}
+
+func (b *bot) selectionComponents(key string, flow *selectionFlow) []discordgo.MessageComponent {
+	if flow.stage == "character" {
+		return b.characterSelectionComponents(key, flow)
+	}
+	return b.actorSelectionComponents(key, flow)
+}
+
+func pageButtons(prefix string, page, total int) discordgo.ActionsRow {
+	buttons := make([]discordgo.MessageComponent, 0, 2)
+	if page > 0 {
+		buttons = append(buttons, discordgo.Button{Label: "Назад", Style: discordgo.SecondaryButton, CustomID: prefix + ":" + strconv.Itoa(page-1)})
+	}
+	if (page+1)*25 < total {
+		buttons = append(buttons, discordgo.Button{Label: "Далее", Style: discordgo.SecondaryButton, CustomID: prefix + ":" + strconv.Itoa(page+1)})
+	}
+	return discordgo.ActionsRow{Components: buttons}
+}
+
+func pageBounds(total, page int) (int, int) {
+	maxPage := (total - 1) / 25
+	if page < 0 {
+		page = 0
+	}
+	if page > maxPage {
+		page = maxPage
+	}
+	start := page * 25
+	end := start + 25
+	if end > total {
+		end = total
+	}
+	return start, end
+}
+func truncateLabel(value string) string {
+	r := []rune(value)
+	if len(r) > 100 {
+		return string(r[:97]) + "..."
+	}
+	return value
+}
+func (b *bot) prunePendingLocked() {
+	now := time.Now()
+	for key, pending := range b.pending {
+		if now.After(pending.expiresAt) {
+			delete(b.pending, key)
+		}
+	}
+}
+
+func (b *bot) pruneFlowsLocked() {
+	now := time.Now()
+	for key, flow := range b.flows {
+		if now.After(flow.expiresAt) {
+			delete(b.flows, key)
+		}
+	}
+}
+
 func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.MessageComponentData()
 	if !strings.HasPrefix(data.CustomID, "fm-link:") {
@@ -255,11 +512,12 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 	key := strings.TrimPrefix(data.CustomID, "fm-link:")
 	b.mu.Lock()
 	p, ok := b.pending[key]
-	if ok {
+	valid := ok && time.Now().Before(p.expiresAt) && p.discordID == u.ID && p.guildID == i.GuildID
+	if valid {
 		delete(b.pending, key)
 	}
 	b.mu.Unlock()
-	if !ok || time.Now().After(p.expiresAt) || p.discordID != u.ID || p.guildID != i.GuildID {
+	if !valid {
 		b.reply(s, i, "Подтверждение недействительно, истекло или принадлежит другому участнику. Повторите /character-link.", nil)
 		return
 	}

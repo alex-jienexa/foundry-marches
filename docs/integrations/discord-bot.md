@@ -54,7 +54,7 @@ docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 \
   < docs/database/migrations/0002_discord_bot_auth.sql
 ```
 
-The migration is safe to re-run. It seeds permissions for the existing `player`, `gm`, `admin` and `owner` roles and grants the API database role the minimum additional access needed for registration, role assignment, role mapping and audit inserts. It does not delete or recreate data and does not touch the PostgreSQL volume.
+The migration is safe to re-run. It seeds permissions for the existing `player`, `gm`, `admin` and `owner` roles and grants the API database role the minimum additional access needed for registration, role assignment, role mapping, draft character creation and audit inserts. It does not delete or recreate data and does not touch the PostgreSQL volume.
 
 ## 5. Build and start
 
@@ -84,33 +84,40 @@ The API must be healthy. The bot log should report that it connected and registe
 5. As owner, run `/role-grant discord_user_id:<ID> role_key:gm` to grant the application GM role to a registered member. Alternatively, use `/role-map discord_role_id:<ID> role_key:gm` to map a Discord role to the application GM role. The mapping is evaluated using the member roles included in each Gateway interaction.
 6. Only `player` and `gm` may be granted/mapped with these commands. The privileged `owner` role is only bootstrapped from `DISCORD_ADMIN_USER_IDS`.
 
-## 7. Test the link flow with Андрей
+## 7. Test draft creation and linking with Андрей
 
-The link operation deliberately connects an already-existing application character to an already-discovered Foundry Actor. It does not create an application character, infer ownership, or write anything to Foundry.
+The bot now supports two explicit GM actions:
+
+- `/character-draft` creates an application character in `draft` status from a selected unlinked Foundry Actor. It copies only the Actor name and portrait URL. It does not assign an owner or copy game statistics/items. Repeating the command for the same Actor returns the existing draft instead of creating a duplicate.
+- `/character-link` lets the GM select an unlinked Foundry Actor and an existing application character, then preview and confirm the link. The confirmation is bound to the initiating Discord user and guild.
+
+After linking, the existing Foundry sync path fills Foundry-owned character fields. Foundry sync itself still does not create application characters.
 
 1. Ensure the Foundry world is synchronized after any PF2e system update. If needed, run the existing sync endpoint using the existing `FOUNDRY_SYNC_API_TOKEN`:
    `POST http://127.0.0.1:8080/api/integrations/foundry/sync`.
-2. In Discord, run `/foundry-actors` and find Андрей's Actor. Copy its exact Actor UUID.
-3. Run `/characters` and find the existing application character Андрей. Copy its exact application character ID.
-4. Run `/character-link actor_uuid:<Actor UUID> character_id:<character ID>`.
-5. Review the ephemeral confirmation message. It shows both names and identifiers. Click **Подтвердить привязку**.
-6. Run `/foundry-actors` again. Андрей's Actor should no longer be in the unlinked list.
-7. Verify the relation with a read-only SQL query:
+2. In Discord, run `/foundry-actors` and confirm Андрей's Actor is present.
+3. Run `/character-draft`. Select Андрей in the dropdown. The bot should report a new `draft` character and its application ID. No owner is assigned.
+4. Run `/characters`. Confirm the new Андрей draft appears.
+5. Run `/character-link`. Select Андрей's Foundry Actor, then select the newly created Андрей application character.
+6. Review the ephemeral confirmation message and click **Подтвердить привязку**.
+7. Run `/foundry-actors` again. Андрей's Actor should no longer be in the unlinked list.
+8. Run the Foundry sync again. Verify that Foundry-owned fields are populated from the Actor snapshot.
+9. Verify the relation with a read-only SQL query:
 
 ```sql
-SELECT fa.actor_uuid, fa.character_id, c.name, c.owner_user_id,
-       fa.owner_confirmed_at, fa.linked_at
+SELECT fa.actor_uuid, fa.character_id, c.name, c.status,
+       c.owner_user_id, fa.owner_confirmed_at, fa.linked_at
 FROM foundry_actors fa
 JOIN characters c ON c.id = fa.character_id
 WHERE c.name ILIKE '%Андрей%';
 ```
 
-The operation changes only `foundry_actors.character_id` and link timestamps and adds an audit event. It does not set `characters.owner_user_id` or `foundry_actors.owner_confirmed_at`.
+The draft creation operation writes one `characters` row and one audit event. The subsequent link operation changes the Foundry link and link timestamps and adds its audit event. Neither operation sets `characters.owner_user_id` or `foundry_actors.owner_confirmed_at`, and neither writes to Foundry.
 
 ### If Андрей is missing
 
 - Missing from `/foundry-actors`: run Foundry sync and check that the Actor exists in the configured world and has type `character`, not `npc`.
-- Missing from `/characters`: there is not yet an application character record to link. Foundry sync intentionally does not create application characters. Do not insert a row manually into production just for this test; the character creation/approval flow is a separate application feature.
+- Missing from `/characters`: create the draft explicitly with `/character-draft`; Foundry sync intentionally does not create application characters.
 - The Actor or application character is already linked: the backend rejects the conflicting link with HTTP 409.
 - Permission denied: register first and ensure the user has the application `gm`, `admin` or `owner` permission that includes `foundry.manage`.
 
@@ -121,7 +128,8 @@ The operation changes only `foundry_actors.character_id` and link timestamps and
 | `/register` | Register the current server member | Server membership |
 | `/foundry-actors` | List unlinked Foundry character Actors | `foundry.manage` |
 | `/characters` | List application characters and IDs | `foundry.manage` |
-| `/character-link` | Preview and confirm a link | `foundry.manage` |
+| `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
+| `/character-link` | Select Actor and application character, preview and confirm a link | `foundry.manage` |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
 
@@ -131,4 +139,5 @@ The operation changes only `foundry_actors.character_id` and link timestamps and
 - Keep the API and bot service tokens distinct. Rotate `DISCORD_BOT_API_TOKEN` in both services together.
 - The pending confirmation button expires after 10 minutes and is bound to the Discord user and guild that initiated it. A bot restart invalidates pending confirmations.
 - Do not grant privileged Discord roles to untrusted users. A role mapping intentionally grants the corresponding application role to every member who has that Discord role.
-- The current implementation covers registration, RBAC checks, role assignment/mapping and explicit Foundry Actor linking. Web OAuth2/browser sessions, character creation, ownership confirmation and character approval remain separate work.
+- Select menus show up to 25 entries per page; navigation buttons paginate longer Actor/character lists. Selection flows expire after 10 minutes and are bound to the initiating Discord user and guild. A bot restart invalidates them.
+- The current implementation covers registration, RBAC checks, role assignment/mapping, explicit draft creation and Foundry Actor linking. Web OAuth2/browser sessions, ownership confirmation and character approval remain separate work.
