@@ -178,6 +178,9 @@ const (
 // are not copied wholesale into every normalized Item.
 type CharacterItemDto struct {
 	ID                  string                `json:"id"`
+	Skill               *string               `json:"skill,omitempty"`
+	PreparedRanks       []int                 `json:"preparedRanks,omitempty"`
+	SpellcastingType    *string               `json:"spellcastingType,omitempty"`
 	Name                string                `json:"name"`
 	Type                string                `json:"type"`
 	Slug                *string               `json:"slug"`
@@ -224,14 +227,16 @@ type DecodedActor struct {
 // that may be used by the optional derived-stat calculator. Missing source data
 // remains nil; the decoder never reconstructs ability scores or proficiency.
 type CharacterStatisticsInputDto struct {
-	Abilities     map[string]AbilityScoreDto `json:"abilities"`
-	Proficiencies CharacterProficienciesDto  `json:"proficiencies"`
+	Abilities        map[string]AbilityScoreDto `json:"abilities"`
+	AbilitiesDerived bool                       `json:"abilitiesDerived,omitempty"`
+	Proficiencies    CharacterProficienciesDto  `json:"proficiencies"`
 }
 
 // AbilityScoreDto distinguishes the stored score from a stored modifier.
 type AbilityScoreDto struct {
-	Score    *int `json:"score"`
-	Modifier *int `json:"modifier"`
+	Score    *int  `json:"score"`
+	Modifier *int  `json:"modifier"`
+	Derived  bool  `json:"derived,omitempty"`
 }
 
 type CharacterProficienciesDto struct {
