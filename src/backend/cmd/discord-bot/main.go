@@ -994,7 +994,7 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 	groups := make(map[string][]string)
 	total := 0
 	for _, item := range c.Items {
-		if item.Category != "equipment" || item.Name == "" {
+		if !isInventoryItem(item) || item.Name == "" {
 			continue
 		}
 		group := item.Type
@@ -1045,6 +1045,11 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		}
 	}
 	return embeds
+}
+
+func isInventoryItem(item characterItem) bool {
+	if item.Category == "equipment" { return true }
+	return item.Quantity != nil || item.Equipped != nil || item.Usage != nil || item.ContainerID != nil
 }
 
 func inventoryStateLabel(equipped *characterEquipped) string {
