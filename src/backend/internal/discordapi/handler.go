@@ -746,8 +746,41 @@ func (h *Handler) previewLink(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage"); !ok {
 		return
 	}
-	var result linkPreview
+	if strings.TrimSpace(req.OwnerDiscordUserID) == "" {
+		writeError(w, http.StatusBadRequest, "a Discord user mention is required to assign the character owner")
+		return
+	}
+	var ownerUserID string
 	err := h.db.QueryRowContext(r.Context(), `
+SELECT da.user_id::text
+FROM discord_accounts da
+JOIN users u ON u.id = da.user_id
+WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
+`, req.OwnerDiscordUserID).Scan(&ownerUserID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "the selected owner must register with /register first")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not resolve selected character owner")
+		return
+	}
+	var currentOwnerID sql.NullString
+	err = h.db.QueryRowContext(r.Context(), "SELECT owner_user_id::text FROM characters WHERE id = $1", req.CharacterID).Scan(&currentOwnerID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusConflict, "application character is unavailable")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not inspect application character owner")
+		return
+	}
+	if currentOwnerID.Valid && currentOwnerID.String != ownerUserID {
+		writeError(w, http.StatusConflict, "application character already belongs to another user")
+		return
+	}
+	var result linkPreview
+	err = h.db.QueryRowContext(r.Context(), `
 SELECT fa.actor_uuid, COALESCE(fa.snapshot->>'name', fa.actor_uuid), c.id::text, c.name
 FROM foundry_actors fa
 CROSS JOIN characters c
