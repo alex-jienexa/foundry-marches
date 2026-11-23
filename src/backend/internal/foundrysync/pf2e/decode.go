@@ -667,8 +667,8 @@ func cloneRaw(value []byte) json.RawMessage {
 	return append(json.RawMessage(nil), value...)
 }
 
-// decodeStatistics reads only explicit Actor-level values. In particular, it
-// does not infer abilities from boosts or current ranks from class progression.
+// decodeStatistics reads explicit Actor-level values and reconstructs ability
+// scores only from complete, saved PF2e boost selections.
 func decodeStatistics(system map[string]json.RawMessage, level *int, actorItems []FoundryItemDto) CharacterStatisticsInputDto {
 	abilities := make(map[string]AbilityScoreDto)
 	for _, key := range []string{"str", "dex", "con", "int", "wis", "cha"} {
@@ -757,8 +757,12 @@ func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int
 		if item.Type != "ancestry" {
 			continue
 		}
-		for _, selection := range objectAt(item.System, "flaws") {
-			selected := stringAt(objectAt(map[string]json.RawMessage{"selection": selection}, "selection"), "selected")
+		for _, rawSelection := range objectAt(item.System, "flaws") {
+			var selection map[string]json.RawMessage
+			if json.Unmarshal(rawSelection, &selection) != nil {
+				return nil
+			}
+			selected := stringAt(selection, "selected")
 			if selected != nil && *selected != "" {
 				flaws["1"] = append(flaws["1"], *selected)
 			}
@@ -786,7 +790,7 @@ func decodeAbilityScoresFromBoosts(system map[string]json.RawMessage, level *int
 				return nil
 			}
 			if _, duplicate := seen[key]; duplicate {
-				return nil
+				continue
 			}
 			seen[key] = struct{}{}
 			scores[key] -= 2
