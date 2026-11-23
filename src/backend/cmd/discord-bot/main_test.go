@@ -430,6 +430,52 @@ func TestCharacterSkillAbilityGroupsSortByCountAndUnknownLast(t *testing.T) {
 	}
 }
 
+func TestCharacterSpellsOrderFocusCantripsBeforeNamedSpells(t *testing.T) {
+	focus := "focus"
+	divine := "divine"
+	list := "Фокусный источник"
+	cantrip := true
+	rankOne := 1
+	c := characterDetails{}
+	c.Identity.Name = "Оракул"
+	c.Items = []characterItem{
+		{Name: "Ярость духов", Type: "spell", Level: &rankOne, SpellcastingType: &focus, Tradition: &divine, SpellList: &list},
+		{Name: "Свет", Type: "spell", Level: &rankOne, Cantrip: cantrip, SpellcastingType: &focus, Tradition: &divine, SpellList: &list},
+	}
+	embed := characterSpellsEmbed(c)
+	if len(embed.Fields) != 2 {
+		t.Fatalf("focus spell fields = %d, want cantrip and spell groups: %+v", len(embed.Fields), embed.Fields)
+	}
+	if !strings.Contains(embed.Fields[0].Name, "ФОКУСНЫЕ ЗАКЛИНАНИЯ") ||
+		!strings.Contains(embed.Fields[0].Name, "чары") ||
+		!strings.Contains(embed.Fields[0].Value, "Свет") {
+		t.Fatalf("focus cantrip should be listed first: %+v", embed.Fields)
+	}
+	if !strings.Contains(embed.Fields[1].Value, "Ярость духов") {
+		t.Fatalf("focus spells should follow cantrips: %+v", embed.Fields)
+	}
+}
+
+func TestCharacterListFieldDoesNotShortenEntriesAfterTen(t *testing.T) {
+	entries := make([]string, 12)
+	for i := range entries {
+		entries[i] = fmt.Sprintf("Навык %d", i+1)
+	}
+	embed := &discordgo.MessageEmbed{}
+	addCharacterListField(embed, "Навыки", entries)
+	if len(embed.Fields) != 1 {
+		t.Fatalf("fields = %d, want one field for 12 short entries", len(embed.Fields))
+	}
+	for _, entry := range entries {
+		if !strings.Contains(embed.Fields[0].Value, entry) {
+			t.Errorf("field omitted %q: %q", entry, embed.Fields[0].Value)
+		}
+	}
+	if strings.Contains(embed.Fields[0].Value, "ещё") {
+		t.Fatalf("field contains shortening marker: %q", embed.Fields[0].Value)
+	}
+}
+
 func TestCharacterEmbedUsesPublicFoundryPortrait(t *testing.T) {
 	path := "assets/westmarches/pc/portrait.jpg"
 	resolved := resolveFoundryImageURL(&path, "https://foundry.jiene.ru")
