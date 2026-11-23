@@ -126,6 +126,7 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 	classCategory := "class"
 	ancestryCategory := "ancestry"
 	classFeatureCategory := "classfeature"
+	ancestryFeatureCategory := "ancestryfeature"
 	generalCategory := "general"
 	skillCategory := "skill"
 	reaction := "reaction"
@@ -145,9 +146,14 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 		{Name: "Блок щитом", Level: &featureLevel},
 		{Name: "Храбрость", Level: &futureFeatureLevel},
 	}}
+	c.Build.AncestryFeatures = []classFeatureReference{
+		{Name: "Особенность рода", Level: &featureLevel},
+		{Name: "Будущая особенность", Level: &futureFeatureLevel},
+	}
 	c.Items = []characterItem{
 		{Name: "Двойной разрез / Double Slice", Type: "feat", SystemCategory: &classCategory},
 		{Name: "Видящий во мраке / Gloomseer", Type: "feat", SystemCategory: &ancestryCategory},
+		{Name: "Особенность рода", Type: "feat", SystemCategory: &ancestryFeatureCategory},
 		{Name: "Реагирующий удар / Reactive Strike", Type: "action", ActionType: &reaction},
 		{Name: "Реагирующий удар / Reactive Strike", Type: "feat", SystemCategory: &classFeatureCategory},
 		{Name: "Блок щитом / Shield Block", Type: "feat", SystemCategory: &generalCategory},
@@ -175,9 +181,10 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 		field string
 		want  string
 	}{
+		{"Особенности класса", "Реагирующий удар"},
 		{"Способности класса", "Двойной разрез"},
+		{"Особенности родословной", "Особенность рода"},
 		{"Способности родословной", "Видящий во мраке"},
-				{"Особенности класса", "Реагирующий удар"},
 		{"Способности навыков", "Сильный носильщик"},
 	}
 	for _, check := range checks {
