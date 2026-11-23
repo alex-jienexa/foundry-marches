@@ -3,7 +3,32 @@ package main
 import (
 	"strings"
 	"testing"
+
+	"github.com/bwmarrin/discordgo"
 )
+
+func TestCommandOptionsReadDiscordUserMention(t *testing.T) {
+	options := []*discordgo.ApplicationCommandInteractionDataOption{
+		{Name: "owner", Type: discordgo.ApplicationCommandOptionUser, Value: "123456789012345678"},
+	}
+	got := commandOptions(options)
+	if got["owner"] != "123456789012345678" {
+		t.Fatalf("owner option = %q, want Discord user ID", got["owner"])
+	}
+}
+
+func TestDirectoryEmbedUsesReadableStatusesAndCounts(t *testing.T) {
+	embed := directoryEmbed("Персонажи", "Список", []string{"Андрей · " + characterStatusLabel("draft"), "Вихорь · " + characterStatusLabel("active")}, 1)
+	if embed.Title != "Персонажи" || len(embed.Fields) != 1 {
+		t.Fatalf("unexpected directory embed: %+v", embed)
+	}
+	if !strings.Contains(embed.Fields[0].Value, "Андрей · черновик") {
+		t.Fatalf("directory field = %q, missing localized status", embed.Fields[0].Value)
+	}
+	if embed.Footer == nil || embed.Footer.Text != "Показано 1 из 2 · ещё 1 не показано" {
+		t.Fatalf("directory footer = %+v", embed.Footer)
+	}
+}
 
 func TestPageBounds(t *testing.T) {
 	tests := []struct {
