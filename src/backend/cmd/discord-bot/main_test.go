@@ -117,7 +117,7 @@ func TestIntegrationStatusEmbedMarksUnavailableComponents(t *testing.T) {
 	}
 }
 
-func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
+func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 	level := 1
 	featureLevel := 1
 	futureFeatureLevel := 3
@@ -165,15 +165,10 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 		"lore-warfare": {Rank: &two},
 	}
 
-	embed := characterEmbed(c)
+	embed := characterAbilitiesEmbed(c)
 	fields := make(map[string]string, len(embed.Fields))
 	for _, field := range embed.Fields {
 		fields[field.Name] = field.Value
-	}
-	for _, shown := range []string{"Родословная", "Наследие", "Предыстория", "Класс"} {
-		if _, exists := fields[shown]; !exists {
-			t.Errorf("fundamental choice %q must be displayed when present", shown)
-		}
 	}
 	checks := []struct {
 		field string
@@ -184,10 +179,6 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 		{"Действия", "Реагирующий удар — реакция"},
 		{"Особенности класса", "Реагирующий удар"},
 		{"Другие способности", "Сильный носильщик"},
-		{"Предметы", "Длинный меч"},
-		{"Предметы", "Золотые монеты × 2"},
-		{"Ключевая характеристика", "Сила"},
-		{"Характеристики", "Значения не сохранены"},
 	}
 	for _, check := range checks {
 		if !strings.Contains(fields[check.field], check.want) {
@@ -199,11 +190,6 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	}
 	if strings.Contains(fields["Другие способности"], "Блок щитом") {
 		t.Errorf("class feature duplicate must not appear under other abilities: %q", fields["Другие способности"])
-	}
-	if strings.Contains(fields["Предметы"], "Двойной разрез") ||
-		strings.Contains(fields["Предметы"], "Реагирующий удар") ||
-		strings.Contains(fields["Предметы"], "Блок щитом") {
-		t.Errorf("abilities and actions must not appear as equipment: %q", fields["Предметы"])
 	}
 	if strings.Count(fields["Особенности класса"], "Реагирующий удар") != 1 {
 		t.Errorf("class feature must not be duplicated: %q", fields["Особенности класса"])
@@ -303,8 +289,8 @@ func TestCharacterInventoryIncludesAllPhysicalItemTypesAndState(t *testing.T) {
 		{ID: "custom", Name: "Талисман", Type: "customPhysical", Category: "other", Quantity: &one},
 	}
 	embeds := characterInventoryEmbeds(c)
-	if len(embeds) < 5 {
-		t.Fatalf("got %d grouped inventory embeds, want all physical item types", len(embeds))
+	if len(embeds) != 1 {
+		t.Fatalf("got %d inventory messages, want all groups in one message", len(embeds))
 	}
 	joined := ""
 	for _, embed := range embeds {
@@ -333,8 +319,8 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 		{Name: "Лечебное растение", Type: "spell", Level: &two, Tradition: &primal, SpellList: &primalList},
 	}
 	embeds := characterSpellsEmbeds(c)
-	if len(embeds) != 3 {
-		t.Fatalf("got %d spell groups, want 3 including cantrips", len(embeds))
+	if len(embeds) != 1 || len(embeds[0].Fields) != 3 {
+		t.Fatalf("got %d spell embeds with %d fields, want one message with 3 grouped fields", len(embeds), len(embeds[0].Fields))
 	}
 	joined := ""
 	for _, embed := range embeds {
@@ -346,6 +332,60 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 		if !strings.Contains(joined, want) {
 			t.Errorf("spell output missing %q: %s", want, joined)
 		}
+	}
+}
+
+
+func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
+	level, xp, hp, maxHP := 2, 400, 2, 24
+	c := characterDetails{}
+	c.Identity.Name = "Малахия"
+	c.Build.Class = &characterReference{Name: "Следователь"}
+	c.Build.Ancestry = &characterReference{Name: "Человек"}
+	c.Progression.Level = &level
+	c.Progression.Experience.Value = &xp
+	c.Attributes.HP = &struct {
+		Current *int `json:"current"`
+		Temp *int `json:"temp"`
+		Max *int `json:"max"`
+	}{Current: &hp, Max: &maxHP}
+	score, modifier := 12, 1
+	c.Statistics.Abilities = map[string]struct {
+		Score *int `json:"score"`
+		Modifier *int `json:"modifier"`
+	}{"int": {Score: &score, Modifier: &modifier}}
+	embed := characterEmbed(c)
+	fields := make(map[string]string, len(embed.Fields))
+	for _, field := range embed.Fields { fields[field.Name] = field.Value }
+	for _, name := range []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"} {
+		if fields[name] == "" { t.Errorf("summary card is missing %q", name) }
+	}
+	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: 12 (+1)") || fields["Опыт"] != "400" {
+		t.Fatalf("summary card fields = %#v", fields)
+	}
+	for _, name := range []string{"Способности класса", "Действия", "Навыки", "Предметы"} {
+		if fields[name] != "" { t.Errorf("detailed field %q should not be in summary card", name) }
+	}
+}
+
+func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
+	worn := "worn"
+	inSlot := false
+	invested := false
+	ordinary := characterItem{Type: "equipment", Equipped: &characterEquipped{CarryType: &worn, InSlot: &inSlot, Invested: &invested}}
+	if got := inventoryStateLabel(ordinary); got != "" {
+		t.Fatalf("ordinary worn carry state = %q, want no misleading worn label", got)
+	}
+	armorSlot := true
+	armor := characterItem{Type: "armor", Equipped: &characterEquipped{CarryType: &worn, InSlot: &armorSlot}}
+	if got := inventoryStateLabel(armor); got != "НАДЕТО КАК ДОСПЕХ" {
+		t.Fatalf("armor state = %q", got)
+	}
+	stowed := "stowed"
+	container := "backpack-id"
+	item := characterItem{Type: "equipment", ContainerID: &container, Equipped: &characterEquipped{CarryType: &stowed}}
+	if got := inventoryStateLabel(item); got != "В РЮКЗАКЕ" {
+		t.Fatalf("stowed item state = %q", got)
 	}
 }
 
