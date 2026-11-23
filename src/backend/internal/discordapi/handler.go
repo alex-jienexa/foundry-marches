@@ -324,7 +324,8 @@ func (h *Handler) searchFoundryCharacters(w http.ResponseWriter, r *http.Request
 	if !decodeRequest(w, r, &req) {
 		return
 	}
-	if _, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage"); !ok {
+	userID, canManage, ok := h.authorizeCharacterRead(w, r.Context(), req.identityRequest)
+	if !ok {
 		return
 	}
 	query := strings.TrimSpace(req.Query)
@@ -333,7 +334,10 @@ func (h *Handler) searchFoundryCharacters(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	rows, err := h.db.QueryContext(r.Context(), `
+	var rows *sql.Rows
+	var err error
+	if canManage {
+		rows, err = h.db.QueryContext(r.Context(), `
 SELECT actor_uuid, COALESCE(snapshot->>'name', actor_uuid)
 FROM foundry_actors
 WHERE world_id = $1
@@ -342,6 +346,23 @@ WHERE world_id = $1
 ORDER BY snapshot->>'name', actor_uuid
 LIMIT 25
 `, h.worldID, "%"+query+"%")
+	} else {
+		// Players can discover only their own active characters after ownership
+		// has been explicitly confirmed on the Foundry Actor link.
+		rows, err = h.db.QueryContext(r.Context(), `
+SELECT fa.actor_uuid, c.name
+FROM foundry_actors fa
+JOIN characters c ON c.id = fa.character_id
+WHERE fa.world_id = $1
+  AND fa.owner_confirmed_at IS NOT NULL
+  AND c.owner_user_id = $2
+  AND c.status = 'active'
+  AND c.name ILIKE $3
+  AND fa.snapshot->>'type' = 'character'
+ORDER BY c.name, fa.actor_uuid
+LIMIT 25
+`, h.worldID, userID, "%"+query+"%")
+	}
 	if err != nil {
 		log.Printf("Discord Foundry character search failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "could not search Foundry characters")
@@ -365,14 +386,15 @@ LIMIT 25
 	writeJSON(w, http.StatusOK, map[string]any{"actors": items})
 }
 
-// foundryCharacterDetails decodes the already stored raw Actor snapshot into the
-// same DTO used by the sync pipeline. The endpoint is GM/admin-only.
+// foundryCharacterDetails decodes a saved Actor snapshot. GMs can inspect all
+// character Actors; players can inspect only their own active, confirmed links.
 func (h *Handler) foundryCharacterDetails(w http.ResponseWriter, r *http.Request) {
 	var req characterDetailRequest
 	if !decodeRequest(w, r, &req) {
 		return
 	}
-	if _, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage"); !ok {
+	userID, canManage, ok := h.authorizeCharacterRead(w, r.Context(), req.identityRequest)
+	if !ok {
 		return
 	}
 	if strings.TrimSpace(req.ActorUUID) == "" {
@@ -382,14 +404,26 @@ func (h *Handler) foundryCharacterDetails(w http.ResponseWriter, r *http.Request
 
 	var snapshot []byte
 	err := h.db.QueryRowContext(r.Context(), `
-SELECT snapshot
-FROM foundry_actors
-WHERE world_id = $1
-  AND actor_uuid = $2
-  AND snapshot->>'type' = 'character'
-`, h.worldID, req.ActorUUID).Scan(&snapshot)
+SELECT fa.snapshot
+FROM foundry_actors fa
+WHERE fa.world_id = $1
+  AND fa.actor_uuid = $2
+  AND fa.snapshot->>'type' = 'character'
+  AND (
+    $3::boolean = true
+    OR EXISTS (
+      SELECT 1
+      FROM characters c
+      WHERE c.id = fa.character_id
+        AND c.owner_user_id = $4
+        AND c.status = 'active'
+        AND fa.owner_confirmed_at IS NOT NULL
+    )
+  )
+`, h.worldID, req.ActorUUID, canManage, userID).Scan(&snapshot)
 	if errors.Is(err, sql.ErrNoRows) {
-		writeError(w, http.StatusNotFound, "Foundry character was not found in the latest synchronized snapshots")
+		// Do not reveal whether another player's Actor UUID exists.
+		writeError(w, http.StatusNotFound, "character was not found or is not available to this account")
 		return
 	}
 	if err != nil {
@@ -405,6 +439,53 @@ WHERE world_id = $1
 		return
 	}
 	writeJSON(w, http.StatusOK, decoded.Character)
+}
+
+// authorizeCharacterRead returns the registered application user and whether
+// they have the global Foundry-management permission. Ordinary players are
+// authorized only by the ownership predicates in the search/detail queries.
+func (h *Handler) authorizeCharacterRead(w http.ResponseWriter, ctx context.Context, req identityRequest) (string, bool, bool) {
+	if err := h.validateGuild(req.GuildID, req.DiscordUserID); err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
+		return "", false, false
+	}
+	var userID string
+	err := h.db.QueryRowContext(ctx, `
+SELECT da.user_id::text
+FROM discord_accounts da
+JOIN users u ON u.id = da.user_id
+WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
+`, req.DiscordUserID).Scan(&userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusForbidden, "use /register before accessing the application")
+		return "", false, false
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not resolve Discord identity")
+		return "", false, false
+	}
+
+	var canManage bool
+	err = h.db.QueryRowContext(ctx, `
+SELECT EXISTS (
+  SELECT 1
+  FROM user_roles ur
+  JOIN role_permissions rp ON rp.role_id = ur.role_id
+  WHERE ur.user_id = $1 AND rp.permission_key = 'foundry.manage'
+  UNION
+  SELECT 1
+  FROM discord_role_map drm
+  JOIN role_permissions rp ON rp.role_id = drm.role_id
+  WHERE drm.guild_id = $2
+    AND drm.discord_role_id = ANY($3)
+    AND rp.permission_key = 'foundry.manage'
+)
+`, userID, h.guildID, pq.Array(req.DiscordRoleIDs)).Scan(&canManage)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not evaluate character access")
+		return "", false, false
+	}
+	return userID, canManage, true
 }
 
 func (h *Handler) createCharacterDraft(w http.ResponseWriter, r *http.Request) {
