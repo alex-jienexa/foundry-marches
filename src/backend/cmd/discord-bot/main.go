@@ -587,7 +587,11 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 		b.pending[confirmKey] = pendingLink{actorUUID: payload.ActorUUID, characterID: payload.CharacterID, discordID: u.ID, guildID: i.GuildID, ownerDiscordID: flow.ownerDiscordID, expiresAt: time.Now().Add(10 * time.Minute)}
 		b.mu.Unlock()
 		components := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.Button{Label: "Подтвердить привязку", Style: discordgo.SuccessButton, CustomID: "fm-link:" + confirmKey}}}}
-		b.edit(s, i, fmt.Sprintf("Проверьте привязку:\nFoundry: %s (%s)\nПерсонаж: %s (%s)\nВладелец персонажа не изменится.", preview.ActorName, preview.ActorUUID, preview.CharacterName, preview.CharacterID), components)
+		ownerLabel := "владелец, уже указанный в приложении"
+		if flow.ownerDiscordID != "" {
+			ownerLabel = "<@" + flow.ownerDiscordID + ">"
+		}
+		b.edit(s, i, fmt.Sprintf("**Проверьте привязку персонажа**\n\n**Foundry Actor**\n%s\n\n**Персонаж приложения**\n%s\n\n**Владелец**\n%s\n\nПодтверждение закрепит указанного владельца и откроет ему доступ к карточке персонажа.", preview.ActorName, preview.CharacterName, ownerLabel), components)
 	}
 }
 
