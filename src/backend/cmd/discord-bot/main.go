@@ -1319,6 +1319,10 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		if item.SpellList != nil {
 			list = *item.SpellList
 		}
+		if category == 2 {
+			tradition = "Фокусная магия"
+			list = ""
+		}
 		key := spellGroup{category: category, stateRank: stateRank, tradition: tradition, rank: rank, list: list, state: state}
 		if _, ok := groups[key]; !ok {
 			keys = append(keys, key)
@@ -1346,7 +1350,11 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 			listName = strings.ToLower(*item.SpellList)
 		}
 		if spellType == "focus" || strings.Contains(listName, "focus") || strings.Contains(listName, "фокус") {
-			addSpell(item, 2, 0, "Фокусные заклинания", rank)
+			focusOrder := 1
+			if item.Cantrip {
+				focusOrder = 0
+			}
+			addSpell(item, 2, 0, "Фокусные заклинания", focusOrder)
 			continue
 		}
 		if spellType == "spontaneous" {
@@ -1417,7 +1425,13 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 				break
 			}
 			rankLabel := "ранг не указан"
-			if key.rank == 0 {
+			if key.category == 2 {
+				if key.rank == 0 {
+					rankLabel = "чары"
+				} else {
+					rankLabel = "заклинания"
+				}
+			} else if key.rank == 0 {
 				rankLabel = "чары"
 			} else if key.rank > 0 {
 				rankLabel = fmt.Sprintf("ранг %d", key.rank)
