@@ -143,8 +143,8 @@ func TestDecodePostSessionActorSnapshot(t *testing.T) {
 	if got := character.Statistics.ReconstructedAbilities["int"]; got.Score == nil || *got.Score != 16 || !got.Derived {
 		t.Fatalf("INT = %+v, want derived score 16", got)
 	}
-	if got := character.Statistics.ReconstructedAbilities["cha"]; got.Score == nil || *got.Score != 16 {
-		t.Fatalf("CHA = %+v, want score 16", got)
+	if got := character.Statistics.ReconstructedAbilities["cha"]; got.Score == nil || *got.Score != 18 {
+		t.Fatalf("CHA = %+v, want score 18 including the saved gradual boost at level 5", got)
 	}
 
 	if character.Attributes.HP == nil || character.Attributes.HP.Current == nil || *character.Attributes.HP.Current != 2 {
