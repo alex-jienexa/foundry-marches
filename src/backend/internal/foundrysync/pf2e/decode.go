@@ -326,6 +326,9 @@ func reconstructedAbilityScore(system map[string]json.RawMessage, items []Foundr
 			boosts += selectedBoostCount(objectAt(item.System, "boosts"), ability)
 			flaws += selectedBoostCount(objectAt(item.System, "flaws"), ability)
 			voluntary := objectAt(item.System, "voluntary")
+			if selected := stringAt(voluntary, "boost"); selected != nil && *selected == ability {
+				boosts++
+			}
 			flaws += stringArrayCount(voluntary, "flaws", ability)
 		case "background":
 			hasBackground = true
@@ -925,7 +928,10 @@ func reconstructAbilityScores(system map[string]json.RawMessage, items []Foundry
 			keyAbility := objectAt(item.System, "keyAbility")
 			selected := stringAt(keyAbility, "selected")
 			values := stringsAt(keyAbility, "value")
-			if selected != nil && *selected != "" && isAbilityKey(*selected) {
+			if selected != nil && *selected != "" {
+				if !isAbilityKey(*selected) {
+					return nil, false
+				}
 				continue
 			}
 			if len(values) != 1 || !isAbilityKey(values[0]) {
@@ -971,8 +977,14 @@ func completeSelectedBoosts(raw map[string]json.RawMessage) bool {
 		if json.Unmarshal(value, &entry) != nil {
 			continue
 		}
+		if len(entry["value"]) == 0 {
+			continue
+		}
 		var choices []string
-		if json.Unmarshal(entry["value"], &choices) != nil || len(choices) == 0 {
+		if json.Unmarshal(entry["value"], &choices) != nil {
+			return false
+		}
+		if len(choices) == 0 {
 			continue
 		}
 		selected := stringAt(entry, "selected")
