@@ -138,39 +138,54 @@ The draft creation operation writes one `characters` row and one audit event. Th
 
 ## 8. Character lookup and integration monitoring
 
-The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If exactly one Actor matches, the bot opens its card immediately; if multiple Actors match, choose the correct one from the ephemeral select menu. The same single-result shortcut is used by /my-character and /character-unlink (unlink still requires an explicit confirmation button).
+The /character name:<имя> command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If exactly one Actor matches, the bot opens its card immediately; if multiple Actors match, choose the correct one from the ephemeral select menu. The same single-result shortcut is used by /my-character and /character-unlink. Unlinking always requires an explicit confirmation button.
+
+The main character card is intentionally compact and contains the portrait, class, ancestry, level, current/max HP, six ability scores/modifiers and XP. Buttons below the card open separate views for abilities and skills, equipment, spells and campaign metrics. These views replace the contents of the same Discord message rather than creating a message for each group. The campaign-metrics button currently reports that a campaign metrics data source is not yet connected.
+
+If hp.max is absent, the decoder derives it from class HP per level, ancestry HP, character level and Constitution modifier. The Constitution modifier is read from prepared Actor abilities when available; otherwise it is reconstructed only when the required ancestry/background/class selections and level-based boosts are present. If the inputs are incomplete, maximum HP remains unknown rather than being guessed. The class key ability is taken from the class Item system.keyAbility, which takes precedence over the Actor-level details.keyability value.
+
+The post-session regression fixture at src/backend/internal/foundrysync/testdata/actor-after-session.json is a complete Actor export with 46 Items, level 2 and 400 XP. It verifies the Investigator key ability is INT, derives the six ability scores from the complete saved level-1 boost selection (including explicit ancestry flaws when selected), and derives maximum HP 24. Prepared ability values take precedence when present; boost reconstruction is used only when every boost round up to the current level is present and complete. The fixture also has no system.attributes.dying; the decoder leaves that condition unknown when absent. When a dying value and maximum are present and the current dying value reaches that maximum, the Discord card is marked МЁРТВ.
+
+Relative portrait paths are resolved against FOUNDRY_PUBLIC_BASE_URL, and the main card uses the resolved URL as its image. Set the variable to the externally reachable Foundry base URL, not the Relay URL. Discord must be able to fetch the resulting image URL without an interactive Foundry login. If an image still does not render, open the exact resolved URL in a private/incognito browser window; a login page, 403 or 404 means the image is not publicly fetchable by Discord. Absolute HTTP(S) image URLs work without this setting.
+
+The abilities button separates PF2e documents by their source type/category:
+- class abilities (feat with system.category=class);
+- ancestry abilities (feat with system.category=ancestry);
+- actions (type=action), with the action kind shown where available;
+- class features from the class progression table, limited to the character's current level and deduplicated against matching Actor Items;
+- other feats (for example, general and skill feats);
+- trained skills with their proficiency ranks.
+
+The equipment button displays all physical Actor Items grouped by type (weapons, armor, shields, equipment, consumables, containers and treasure). Item state is read from equipped.carryType, equipped.inSlot and equipped.invested: only an armor item actually in its armor slot is labeled as worn armor; invested items are marked invested; stowed items inside a backpack are marked as stored in the backpack. A generic carryType=worn value is not by itself rendered as “worn”.
+
+The spells button groups spell Items inside one Discord message by tradition, rank and spellcasting entry/list. Each group is a field in the same embed. Very large collections are shortened only when Discord's message/embed limits require it.
 
 Access is enforced by the backend, not only by Discord command visibility:
-- GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
-- A registered player with `characters.create` can search and open only their own `draft`, `pending_approval` or `active` character, whose linked `foundry_actors.owner_confirmed_at` is set after the latest ownership transfer (or after the original link if there was no transfer).
+- GM/admin/owner users with foundry.manage can search all synchronized character Actors.
+- A registered player with characters.create can search and open only their own draft, pending_approval or active character, whose linked foundry_actors.owner_confirmed_at is set after the latest ownership transfer (or after the original link if there was no transfer).
 - Unlinked, unconfirmed, unavailable, dead, retired, NPC, archived and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
 
-Character ownership is assigned explicitly during `/character-create` or `/character-link`. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A linked character becomes visible to its assigned player only after the explicit owner assignment is committed and `owner_confirmed_at` is recorded for that link.
+Character ownership is assigned explicitly during /character-create or /character-link. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A linked character becomes visible to its assigned player only after the explicit owner assignment is committed and owner_confirmed_at is recorded for that link.
 
-The `/integration-status` command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when one or more component states change. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
+The /integration-status command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When DISCORD_ADMIN_CHANNEL_ID is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when one or more component states change. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
 
 The admin channel receives:
 - integration outage and recovery notifications;
 - backend network errors and HTTP 5xx responses encountered by bot commands;
 - repeated identical errors are rate-limited to one notification per five minutes.
 
-This is operational alerting, not a replacement for container logs: detailed stack traces and failures from background processes that do not pass through a bot request remain available through `docker compose logs`.
+This is operational alerting, not a replacement for container logs: detailed stack traces and failures from background processes that do not pass through a bot request remain available through docker compose logs.
 
-To configure the channel, enable Developer Mode in Discord, copy the target text channel ID, set `DISCORD_ADMIN_CHANNEL_ID` in the existing server `.env`, and ensure the bot can view the channel and send messages with embeds. Rebuild the bot after changing the environment:
-
-```sh
-docker compose up -d --build api discord-bot
-docker compose logs --tail=100 discord-bot
-```
+To configure the channel, enable Developer Mode in Discord, copy the target text channel ID, set DISCORD_ADMIN_CHANNEL_ID in the existing server .env, and ensure the bot can view the channel and send messages with embeds. Rebuild the bot after changing the environment.
 
 Then test:
-1. Run `/character name:Андрей` as a GM/admin and select Андрей; the card should show abilities, actions, class features, trained skills and equipment in separate fields.
-2. Run `/my-character` as a player with a linked, owner-confirmed character in `draft`, `pending_approval` or `active`; only that player's character should be returned.
-3. Run `/character-inventory name:<имя>` and `/character-spells name:<имя>`; verify that only equipment and actual spell Items are shown respectively.
+1. Run /character name:Андрей as a GM/admin; a unique match should open the compact card immediately. Use the buttons to inspect abilities, equipment and spells without creating extra messages.
+2. Run /my-character as a player with a linked, owner-confirmed character in draft, pending_approval or active; only that player's character should be returned. A single result should open automatically.
+3. Run /character-inventory name:<имя> and /character-spells name:<имя>; verify that all item/spell groups appear as fields in one Discord message each.
 4. Search for another player's character as the same player; it must not appear. A direct request using another Actor UUID must also return 404.
-4. If no ownership has been assigned and confirmed yet, an ordinary player should receive no character results. Do not change production ownership fields solely to make this test pass.
-5. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
-6. Do not deliberately disconnect the production Relay or Foundry session just to test alerts. Verify recovery notifications during a planned maintenance window or in a separate staging environment.
+5. If no ownership has been assigned and confirmed yet, an ordinary player should receive no character results. Do not change production ownership fields solely to make this test pass.
+6. Run /integration-status; verify PostgreSQL, Relay and Foundry are green.
+7. Do not deliberately disconnect the production Relay or Foundry session just to test alerts. Verify recovery notifications during a planned maintenance window or in a separate staging environment.
 
 ## Current command reference
 
