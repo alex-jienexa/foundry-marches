@@ -110,11 +110,11 @@ type characterDetails struct {
 		} `json:"experience"`
 	} `json:"progression"`
 	Build struct {
-		Ancestry   *characterReference `json:"ancestry"`
-		Heritage   *characterReference `json:"heritage"`
-		Background *characterReference `json:"background"`
-		Class      *characterReference `json:"class"`
-		KeyAbility *string `json:"keyAbility"`
+		Ancestry           *characterReference      `json:"ancestry"`
+		Heritage           *characterReference      `json:"heritage"`
+		Background         *characterReference      `json:"background"`
+		Class              *characterReference      `json:"class"`
+		KeyAbility         *string                  `json:"keyAbility"`
 		ClassProficiencies *classProficiencyDetails `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {

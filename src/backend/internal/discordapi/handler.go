@@ -30,7 +30,7 @@ const (
 	DraftCharacterPath  = "/api/internal/discord/characters/draft"
 	CharacterSearchPath = "/api/internal/discord/characters/search"
 	CharacterDetailPath = "/api/internal/discord/characters/detail"
-	MyCharactersPath   = "/api/internal/discord/characters/mine"
+	MyCharactersPath    = "/api/internal/discord/characters/mine"
 )
 
 type Handler struct {
