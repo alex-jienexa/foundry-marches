@@ -303,17 +303,20 @@ func TestResolveFoundryImageURL(t *testing.T) {
 }
 
 func TestCharacterCardUsesFoundryPlaceholderWithoutPortrait(t *testing.T) {
-	portrait := characterPortraitURL(nil, "https://foundry.example.test")
 	want := "https://foundry.example.test/systems/pf2e/icons/default-icons/character.svg"
-	if portrait == nil || *portrait != want {
-		t.Fatalf("placeholder portrait = %v, want %q", portrait, want)
-	}
-	character := characterDetails{}
-	character.Identity.Name = "Без портрета"
-	character.Identity.Image = portrait
-	embed := characterEmbed(character)
-	if embed.Thumbnail == nil || embed.Thumbnail.URL != want {
-		t.Fatalf("thumbnail = %+v, want Foundry placeholder", embed.Thumbnail)
+	empty := ""
+	for _, source := range []*string{nil, &empty} {
+		portrait := characterPortraitURL(source, "https://foundry.example.test")
+		if portrait == nil || *portrait != want {
+			t.Fatalf("placeholder portrait = %v, want %q", portrait, want)
+		}
+		character := characterDetails{}
+		character.Identity.Name = "Без портрета"
+		character.Identity.Image = portrait
+		embed := characterEmbed(character)
+		if embed.Thumbnail == nil || embed.Thumbnail.URL != want {
+			t.Fatalf("thumbnail = %+v, want Foundry placeholder", embed.Thumbnail)
+		}
 	}
 }
 
@@ -464,6 +467,33 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 			t.Errorf("spell output missing %q: %s", want, joined)
 		}
 	}
+}
+
+func TestCharacterEmbedFallsBackToReconstructedAbilityWhenStoredValueEmpty(t *testing.T) {
+	emptyScore, emptyModifier := (*int)(nil), (*int)(nil)
+	score, modifier := 16, 3
+	c := characterDetails{}
+	c.Identity.Name = "Персонаж с восстановленными характеристиками"
+	c.Statistics.Abilities = map[string]struct {
+		Score    *int  `json:"score"`
+		Modifier *int  `json:"modifier"`
+		Derived  bool  `json:"derived"`
+	}{"wis": {Score: emptyScore, Modifier: emptyModifier}}
+	c.Statistics.ReconstructedAbilities = map[string]struct {
+		Score    *int  `json:"score"`
+		Modifier *int  `json:"modifier"`
+		Derived  bool  `json:"derived"`
+	}{"wis": {Score: &score, Modifier: &modifier, Derived: true}}
+	embed := characterEmbed(c)
+	for _, field := range embed.Fields {
+		if field.Name == "Характеристики" {
+			if !strings.Contains(field.Value, "МДР: +3") {
+				t.Fatalf("ability field = %q, want reconstructed Wisdom modifier", field.Value)
+			}
+			return
+		}
+	}
+	t.Fatal("ability field missing")
 }
 
 func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
