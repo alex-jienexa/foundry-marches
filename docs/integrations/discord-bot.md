@@ -39,6 +39,8 @@ DISCORD_ADMIN_CHANNEL_ID=discord-admin-channel-id
 DISCORD_CAMPAIGN_ROLE_ID=1574386309584388106
 # Optional; default 60 seconds, allowed range 15..3600
 DISCORD_HEALTH_INTERVAL_SECONDS=60
+# Public Foundry URL used to resolve relative Actor portrait paths in Discord embeds
+FOUNDRY_PUBLIC_BASE_URL=https://foundry.example.com
 ```
 
 Generate the service-to-service token independently:
@@ -134,7 +136,13 @@ The draft creation operation writes one `characters` row and one audit event. Th
 
 ## 8. Character lookup and integration monitoring
 
-The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu.
+The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu. The `/my-character` command lists only the caller's own linked, owner-confirmed characters using the same ownership and lifecycle predicates as player lookup.
+
+The character Embed shows fundamental build choices (ancestry, heritage, background and class) when present in the Actor's actual Items, plus level, current HP, XP, hero points, ability scores when the Actor snapshot contains them, skills and categorized features. A missing HP maximum is shown as current HP only, not as a misleading `current / —` pair.
+
+The current example Actor snapshot stores `system.attributes.hp.value` and `temp`, but does not include `hp.max` or the prepared six ability scores under `system.abilities`. The decoder deliberately does not reconstruct these values from class/ancestry/gear rules. Therefore the card cannot yet display a maximum HP or six ability scores for that snapshot; those require a Foundry-side prepared-data export rather than guessing in the application.
+
+Relative portrait paths (for example `systems/pf2e/icons/...`) are converted to public URLs only when `FOUNDRY_PUBLIC_BASE_URL` is configured. Set it to the externally reachable base URL of the Foundry instance; do not set it to the Relay URL. Absolute HTTP(S) image URLs work without this setting.
 
 The Embed separates PF2e documents by their source type/category:
 - class abilities (`feat` with `system.category=class`);
@@ -142,9 +150,9 @@ The Embed separates PF2e documents by their source type/category:
 - actions (`type=action`), with the action kind shown where available;
 - class features from the class progression table, limited to the character's current level and deduplicated against matching Actor Items;
 - other feats (for example, general and skill feats);
-- equipment only (`CharacterItemDto.category=equipment`) in the `Предметы` field. Feats, actions, class features, ancestry, heritage, background and class documents are never presented as equipment.
+- equipment (`CharacterItemDto.category=equipment`) in the `Предметы` field.
 
-Fundamental build choices (ancestry, heritage, background and class) are not repeated as separate lines. Skills are displayed with PF2e proficiency names — Обучен, Эксперт, Мастер or Легенда. Rank 0/untrained and absent ranks are omitted. The decoder preserves source categories and action types; the bot does not infer a category from an Item's localized name.
+Skills are displayed with PF2e proficiency names — Обучен, Эксперт, Мастер or Легенда. Rank 0/untrained and absent ranks are omitted. The decoder preserves source categories and action types; the bot does not infer a category from an Item's localized name.
 
 Access is enforced by the backend, not only by Discord command visibility:
 - GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
@@ -171,8 +179,9 @@ docker compose logs --tail=100 discord-bot
 
 Then test:
 1. Run `/character name:Андрей` as a GM/admin and select Андрей; the card should show abilities, actions, class features, trained skills and equipment in separate fields.
-2. Run `/character name:<имя>` as a player with a linked, owner-confirmed character in `draft`, `pending_approval` or `active`; only that player's character should be returned.
-3. Search for another player's character as the same player; it must not appear. A direct request using another Actor UUID must also return 404.
+2. Run `/my-character` as a player with a linked, owner-confirmed character in `draft`, `pending_approval` or `active`; only that player's character should be returned.
+3. Run `/character-inventory name:<имя>` and `/character-spells name:<имя>`; verify that only equipment and actual spell Items are shown respectively.
+4. Search for another player's character as the same player; it must not appear. A direct request using another Actor UUID must also return 404.
 4. If no ownership has been assigned and confirmed yet, an ordinary player should receive no character results. Do not change production ownership fields solely to make this test pass.
 5. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
 6. Do not deliberately disconnect the production Relay or Foundry session just to test alerts. Verify recovery notifications during a planned maintenance window or in a separate staging environment.
@@ -188,6 +197,9 @@ Then test:
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link owner:@player` | Select Actor and application character, assign/confirm owner, preview and confirm link | `foundry.manage` |
 | `/character` | Search and display character data; GM sees all, players see only their own linked and owner-confirmed drafts, pending approvals and active characters | `characters.create` for own characters; `foundry.manage` for global access |
+| `/my-character` | Show the caller's own linked and owner-confirmed character(s) | `characters.create` or `foundry.manage` |
+| `/character-inventory name:<имя>` | Show equipment and quantities for a selected character | Same visibility as `/character` |
+| `/character-spells name:<имя>` | Show spell Items and their ranks for a selected character | Same visibility as `/character` |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
