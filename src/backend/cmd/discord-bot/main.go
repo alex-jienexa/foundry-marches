@@ -1099,11 +1099,12 @@ func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		if groupLabels[group] == "" { group = "equipment" }
 		line := item.Name
 		if item.Quantity != nil && *item.Quantity > 1 { line = appendLocalizedCharacterSuffix(line, " × "+strconv.Itoa(*item.Quantity)) }
-		if state := inventoryStateLabel(item); state != "" { line += " · **" + state + "**" }
+		state := inventoryStateLabel(item, containerNames)
+		if state != "" { line += " · **" + state + "**" }
 		if item.Usage != nil {
 			if usage := inventoryUsageLabel(*item.Usage); usage != "" { line += " · " + usage }
 		}
-		if item.ContainerID != nil {
+		if item.ContainerID != nil && state != "В РЮКЗАКЕ" {
 			if name := containerNames[*item.ContainerID]; name != "" { line += " · в " + name } else { line += " · внутри контейнера" }
 		}
 		groups[group] = append(groups[group], line)
@@ -1144,7 +1145,7 @@ func isInventoryItem(item characterItem) bool {
 	return item.Quantity != nil || item.Equipped != nil || item.Usage != nil || item.ContainerID != nil
 }
 
-func inventoryStateLabel(item characterItem) string {
+func inventoryStateLabel(item characterItem, containerNames map[string]string) string {
 	if item.Equipped == nil { return "" }
 	equipped := item.Equipped
 	states := make([]string, 0, 2)
@@ -1157,7 +1158,7 @@ func inventoryStateLabel(item characterItem) string {
 	switch carryType {
 	case "held": states = append(states, "В РУКАХ")
 	case "stowed":
-		if item.ContainerID != nil && strings.TrimSpace(*item.ContainerID) != "" { states = append(states, "В РЮКЗАКЕ") } else { states = append(states, "УБРАНО") }
+		if item.ContainerID != nil && containerNames[*item.ContainerID] != "" { states = append(states, "В РЮКЗАКЕ") } else { states = append(states, "УБРАНО") }
 	case "dropped": states = append(states, "БРОШЕНО")
 	}
 	return strings.Join(states, " · ")
