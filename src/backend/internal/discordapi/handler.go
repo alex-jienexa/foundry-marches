@@ -814,23 +814,21 @@ func (h *Handler) link(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ownerUserID := ""
-	{
-		err := h.db.QueryRowContext(r.Context(), `
+	err := h.db.QueryRowContext(r.Context(), `
 SELECT da.user_id::text
 FROM discord_accounts da
 JOIN users u ON u.id = da.user_id
 WHERE da.discord_id = $1 AND da.in_guild = true AND u.status = 'active'
 `, req.OwnerDiscordUserID).Scan(&ownerUserID)
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "the selected owner must register with /register first")
-			return
-		}
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "could not resolve selected character owner")
-			return
-		}
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "the selected owner must register with /register first")
+		return
 	}
-	err := h.foundry.LinkActorWithOwner(r.Context(), h.worldID, req.ActorUUID, req.CharacterID, userID, ownerUserID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not resolve selected character owner")
+		return
+	}
+	err = h.foundry.LinkActorWithOwner(r.Context(), h.worldID, req.ActorUUID, req.CharacterID, userID, ownerUserID)
 	switch {
 	case err == nil:
 		writeJSON(w, http.StatusOK, map[string]string{"status": "linked"})
