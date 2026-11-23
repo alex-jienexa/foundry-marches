@@ -32,6 +32,7 @@ const (
 	CharacterCreatePath   = "/api/internal/discord/characters/create"
 	CharacterSearchPath   = "/api/internal/discord/characters/search"
 	CharacterDetailPath   = "/api/internal/discord/characters/detail"
+	MyCharactersPath      = "/api/internal/discord/characters/mine"
 	IntegrationStatusPath = "/api/internal/discord/integration-status"
 )
 
@@ -145,6 +146,7 @@ type characterItem struct {
 	SystemCategory *string `json:"systemCategory"`
 	ActionType     *string `json:"actionType"`
 	Quantity       *int    `json:"quantity"`
+	Level          *int    `json:"level"`
 }
 type characterReference struct {
 	Name string `json:"name"`
@@ -221,7 +223,10 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "character-link", Description: "Связать Foundry Actor с персонажем и назначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "owner", Description: "Владелец персонажа (обязательно)", Type: discordgo.ApplicationCommandOptionUser, Required: true}}},
 		{Name: "character-create", Description: "Создать черновик персонажа для себя или игрока", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Владелец персонажа (для мастера)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
-		{Name: "character", Description: "Найти своего персонажа (GM видит всех) и показать данные Foundry", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
+		{Name: "character", Description: "Найти персонажа по имени (GM видит всех)", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
+		{Name: "my-character", Description: "Показать своего привязанного персонажа"},
+		{Name: "character-inventory", Description: "Показать инвентарь персонажа", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
+		{Name: "character-spells", Description: "Показать заклинания персонажа", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "integration-status", Description: "Проверить доступность API, Relay и Foundry"},
 		{Name: "role-grant", Description: "Назначить роль зарегистрированному участнику",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -351,7 +356,15 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.startSelection(s, i, id, u, "draft", "")
 	case "character":
 		o := commandOptions(i.ApplicationCommandData().Options)
-		b.startCharacterLookup(s, i, id, u, o["name"])
+		b.startCharacterLookup(s, i, id, u, o["name"], "view")
+	case "my-character":
+		b.startMyCharacterLookup(s, i, id, u)
+	case "character-inventory":
+		o := commandOptions(i.ApplicationCommandData().Options)
+		b.startCharacterLookup(s, i, id, u, o["name"], "inventory")
+	case "character-spells":
+		o := commandOptions(i.ApplicationCommandData().Options)
+		b.startCharacterLookup(s, i, id, u, o["name"], "spells")
 	case "integration-status":
 		b.showIntegrationStatus(s, i)
 	case "role-grant":
@@ -428,7 +441,7 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 	b.edit(s, i, label, components)
 }
 
-func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, query string) {
+func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, query, mode string) {
 	var result struct {
 		Actors []actor `json:"actors"`
 	}
@@ -443,7 +456,7 @@ func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.Interactio
 		b.edit(s, i, "Персонажи с таким именем не найдены в последней синхронизации Foundry.", nil)
 		return
 	}
-	flow := &selectionFlow{mode: "view", stage: "actor", discordID: u.ID, guildID: i.GuildID,
+	flow := &selectionFlow{mode: mode, stage: "actor", discordID: u.ID, guildID: i.GuildID,
 		actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
 	key, err := randomKey()
 	if err != nil {
@@ -455,6 +468,32 @@ func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.Interactio
 	b.flows[key] = flow
 	b.mu.Unlock()
 	b.edit(s, i, fmt.Sprintf("Найдено персонажей: %d. Выбери нужного:", len(result.Actors)), b.actorSelectionComponents(key, flow))
+}
+
+func (b *bot) startMyCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User) {
+	var result struct {
+		Actors []actor `json:"actors"`
+	}
+	if err := b.post(MyCharactersPath, id, &result); err != nil {
+		b.edit(s, i, "Не удалось получить твоих персонажей: "+err.Error(), nil)
+		return
+	}
+	if len(result.Actors) == 0 {
+		b.edit(s, i, "У тебя пока нет привязанного и подтверждённого персонажа. Попроси мастера связать персонажа с твоим Discord-аккаунтом через `/character-link`.", nil)
+		return
+	}
+	flow := &selectionFlow{mode: "view", stage: "actor", discordID: u.ID, guildID: i.GuildID,
+		actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
+	key, err := randomKey()
+	if err != nil {
+		b.edit(s, i, "Не удалось подготовить выбор персонажа.", nil)
+		return
+	}
+	b.mu.Lock()
+	b.pruneFlowsLocked()
+	b.flows[key] = flow
+	b.mu.Unlock()
+	b.edit(s, i, "Выбери своего персонажа:", b.actorSelectionComponents(key, flow))
 }
 
 func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -532,7 +571,8 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			return
 		}
 		flow.actorUUID = chosen.ActorUUID
-		if flow.mode == "view" {
+		if flow.mode == "view" || flow.mode == "inventory" || flow.mode == "spells" {
+			mode := flow.mode
 			delete(b.flows, key)
 			b.mu.Unlock()
 			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
@@ -547,7 +587,14 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				b.edit(s, i, "Не удалось загрузить данные персонажа: "+err.Error(), nil)
 				return
 			}
-			b.editEmbed(s, i, characterEmbed(details))
+			switch mode {
+			case "inventory":
+				b.editEmbed(s, i, characterInventoryEmbed(details))
+			case "spells":
+				b.editEmbed(s, i, characterSpellsEmbed(details))
+			default:
+				b.editEmbed(s, i, characterEmbed(details))
+			}
 			return
 		}
 		if flow.mode == "draft" {
@@ -751,6 +798,50 @@ func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, em
 	if err != nil {
 		log.Printf("Discord embed edit: %v", err)
 	}
+}
+
+func characterInventoryEmbed(c characterDetails) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{Title: "Инвентарь · " + c.Identity.Name, Color: 0x5865F2}
+	lines := make([]string, 0)
+	for _, item := range c.Items {
+		if item.Category != "equipment" || item.Name == "" {
+			continue
+		}
+		line := item.Name
+		if item.Quantity != nil && *item.Quantity > 1 {
+			line += " × " + strconv.Itoa(*item.Quantity)
+		}
+		lines = append(lines, line)
+	}
+	if len(lines) == 0 {
+		embed.Description = "В инвентаре нет предметов или они отсутствуют в последней синхронизации."
+	} else {
+		addCharacterListField(embed, "Предметы", lines)
+	}
+	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Данные из последней синхронизации Foundry"}
+	return embed
+}
+
+func characterSpellsEmbed(c characterDetails) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{Title: "Заклинания · " + c.Identity.Name, Color: 0x5865F2}
+	lines := make([]string, 0)
+	for _, item := range c.Items {
+		if item.Type != "spell" || item.Name == "" {
+			continue
+		}
+		line := item.Name
+		if item.Level != nil {
+			line = fmt.Sprintf("%s · ранг %d", line, *item.Level)
+		}
+		lines = append(lines, line)
+	}
+	if len(lines) == 0 {
+		embed.Description = "В последней синхронизации Foundry заклинания не найдены."
+	} else {
+		addCharacterListField(embed, "Заклинания", lines)
+	}
+	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Подготовленные слоты и доступность применений пока не отображаются"}
+	return embed
 }
 
 func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
