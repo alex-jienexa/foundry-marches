@@ -179,7 +179,6 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 		{"Действия", "Реагирующий удар — реакция"},
 		{"Особенности класса", "Реагирующий удар"},
 		{"Способности навыков", "Сильный носильщик"},
-		{"Другие способности", "Сильный носильщик"},
 	}
 	for _, check := range checks {
 		if !strings.Contains(fields[check.field], check.want) {
@@ -191,6 +190,9 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 	}
 	if strings.Contains(fields["Другие способности"], "Блок щитом") {
 		t.Errorf("class feature duplicate must not appear under other abilities: %q", fields["Другие способности"])
+	}
+	if strings.Contains(fields["Другие способности"], "Сильный носильщик") {
+		t.Errorf("skill feat must not be duplicated under other abilities: %q", fields["Другие способности"])
 	}
 	if strings.Count(fields["Особенности класса"], "Реагирующий удар") != 1 {
 		t.Errorf("class feature must not be duplicated: %q", fields["Особенности класса"])
@@ -272,11 +274,14 @@ func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
 	if !strings.Contains(fields["Обучение навыкам"], "Дипломатия — Обучен") {
 		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Обучение навыкам"])
 	}
-	if !strings.Contains(fields["Способности · Дипломатия"], "Остроумная реплика") {
-		t.Fatalf("Diplomacy skill-feat group = %q", fields["Способности · Дипломатия"])
+	grouped := fields["Способности навыков"]
+	for _, want := range []string{"Дипломатия", "- Остроумная реплика", "Атлетика", "- Атлетическая мощь"} {
+		if !strings.Contains(grouped, want) {
+			t.Errorf("grouped skill feats = %q, missing %q", grouped, want)
+		}
 	}
-	if !strings.Contains(fields["Способности · Атлетика"], "Атлетическая мощь") {
-		t.Fatalf("Athletics skill-feat group = %q", fields["Способности · Атлетика"])
+	if strings.Contains(grouped, "Способности · ") {
+		t.Errorf("skill names must be lines inside one field, not separate field headings: %q", grouped)
 	}
 }
 
@@ -307,8 +312,8 @@ func TestCharacterEmbedUsesPublicFoundryPortrait(t *testing.T) {
 	character.Identity.Name = "Портретный персонаж"
 	character.Identity.Image = resolved
 	embed := characterEmbed(character)
-	if embed.Image == nil || embed.Image.URL != *resolved {
-		t.Fatalf("embed image = %+v, want resolved public portrait URL", embed.Image)
+	if embed.Thumbnail == nil || embed.Thumbnail.URL != *resolved {
+		t.Fatalf("embed thumbnail = %+v, want resolved public portrait URL", embed.Thumbnail)
 	}
 }
 
@@ -324,8 +329,8 @@ func TestCharacterEmbedDoesNotRenderMissingHPMaximumAsDash(t *testing.T) {
 	embed := characterEmbed(c)
 	for _, field := range embed.Fields {
 		if field.Name == "ОЗ" {
-			if field.Value != "19 ОЗ" {
-				t.Fatalf("HP field = %q, want current HP without fabricated maximum", field.Value)
+			if field.Value != "19 / —" {
+				t.Fatalf("HP field = %q, want current and explicitly unavailable maximum", field.Value)
 			}
 			return
 		}
@@ -448,7 +453,7 @@ func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
 			t.Errorf("summary card is missing %q", name)
 		}
 	}
-	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: 12 (+1)") || fields["Опыт"] != "400" {
+	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: +1") || strings.Contains(fields["Характеристики"], "12") || fields["Опыт"] != "400" {
 		t.Fatalf("summary card fields = %#v", fields)
 	}
 	for _, name := range []string{"Способности класса", "Действия", "Навыки", "Предметы"} {
