@@ -29,6 +29,7 @@ const (
 	GrantRolePath         = "/api/internal/discord/roles/grant"
 	MapRolePath           = "/api/internal/discord/roles/map"
 	DraftCharacterPath    = "/api/internal/discord/characters/draft"
+	CharacterCreatePath   = "/api/internal/discord/characters/create"
 	CharacterSearchPath   = "/api/internal/discord/characters/search"
 	CharacterDetailPath   = "/api/internal/discord/characters/detail"
 	IntegrationStatusPath = "/api/internal/discord/integration-status"
@@ -36,6 +37,7 @@ const (
 
 type bot struct {
 	apiURL, apiToken, guildID string
+	campaignRoleID             string
 	adminChannelID            string
 	healthInterval            time.Duration
 	client                    *http.Client
@@ -48,11 +50,11 @@ type bot struct {
 	lastHealthState           string
 }
 type pendingLink struct {
-	actorUUID, characterID, discordID, guildID string
+	actorUUID, characterID, discordID, guildID, ownerDiscordID string
 	expiresAt                                  time.Time
 }
 type selectionFlow struct {
-	mode, stage, discordID, guildID, actorUUID string
+	mode, stage, discordID, guildID, actorUUID, ownerDiscordID string
 	actors                                     []actor
 	characters                                 []character
 	page                                       int
@@ -72,6 +74,7 @@ type linkPayload struct {
 	identity
 	ActorUUID   string `json:"actor_uuid"`
 	CharacterID string `json:"character_id"`
+	OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
 }
 type actor struct {
 	ActorUUID string `json:"actor_uuid"`
@@ -162,6 +165,7 @@ func main() {
 	token, appID := requiredEnv("DISCORD_BOT_TOKEN"), requiredEnv("DISCORD_APPLICATION_ID")
 	guildID, apiToken := requiredEnv("DISCORD_GUILD_ID"), requiredEnv("DISCORD_BOT_API_TOKEN")
 	adminChannelID := strings.TrimSpace(os.Getenv("DISCORD_ADMIN_CHANNEL_ID"))
+	campaignRoleID := strings.TrimSpace(os.Getenv("DISCORD_CAMPAIGN_ROLE_ID"))
 	healthInterval := 60 * time.Second
 	if raw := strings.TrimSpace(os.Getenv("DISCORD_HEALTH_INTERVAL_SECONDS")); raw != "" {
 		seconds, err := strconv.Atoi(raw)
@@ -171,7 +175,7 @@ func main() {
 		healthInterval = time.Duration(seconds) * time.Second
 	}
 	b := &bot{apiURL: strings.TrimRight(requiredEnv("BACKEND_INTERNAL_URL"), "/"), apiToken: apiToken,
-		guildID: guildID, adminChannelID: adminChannelID, healthInterval: healthInterval,
+		guildID: guildID, campaignRoleID: campaignRoleID, adminChannelID: adminChannelID, healthInterval: healthInterval,
 		client: &http.Client{Timeout: 12 * time.Second}, pending: make(map[string]pendingLink),
 		flows: make(map[string]*selectionFlow), reportedErrors: make(map[string]time.Time)}
 	if len(apiToken) < 32 {
@@ -205,7 +209,8 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "register", Description: "Зарегистрироваться в FoundryMarches"},
 		{Name: "foundry-actors", Description: "Показать несвязанных персонажей Foundry"},
 		{Name: "characters", Description: "Показать персонажей приложения и их ID"},
-		{Name: "character-link", Description: "Выбрать Foundry Actor и персонажа приложения для привязки"},
+		{Name: "character-link", Description: "Связать Foundry Actor с персонажем и назначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "owner", Description: "Владелец персонажа", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
+		{Name: "character-create", Description: "Создать черновик персонажа для себя или игрока", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Владелец персонажа (для мастера)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
 		{Name: "character", Description: "Найти своего персонажа (GM видит всех) и показать данные Foundry", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "integration-status", Description: "Проверить доступность API, Relay и Foundry"},
@@ -260,7 +265,14 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			b.edit(s, i, "Регистрация не выполнена: "+err.Error(), nil)
 			return
 		}
-		b.edit(s, i, "Регистрация завершена. Назначена базовая роль player. Внутренний ID: "+out.UserID, nil)
+		if b.campaignRoleID != "" {
+			if err := s.GuildMemberRoleAdd(i.GuildID, u.ID, b.campaignRoleID); err != nil {
+				log.Printf("Discord campaign role assignment failed for user %s: %v", u.ID, err)
+				b.edit(s, i, "Аккаунт зарегистрирован, но роль доступа к кампании выдать не удалось. Сообщи мастеру.", nil)
+				return
+			}
+		}
+		b.edit(s, i, "Добро пожаловать в FoundryMarches! Регистрация завершена, доступ к каналам кампании выдан.", nil)
 	case "foundry-actors":
 		var out struct {
 			Actors []actor `json:"actors"`
@@ -296,7 +308,23 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			b.edit(s, i, truncateMessage("Персонажи приложения (до 200):\n"+strings.Join(lines, "\n")), nil)
 		}
 	case "character-link":
-		b.startSelection(s, i, id, u, "link")
+		o := commandOptions(i.ApplicationCommandData().Options)
+		b.startSelection(s, i, id, u, "link", o["owner"])
+	case "character-create":
+		o := commandOptions(i.ApplicationCommandData().Options)
+		var created character
+		payload := struct {
+			identity
+			Name string `json:"name"`
+			OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"`
+		}{id, o["name"], o["owner"]}
+		if err := b.post(CharacterCreatePath, payload, &created); err != nil {
+			b.edit(s, i, "Не удалось создать персонажа: "+err.Error(), nil)
+			return
+		}
+		ownerText := "ты"
+		if o["owner"] != "" { ownerText = "<@" + o["owner"] + ">" }
+		b.edit(s, i, fmt.Sprintf("**Черновик персонажа создан**\n\nИмя: **%s**\nВладелец: %s\nСтатус: `draft`\n\nМастер сможет связать его с Foundry Actor командой `/character-link`.", created.Name, ownerText), nil)
 	case "character-draft":
 		b.startSelection(s, i, id, u, "draft")
 	case "character":
@@ -333,7 +361,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, mode string) {
+func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, mode, ownerDiscordID string) {
 	var actorResult struct {
 		Actors []actor `json:"actors"`
 	}
@@ -346,7 +374,7 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 		return
 	}
 	flow := &selectionFlow{mode: mode, stage: "actor", discordID: u.ID, guildID: i.GuildID,
-		actors: actorResult.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
+		actors: actorResult.Actors, ownerDiscordID: ownerDiscordID, expiresAt: time.Now().Add(10 * time.Minute)}
 	if mode == "link" {
 		var characterResult struct {
 			Characters []character `json:"characters"`
@@ -543,7 +571,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 		if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
 			return
 		}
-		payload := linkPayload{identity: b.identity(i, u), ActorUUID: actorUUID, CharacterID: chosen.ID}
+		payload := linkPayload{identity: b.identity(i, u), ActorUUID: actorUUID, CharacterID: chosen.ID, OwnerDiscordUserID: flow.ownerDiscordID}
 		var preview linkPreview
 		if err := b.post(PreviewPath, payload, &preview); err != nil {
 			b.edit(s, i, "Нельзя подготовить привязку: "+err.Error(), nil)
@@ -556,7 +584,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 		}
 		b.mu.Lock()
 		b.prunePendingLocked()
-		b.pending[confirmKey] = pendingLink{payload.ActorUUID, payload.CharacterID, u.ID, i.GuildID, time.Now().Add(10 * time.Minute)}
+		b.pending[confirmKey] = pendingLink{actorUUID: payload.ActorUUID, characterID: payload.CharacterID, discordID: u.ID, guildID: i.GuildID, ownerDiscordID: flow.ownerDiscordID, expiresAt: time.Now().Add(10 * time.Minute)}
 		b.mu.Unlock()
 		components := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.Button{Label: "Подтвердить привязку", Style: discordgo.SuccessButton, CustomID: "fm-link:" + confirmKey}}}}
 		b.edit(s, i, fmt.Sprintf("Проверьте привязку:\nFoundry: %s (%s)\nПерсонаж: %s (%s)\nВладелец персонажа не изменится.", preview.ActorName, preview.ActorUUID, preview.CharacterName, preview.CharacterID), components)
@@ -677,11 +705,11 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 		log.Printf("Discord deferred response: %v", err)
 		return
 	}
-	err := b.post(LinkPath, linkPayload{identity: b.identity(i, u), ActorUUID: p.actorUUID, CharacterID: p.characterID}, nil)
+	err := b.post(LinkPath, linkPayload{identity: b.identity(i, u), ActorUUID: p.actorUUID, CharacterID: p.characterID, OwnerDiscordUserID: p.ownerDiscordID}, nil)
 	if err != nil {
 		b.edit(s, i, "Привязка не выполнена: "+err.Error(), []discordgo.MessageComponent{})
 	} else {
-		b.edit(s, i, "Привязка выполнена. Владение персонажем не менялось.", []discordgo.MessageComponent{})
+		b.edit(s, i, "Привязка Foundry выполнена. Владелец персонажа закреплён за указанным Discord-аккаунтом.", []discordgo.MessageComponent{})
 	}
 }
 
