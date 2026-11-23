@@ -293,7 +293,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if len(lines) == 0 {
 			b.edit(s, i, "✨ **Все персонажи Foundry уже связаны.**\n\nЕсли ожидаемый персонаж отсутствует, запусти синхронизацию мира.", nil)
 		} else {
-			b.editEmbed(s, i, directoryEmbed("Персонажи Foundry", "Актёры, которые ещё не связаны с персонажами приложения. Выбери нужного в команде `/character-link`.", lines, 100))
+			b.editEmbed(s, i, directoryEmbed("Персонажи Foundry", "Актёры, которые ещё не связаны с персонажами приложения. Выбери нужного в команде `/character-link`.", lines, 50))
 		}
 	case "characters":
 		var out struct {
@@ -310,7 +310,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if len(lines) == 0 {
 			b.edit(s, i, "📝 **Пока нет персонажей приложения.**\n\nСоздай первого командой `/character-create`.", nil)
 		} else {
-			b.editEmbed(s, i, directoryEmbed("Персонажи приложения", "Черновики и зарегистрированные персонажи кампании.", lines, 60))
+			b.editEmbed(s, i, directoryEmbed("Персонажи приложения", "Черновики и зарегистрированные персонажи кампании.", lines, 40))
 		}
 	case "character-link":
 		o := commandOptions(i.ApplicationCommandData().Options)
@@ -872,7 +872,7 @@ func directoryEmbed(title, description string, entries []string, maxShown int) *
 	embed := &discordgo.MessageEmbed{Title: title, Description: description, Color: 0x5865F2}
 	shown := entries
 	if len(shown) > maxShown { shown = shown[:maxShown] }
-	const perField = 20
+	const perField = 8
 	for start, fieldNumber := 0, 1; start < len(shown); start, fieldNumber = start+perField, fieldNumber+1 {
 		end := start + perField
 		if end > len(shown) { end = len(shown) }
