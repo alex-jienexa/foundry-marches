@@ -45,7 +45,7 @@ ON CONFLICT DO NOTHING;
 -- The API uses the least-privilege foundry_api database role.
 GRANT SELECT ON users, discord_accounts, roles, permissions,
   role_permissions, user_roles, discord_role_map, characters, foundry_actors,
-  character_transfers
+  character_transfers, adventure_signups, expedition_members
   TO foundry_api;
 GRANT INSERT, UPDATE ON users, discord_accounts TO foundry_api;
 GRANT INSERT, UPDATE, DELETE ON user_roles, discord_role_map TO foundry_api;
