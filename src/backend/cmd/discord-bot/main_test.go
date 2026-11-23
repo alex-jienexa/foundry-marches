@@ -176,8 +176,7 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 	}{
 		{"Способности класса", "Двойной разрез"},
 		{"Способности родословной", "Видящий во мраке"},
-		{"Действия", "Реагирующий удар — реакция"},
-		{"Особенности класса", "Реагирующий удар"},
+				{"Особенности класса", "Реагирующий удар"},
 		{"Способности навыков", "Сильный носильщик"},
 	}
 	for _, check := range checks {
@@ -219,7 +218,7 @@ func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testin
 	for name, value := range fields {
 		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "чары") && strings.Contains(value, "Свет") { cantripPrepared = true }
 		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Магическая стрела") { rankOnePrepared = true }
-		if strings.Contains(name, "Подготовка") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Щит") { rankOneBook = true }
+		if strings.Contains(name, "ПОДГОТОВКА") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Щит") { rankOneBook = true }
 	}
 	if !cantripPrepared || !rankOnePrepared || !rankOneBook {
 		t.Fatalf("prepared/book groups incorrect: %+v", fields)
@@ -271,7 +270,7 @@ func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
 	embed := characterSkillsEmbed(c)
 	fields := make(map[string]string)
 	for _, field := range embed.Fields { fields[field.Name] = field.Value }
-	if !strings.Contains(fields["Обучение навыкам"], "Дипломатия — Обучен") {
+	if !strings.Contains(fields["Все навыки"], "Дипломатия — Обучен") {
 		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Обучение навыкам"])
 	}
 	grouped := fields["Способности навыков"]
@@ -356,6 +355,78 @@ func TestCharacterSpellsGroupSpontaneousCantripsSeparately(t *testing.T) {
 		if !strings.Contains(joined, want) {
 			t.Errorf("spontaneous spell output missing %q: %s", want, joined)
 		}
+	}
+}
+
+func TestCharacterCardUsesIdenticalCoreLayoutForMissingData(t *testing.T) {
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	embed := characterEmbed(c)
+	wantNames := []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"}
+	if len(embed.Fields) != len(wantNames) {
+		t.Fatalf("card fields = %d, want exactly %d: %+v", len(embed.Fields), len(wantNames), embed.Fields)
+	}
+	for i, name := range wantNames {
+		if embed.Fields[i].Name != name {
+			t.Errorf("field %d = %q, want %q", i, embed.Fields[i].Name, name)
+		}
+	}
+	if embed.Description != "" {
+		t.Errorf("card description = %q, derived-stat explanation should not be shown", embed.Description)
+	}
+	if got, want := embed.Fields[4].Value, "СИЛ: — · ЛОВ: — · ТЕЛ: — · ИНТ: — · МДР: — · ХАР: —"; got != want {
+		t.Errorf("missing abilities = %q, want %q", got, want)
+	}
+	if embed.Fields[5].Value != "— / —" {
+		t.Errorf("missing XP = %q, want current/maximum placeholders", embed.Fields[5].Value)
+	}
+}
+
+func TestCharacterSkillLinesSortByHighestProficiencyFirst(t *testing.T) {
+	trained, expert, master, legendary := 1, 2, 3, 4
+	lines := characterSkillLines(map[string]characterSkill{
+		"athletics": {Rank: &trained},
+		"crafting": {Rank: &expert},
+		"intimidation": {Rank: &legendary},
+		"thievery": {Rank: &master},
+	}, map[string]characterSkill{})
+	want := []string{"Запугивание — Легенда", "Воровство — Мастер", "Ремесло — Эксперт", "Атлетика — Обучен"}
+	if len(lines) != len(want) {
+		t.Fatalf("skill lines = %v, want %v", lines, want)
+	}
+	for i := range want {
+		if lines[i] != want[i] {
+			t.Errorf("skill line %d = %q, want %q", i, lines[i], want[i])
+		}
+	}
+}
+
+func TestCharacterSkillAbilityGroupsSortByCountAndUnknownLast(t *testing.T) {
+	skill := "skill"
+	athletics, diplomacy, unknown := "athletics", "diplomacy", ""
+	c := characterDetails{}
+	c.Items = []characterItem{
+		{Name: "Атлетика 1", Type: "feat", SystemCategory: &skill, Skill: &athletics},
+		{Name: "Дипломатия 1", Type: "feat", SystemCategory: &skill, Skill: &diplomacy},
+		{Name: "Дипломатия 2", Type: "feat", SystemCategory: &skill, Skill: &diplomacy},
+		{Name: "Неизвестная способность", Type: "feat", SystemCategory: &skill, Skill: &unknown},
+	}
+	embed := characterSkillsEmbed(c)
+	var grouped string
+	for _, field := range embed.Fields {
+		if field.Name == "Способности навыков" {
+			grouped = field.Value
+		}
+	}
+	diplomacyIndex := strings.Index(grouped, "Дипломатия")
+	athleticsIndex := strings.Index(grouped, "Атлетика")
+	unknownIndex := strings.Index(grouped, "Навык не определён")
+	if diplomacyIndex < 0 || athleticsIndex < 0 || unknownIndex < 0 ||
+		!(diplomacyIndex < athleticsIndex && athleticsIndex < unknownIndex) {
+		t.Fatalf("skill ability groups are not ordered by count with unknown last: %q", grouped)
+	}
+	if strings.Contains(grouped, "ещё") {
+		t.Fatalf("skill ability list must not be shortened: %q", grouped)
 	}
 }
 
@@ -537,7 +608,7 @@ func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
 			t.Errorf("summary card is missing %q", name)
 		}
 	}
-	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: +1") || strings.Contains(fields["Характеристики"], "12") || fields["Опыт"] != "400" {
+	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: +1") || strings.Contains(fields["Характеристики"], "12") || fields["Опыт"] != "400 / —" {
 		t.Fatalf("summary card fields = %#v", fields)
 	}
 	for _, name := range []string{"Способности класса", "Действия", "Навыки", "Предметы"} {
