@@ -35,6 +35,8 @@ const (
 	CharacterSearchPath   = "/api/internal/discord/characters/search"
 	CharacterDetailPath   = "/api/internal/discord/characters/detail"
 	MyCharactersPath      = "/api/internal/discord/characters/mine"
+	FoundrySyncPath       = "/api/internal/discord/foundry-sync"
+	StartupFoundrySyncPath = "/api/internal/discord/foundry-sync/startup"
 	IntegrationStatusPath = "/api/internal/discord/integration-status"
 )
 
@@ -45,6 +47,7 @@ type bot struct {
 	adminChannelID            string
 	healthInterval            time.Duration
 	client                    *http.Client
+	syncClient                *http.Client
 	session                   *discordgo.Session
 	mu                        sync.Mutex
 	reportMu                  sync.Mutex
@@ -189,6 +192,13 @@ type healthComponent struct {
 	OK     bool   `json:"ok"`
 	Detail string `json:"detail,omitempty"`
 }
+type syncReport struct {
+	Discovered       int `json:"discovered"`
+	CharactersSynced int `json:"charactersSynced"`
+	SnapshotsOnly    int `json:"snapshotsOnly"`
+	Failed           int `json:"failed"`
+}
+
 type integrationStatus struct {
 	Database healthComponent `json:"database"`
 	Relay    healthComponent `json:"relay"`
@@ -211,7 +221,7 @@ func main() {
 	}
 	b := &bot{apiURL: strings.TrimRight(requiredEnv("BACKEND_INTERNAL_URL"), "/"), apiToken: apiToken,
 		guildID: guildID, foundryPublicBaseURL: foundryPublicBaseURL, campaignRoleID: campaignRoleID, adminChannelID: adminChannelID, healthInterval: healthInterval,
-		client: &http.Client{Timeout: 12 * time.Second}, pending: make(map[string]pendingLink),
+		client: &http.Client{Timeout: 12 * time.Second}, syncClient: &http.Client{Timeout: 10 * time.Minute}, pending: make(map[string]pendingLink),
 		flows: make(map[string]*selectionFlow), reportedErrors: make(map[string]time.Time)}
 	if len(apiToken) < 32 {
 		log.Fatal("DISCORD_BOT_API_TOKEN must contain at least 32 characters")
@@ -231,6 +241,7 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("FoundryMarches bot connected; guild=%s", guildID)
+	go b.syncOnStartup()
 	if adminChannelID != "" {
 		go b.monitorIntegrations(s)
 	} else {
@@ -250,6 +261,7 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
 		{Name: "character", Description: "Найти персонажа по имени (GM видит всех)", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "my-character", Description: "Показать своего привязанного персонажа"},
+		{Name: "foundry-sync", Description: "Обновить снимки всех Actor из Foundry"},
 		{Name: "character-inventory", Description: "Показать инвентарь персонажа", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "character-spells", Description: "Показать заклинания персонажа", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "integration-status", Description: "Проверить доступность API, Relay и Foundry"},
@@ -387,6 +399,13 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.startCharacterLookup(s, i, id, u, o["name"], "view")
 	case "my-character":
 		b.startMyCharacterLookup(s, i, id, u)
+	case "foundry-sync":
+		var report syncReport
+		if err := b.post(FoundrySyncPath, id, &report); err != nil {
+			b.edit(s, i, "Синхронизация Foundry не выполнена: "+err.Error(), nil)
+			return
+		}
+		b.edit(s, i, fmt.Sprintf("**Синхронизация Foundry завершена**\n\nОбнаружено Actor: **%d**\nОбновлено связанных персонажей: **%d**\nСнимков без привязки: **%d**\nОшибок отдельных Actor: **%d**", report.Discovered, report.CharactersSynced, report.SnapshotsOnly, report.Failed), nil)
 	case "character-inventory":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		b.startCharacterLookup(s, i, id, u, o["name"], "inventory")
@@ -1418,6 +1437,15 @@ func intValue(value *int) string {
 	return strconv.Itoa(*value)
 }
 
+func (b *bot) syncOnStartup() {
+	var report syncReport
+	if err := b.post(StartupFoundrySyncPath, struct{}{}, &report); err != nil {
+		b.reportAdminError("Foundry startup sync", err)
+		return
+	}
+	log.Printf("Foundry startup sync finished: discovered=%d characters=%d snapshots=%d failed=%d", report.Discovered, report.CharactersSynced, report.SnapshotsOnly, report.Failed)
+}
+
 func (b *bot) fetchIntegrationStatus() (integrationStatus, error) {
 	var status integrationStatus
 	err := b.post(IntegrationStatusPath, struct{}{}, &status)
@@ -1569,7 +1597,11 @@ func (b *bot) post(path string, payload, target any) error {
 	}
 	req.Header.Set("Authorization", "Bearer "+b.apiToken)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := b.client.Do(req)
+	client := b.client
+	if path == FoundrySyncPath || path == StartupFoundrySyncPath {
+		client = b.syncClient
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		b.reportAdminError("backend request "+path, err)
 		return err
