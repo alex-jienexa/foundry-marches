@@ -58,7 +58,7 @@ FOR UPDATE OF fa, c
 
 	result, err := tx.ExecContext(ctx, `
 UPDATE foundry_actors
-SET character_id = NULL, linked_at = NULL, owner_confirmed_at = NULL, updated_at = now()
+SET character_id = NULL, owner_confirmed_at = NULL, updated_at = now()
 WHERE world_id = $1 AND actor_uuid = $2 AND character_id = $3
 `, worldID, actorUUID, characterID)
 	if err != nil {
