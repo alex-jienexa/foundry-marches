@@ -114,6 +114,7 @@ type characterDetails struct {
 		Heritage   *characterReference `json:"heritage"`
 		Background *characterReference `json:"background"`
 		Class      *characterReference `json:"class"`
+		KeyAbility *string `json:"keyAbility"`
 		ClassProficiencies *classProficiencyDetails `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {
@@ -926,6 +927,13 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 		Name: "Опыт", Value: xp, Inline: true,
 	})
 
+	if c.Build.KeyAbility != nil {
+		keyAbilityNames := map[string]string{"str": "Сила", "dex": "Ловкость", "con": "Телосложение", "int": "Интеллект", "wis": "Мудрость", "cha": "Харизма"}
+		if label := keyAbilityNames[strings.ToLower(*c.Build.KeyAbility)]; label != "" {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Ключевая характеристика", Value: label, Inline: true})
+		}
+	}
+
 	abilityOrder := []string{"str", "dex", "con", "int", "wis", "cha"}
 	abilityNames := map[string]string{
 		"str": "СИЛ",
@@ -950,7 +958,11 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 			abilities = append(abilities, line)
 		}
 	}
-	addCharacterListField(embed, "Характеристики", abilities)
+	if len(abilities) == 0 {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Характеристики", Value: "Значения не сохранены в Actor snapshot", Inline: false})
+	} else {
+		addCharacterListField(embed, "Характеристики", abilities)
+	}
 
 	if c.Resources.HeroPoints != nil {
 		hero := intValue(c.Resources.HeroPoints.Value)
