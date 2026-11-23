@@ -1435,13 +1435,9 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	if len(abilities) == 0 {
 		abilities = append(abilities, "Нет данных в снимке Foundry")
 	}
-	abilityFieldName := "Характеристики"
+	addCharacterListField(embed, "Характеристики", abilities)
 	if c.Statistics.AbilitiesDerived {
-		abilityFieldName = "Характеристики · расчёт по повышениям"
-	}
-	addCharacterListField(embed, abilityFieldName, abilities)
-	if c.Statistics.AbilitiesDerived {
-		embed.Description = "Значения рассчитаны по выбранным повышениям PF2e из родословной, предыстории, класса и повышений по уровням; это не сохранённые значения Actor."
+		embed.Description = "Недостающие значения рассчитаны по выбранным повышениям PF2e из родословной, предыстории, класса и повышений по уровням; они не являются сохранёнными значениями Actor."
 	}
 	xp := intValue(c.Progression.Experience.Value)
 	if c.Progression.Experience.Max != nil {
