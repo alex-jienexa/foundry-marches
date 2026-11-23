@@ -52,6 +52,7 @@ type bot struct {
 	mu                        sync.Mutex
 	reportMu                  sync.Mutex
 	pending                   map[string]pendingLink
+	pendingUnlinks            map[string]pendingUnlink
 	flows                     map[string]*selectionFlow
 	reportedErrors            map[string]time.Time
 	lastHealthState           string
@@ -59,6 +60,10 @@ type bot struct {
 type pendingLink struct {
 	actorUUID, characterID, discordID, guildID, ownerDiscordID string
 	expiresAt                                                  time.Time
+}
+type pendingUnlink struct {
+	actorUUID, actorName, discordID, guildID, ownerDiscordID string
+	expiresAt time.Time
 }
 type selectionFlow struct {
 	mode, stage, discordID, guildID, actorUUID, ownerDiscordID string
@@ -223,7 +228,7 @@ func main() {
 	}
 	b := &bot{apiURL: strings.TrimRight(requiredEnv("BACKEND_INTERNAL_URL"), "/"), apiToken: apiToken,
 		guildID: guildID, foundryPublicBaseURL: foundryPublicBaseURL, campaignRoleID: campaignRoleID, adminChannelID: adminChannelID, healthInterval: healthInterval,
-		client: &http.Client{Timeout: 12 * time.Second}, syncClient: &http.Client{Timeout: 10 * time.Minute}, pending: make(map[string]pendingLink),
+		client: &http.Client{Timeout: 12 * time.Second}, syncClient: &http.Client{Timeout: 10 * time.Minute}, pending: make(map[string]pendingLink), pendingUnlinks: make(map[string]pendingUnlink),
 		flows: make(map[string]*selectionFlow), reportedErrors: make(map[string]time.Time)}
 	if len(apiToken) < 32 {
 		log.Fatal("DISCORD_BOT_API_TOKEN must contain at least 32 characters")
@@ -623,16 +628,21 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 		if strings.HasPrefix(flow.mode, "unlink:") {
 			ownerDiscordID := strings.TrimPrefix(flow.mode, "unlink:")
 			delete(b.flows, key)
+			pendingKey, err := randomKey()
+			if err != nil {
+				b.mu.Unlock()
+				b.reply(s, i, "Не удалось подготовить подтверждение отвязки.", nil)
+				return
+			}
+			b.pendingUnlinks[pendingKey] = pendingUnlink{
+				actorUUID: chosen.ActorUUID, actorName: chosen.Name, discordID: u.ID,
+				guildID: i.GuildID, ownerDiscordID: ownerDiscordID, expiresAt: time.Now().Add(10*time.Minute),
+			}
 			b.mu.Unlock()
 			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil { return }
-			payload := struct { identity; ActorUUID string `json:"actor_uuid"`; OwnerDiscordUserID string `json:"owner_discord_user_id,omitempty"` }{b.identity(i, u), chosen.ActorUUID, ownerDiscordID}
-			if err := b.post(UnlinkPath, payload, nil); err != nil {
-				b.edit(s, i, "Не удалось отвязать Foundry Actor: "+err.Error(), nil)
-			} else if ownerDiscordID != "" {
-				b.edit(s, i, "Foundry Actor отвязан. Владелец персонажа явно переназначен на <@"+ownerDiscordID+">; история владения сохранена. Теперь его можно снова связать через `/character-link`.", nil)
-			} else {
-				b.edit(s, i, "Foundry Actor отвязан. Текущий владелец персонажа сохранён. Для повторной привязки используй `/character-link`.", nil)
-			}
+			message := "Подтверди отвязку Foundry Actor **" + chosen.Name + "**. Персонаж приложения и история сохранятся."
+			if ownerDiscordID != "" { message += "\nНовый владелец: <@" + ownerDiscordID + ">." } else { message += "\nТекущий владелец останется без изменений." }
+			b.edit(s, i, message, unlinkConfirmationComponents(pendingKey))
 			return
 		}
 		if flow.mode == "view" || flow.mode == "inventory" || flow.mode == "spells" {
@@ -809,14 +819,19 @@ func (b *bot) prunePendingLocked() {
 func (b *bot) pruneFlowsLocked() {
 	now := time.Now()
 	for key, flow := range b.flows {
-		if now.After(flow.expiresAt) {
-			delete(b.flows, key)
-		}
+		if now.After(flow.expiresAt) { delete(b.flows, key) }
+	}
+	for key, pending := range b.pendingUnlinks {
+		if now.After(pending.expiresAt) { delete(b.pendingUnlinks, key) }
 	}
 }
 
 func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.MessageComponentData()
+	if strings.HasPrefix(data.CustomID, "fm-unlink-confirm:") {
+		b.handleUnlinkButton(s, i)
+		return
+	}
 	if !strings.HasPrefix(data.CustomID, "fm-link:") {
 		return
 	}
@@ -848,6 +863,54 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 		b.edit(s, i, "Привязка не выполнена: "+err.Error(), []discordgo.MessageComponent{})
 	} else {
 		b.edit(s, i, "Привязка Foundry выполнена. Владелец персонажа закреплён за указанным Discord-аккаунтом.", []discordgo.MessageComponent{})
+	}
+}
+
+
+func unlinkConfirmationComponents(key string) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+			discordgo.Button{CustomID: "fm-unlink-confirm:" + key, Label: "Подтвердить отвязку", Style: discordgo.DangerButton},
+		}},
+	}
+}
+
+func (b *bot) handleUnlinkButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	data := i.MessageComponentData()
+	key := strings.TrimPrefix(data.CustomID, "fm-unlink-confirm:")
+	u := interactionUser(i)
+	if u == nil {
+		b.reply(s, i, "Не удалось определить пользователя.", nil)
+		return
+	}
+	b.mu.Lock()
+	pending, ok := b.pendingUnlinks[key]
+	valid := ok && time.Now().Before(pending.expiresAt) && pending.discordID == u.ID && pending.guildID == i.GuildID
+	if valid { delete(b.pendingUnlinks, key) }
+	b.mu.Unlock()
+	if !valid {
+		b.reply(s, i, "Подтверждение отвязки недействительно или истекло. Повтори /character-unlink.", nil)
+		return
+	}
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
+		return
+	}
+	id := b.identity(i, u)
+	payload := map[string]any{
+		"guild_id": id.GuildID,
+		"discord_user_id": id.DiscordUserID,
+		"discord_role_ids": id.DiscordRoleIDs,
+		"actor_uuid": pending.actorUUID,
+	}
+	if pending.ownerDiscordID != "" { payload["owner_discord_user_id"] = pending.ownerDiscordID }
+	if err := b.post(UnlinkPath, payload, nil); err != nil {
+		b.edit(s, i, "Не удалось отвязать Foundry Actor: "+err.Error(), nil)
+		return
+	}
+	if pending.ownerDiscordID != "" {
+		b.edit(s, i, "Foundry Actor отвязан. Владелец персонажа явно переназначен на <@"+pending.ownerDiscordID+">; история владения сохранена. Теперь его можно снова связать через /character-link.", nil)
+	} else {
+		b.edit(s, i, "Foundry Actor отвязан. Текущий владелец персонажа сохранён. Для повторной привязки используй /character-link.", nil)
 	}
 }
 
