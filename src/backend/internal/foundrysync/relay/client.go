@@ -81,6 +81,32 @@ func NewClient(config Config) (*Client, error) {
 	}, nil
 }
 
+// PingRelay checks that the configured Relay HTTP service responds.
+// A 404 at the base path still proves that the HTTP service is reachable; 5xx
+// responses and authentication failures are reported as unhealthy.
+func (c *Client) PingRelay(ctx context.Context) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL.String(), nil)
+	if err != nil {
+		return fmt.Errorf("create Foundry Relay health request: %w", err)
+	}
+	request.Header.Set("x-api-key", c.apiKey)
+	request.Header.Set("Accept", "application/json")
+
+	response, err := c.httpClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("reach Foundry Relay: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("Foundry Relay rejected the configured API key: HTTP %d", response.StatusCode)
+	}
+	if response.StatusCode >= http.StatusInternalServerError {
+		return fmt.Errorf("Foundry Relay returned HTTP %d", response.StatusCode)
+	}
+	return nil
+}
+
 // GetActorSnapshot retrieves and validates a complete Actor document.
 // The returned bytes are the Actor JSON itself, not the Relay response envelope.
 func (c *Client) GetActorSnapshot(ctx context.Context, worldID, actorUUID string) ([]byte, error) {
