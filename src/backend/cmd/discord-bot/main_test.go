@@ -739,7 +739,7 @@ func TestCharacterEmbedMarksDyingAtMaximum(t *testing.T) {
 	}
 }
 
-func TestCharacterSkillLinesUseProficiencyNamesAndHideUntrained(t *testing.T) {
+func TestCharacterSkillLinesUseProficiencyNamesAndIncludeUntrained(t *testing.T) {
 	trained, expert, master, legendary, untrained := 1, 2, 3, 4, 0
 	lines := characterSkillLines(
 		map[string]characterSkill{
@@ -752,12 +752,12 @@ func TestCharacterSkillLinesUseProficiencyNamesAndHideUntrained(t *testing.T) {
 		map[string]characterSkill{},
 	)
 	joined := strings.Join(lines, "\n")
-	for _, want := range []string{"Атлетика — Обучен", "Ремесло — Эксперт", "Воровство — Мастер", "Запугивание — Легенда"} {
+	for _, want := range []string{"Атлетика — Обучен", "Ремесло — Эксперт", "Воровство — Мастер", "Запугивание — Легенда", "Дипломатия — Не обучен"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("skill lines %q do not contain %q", joined, want)
 		}
 	}
-	if strings.Contains(joined, "Дипломатия") || strings.Contains(joined, "0") {
-		t.Errorf("untrained skill must be omitted: %q", joined)
+	if strings.Index(joined, "Запугивание") > strings.Index(joined, "Дипломатия") {
+		t.Errorf("untrained skills should follow trained skills: %q", joined)
 	}
 }
