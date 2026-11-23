@@ -412,7 +412,7 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 			joined += field.Name + "\n" + field.Value + "\n"
 		}
 	}
-	for _, want := range []string{"Арканная традиция", "Природная традиция", "ранг 0", "ранг 1", "ранг 2", "подготовлено", "Магическая стрела", "Зажечь огонь", "Лечебное растение"} {
+	for _, want := range []string{"Арканная традиция", "Природная традиция", "чары", "ранг 1", "ранг 2", "Подготовлено", "Магическая стрела", "Зажечь огонь", "Лечебное растение"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("spell output missing %q: %s", want, joined)
 		}
