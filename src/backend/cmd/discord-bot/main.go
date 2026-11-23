@@ -20,18 +20,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const (
-	RegisterPath          = "/api/internal/discord/register"
-	ActorsPath            = "/api/internal/discord/actors"
-	CharactersPath        = "/api/internal/discord/characters"
-	PreviewPath            = "/api/internal/discord/link/preview"
-	LinkPath               = "/api/internal/discord/link"
-	GrantRolePath          = "/api/internal/discord/roles/grant"
-	MapRolePath            = "/api/internal/discord/roles/map"
-	DraftCharacterPath     = "/api/internal/discord/characters/draft"
-	CharacterSearchPath    = "/api/internal/discord/characters/search"
-	CharacterDetailPath    = "/api/internal/discord/characters/detail"
-	IntegrationStatusPath  = "/api/internal/discord/integration-status"
+const (\n\tRegisterPath          = "/api/internal/discord/register"\n\tActorsPath            = "/api/internal/discord/actors"\n\tCharactersPath        = "/api/internal/discord/characters"\n\tPreviewPath           = "/api/internal/discord/link/preview"\n\tLinkPath              = "/api/internal/discord/link"\n\tGrantRolePath         = "/api/internal/discord/roles/grant"\n\tMapRolePath           = "/api/internal/discord/roles/map"\n\tDraftCharacterPath    = "/api/internal/discord/characters/draft"\n\tCharacterSearchPath   = "/api/internal/discord/characters/search"\n\tCharacterDetailPath   = "/api/internal/discord/characters/detail"\n\tIntegrationStatusPath = "/api/internal/discord/integration-status"
 )
 
 type bot struct {
@@ -142,7 +131,9 @@ type characterDetails struct {
 		Quantity *int   `json:"quantity"`
 	} `json:"items"`
 }
-type characterItemReference struct { Name string `json:"name"` }
+type characterItemReference struct {
+	Name string `json:"name"`
+}
 type healthComponent struct {
 	OK     bool   `json:"ok"`
 	Detail string `json:"detail,omitempty"`
@@ -374,7 +365,9 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 }
 
 func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, query string) {
-	var result struct { Actors []actor `json:"actors"` }
+	var result struct {
+		Actors []actor `json:"actors"`
+	}
 	if err := b.post(CharacterSearchPath, struct {
 		identity
 		Query string `json:"query"`
