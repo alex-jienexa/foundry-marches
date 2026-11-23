@@ -315,6 +315,21 @@ func TestDecodeAbilityScoresFromBuildBoostSelections(t *testing.T) {
 	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 { t.Fatalf("unexpected class save baseline: %+v", class.SavingThrows) }
 	if class.AdditionalSkills == nil || *class.AdditionalSkills != 3 { t.Fatalf("class additional skill count missing: %+v", class.AdditionalSkills) }
 }
+func TestDecodeAbilityScoresIncludeClassItemBoostSelections(t *testing.T) {
+	raw := []byte(`{"_id":"class-boosts","type":"character","items":[
+		{"_id":"ancestry","type":"ancestry","system":{"boosts":{"0":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}}}},
+		{"_id":"background","type":"background","system":{"boosts":{"0":{"value":["str","dex"],"selected":"str"}}}},
+		{"_id":"class","type":"class","system":{"boosts":{"0":{"value":["int","wis"],"selected":"int"}}}}
+	],"system":{"details":{"level":{"value":1}},"build":{"attributes":{"boosts":{"1":["dex","con","wis","cha"]}}},"abilities":null}}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	want := map[string]int{"str":12,"dex":12,"con":12,"int":12,"wis":12,"cha":14}
+	for ability, score := range want {
+		got := decoded.Character.Statistics.Abilities[ability]
+		if got.Score == nil || *got.Score != score { t.Errorf("%s score = %+v, want %d", ability, got, score) }
+	}
+}
+
 func TestDecodeAbilityScoresApplyAncestryAndVoluntaryFlaws(t *testing.T) {
 	raw := []byte(`{"_id":"flaws","type":"character","items":[
 		{"_id":"ancestry","type":"ancestry","system":{
