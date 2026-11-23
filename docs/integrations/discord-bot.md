@@ -34,6 +34,9 @@ DISCORD_APPLICATION_ID=the-application-id
 DISCORD_GUILD_ID=the-server-id
 DISCORD_ADMIN_USER_IDS=your-discord-user-id
 DISCORD_BOT_API_TOKEN=generated-random-secret
+DISCORD_ADMIN_CHANNEL_ID=discord-admin-channel-id
+# Optional; default 60 seconds, allowed range 15..3600
+DISCORD_HEALTH_INTERVAL_SECONDS=60
 ```
 
 Generate the service-to-service token independently:
@@ -121,6 +124,33 @@ The draft creation operation writes one `characters` row and one audit event. Th
 - The Actor or application character is already linked: the backend rejects the conflicting link with HTTP 409.
 - Permission denied: register first and ensure the user has the application `gm`, `admin` or `owner` permission that includes `foundry.manage`.
 
+## 8. Character lookup and integration monitoring
+
+The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu. The resulting Discord embed shows only values present in the decoded PF2e DTO: level, class/build references, HP, XP, explicitly stored ability scores/modifiers, skill ranks, hero points and a short inventory list. Missing source values are shown as unavailable rather than inferred.
+
+For the initial release, `/character` requires the existing `foundry.manage` permission (GM/admin/owner). It is intentionally not exposed to ordinary players until character ownership and player-facing visibility rules are implemented.
+
+The `/integration-status` command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when the overall state changes. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
+
+The admin channel receives:
+- integration outage and recovery notifications;
+- backend network errors and HTTP 5xx responses encountered by bot commands;
+- repeated identical errors are rate-limited to one notification per five minutes.
+
+This is operational alerting, not a replacement for container logs: detailed stack traces and failures from background processes that do not pass through a bot request remain available through `docker compose logs`.
+
+To configure the channel, enable Developer Mode in Discord, copy the target text channel ID, set `DISCORD_ADMIN_CHANNEL_ID` in the existing server `.env`, and ensure the bot can view the channel and send messages with embeds. Rebuild the bot after changing the environment:
+
+```sh
+docker compose up -d --build api discord-bot
+docker compose logs --tail=100 discord-bot
+```
+
+Then test:
+1. Run `/character name:Андрей` as a GM/admin and select Андрей.
+2. Run `/integration-status`; verify PostgreSQL, Relay and Foundry are green.
+3. Temporarily stop only the Relay service (if it is separately managed) and verify that the admin channel receives one outage alert, then a recovery alert after Relay returns. Do not stop or restart PostgreSQL or delete any volumes for this test.
+
 ## Current command reference
 
 | Command | Purpose | Required application permission |
@@ -130,6 +160,8 @@ The draft creation operation writes one `characters` row and one audit event. Th
 | `/characters` | List application characters and IDs | `foundry.manage` |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link` | Select Actor and application character, preview and confirm a link | `foundry.manage` |
+| `/character` | Search saved Foundry snapshots and display a character embed | `foundry.manage` |
+| `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
 
@@ -140,4 +172,4 @@ The draft creation operation writes one `characters` row and one audit event. Th
 - The pending confirmation button expires after 10 minutes and is bound to the Discord user and guild that initiated it. A bot restart invalidates pending confirmations.
 - Do not grant privileged Discord roles to untrusted users. A role mapping intentionally grants the corresponding application role to every member who has that Discord role.
 - Select menus show up to 25 entries per page; navigation buttons paginate longer Actor/character lists. Selection flows expire after 10 minutes and are bound to the initiating Discord user and guild. A bot restart invalidates them.
-- The current implementation covers registration, RBAC checks, role assignment/mapping, explicit draft creation and Foundry Actor linking. Web OAuth2/browser sessions, ownership confirmation and character approval remain separate work.
+- The current implementation covers registration, RBAC checks, role assignment/mapping, explicit draft creation, Foundry Actor linking, GM-only character lookup and integration health alerts. Web OAuth2/browser sessions, player-facing character visibility, ownership confirmation and character approval remain separate work.
