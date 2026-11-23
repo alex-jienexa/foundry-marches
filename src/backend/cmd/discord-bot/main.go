@@ -135,9 +135,11 @@ type characterDetails struct {
 		Dying *characterDying `json:"dying"`
 	} `json:"attributes"`
 	Statistics struct {
+		AbilitiesDerived bool `json:"abilitiesDerived"`
 		Abilities map[string]struct {
-			Score    *int `json:"score"`
-			Modifier *int `json:"modifier"`
+			Score    *int  `json:"score"`
+			Modifier *int  `json:"modifier"`
+			Derived  bool  `json:"derived"`
 		} `json:"abilities"`
 	} `json:"statistics"`
 	Resources struct {
@@ -173,6 +175,9 @@ type characterItem struct {
 	Tradition           *string            `json:"tradition"`
 	SpellList           *string            `json:"spellList"`
 	Prepared            *bool              `json:"prepared"`
+	PreparedRanks       []int              `json:"preparedRanks"`
+	SpellcastingType    *string            `json:"spellcastingType"`
+	Skill               *string            `json:"skill"`
 }
 
 type characterEquipped struct {
@@ -798,20 +803,29 @@ func (b *bot) showCharacterCard(s *discordgo.Session, i *discordgo.InteractionCr
 	b.pruneFlowsLocked()
 	b.flows[key] = flow
 	b.mu.Unlock()
-	b.editCharacterCard(s, i, characterEmbed(details), characterDetailComponents(key, false))
+	b.editCharacterCard(s, i, characterEmbed(details), characterDetailComponents(key, "overview"))
 }
 
-func characterDetailComponents(key string, includeOverview bool) []discordgo.MessageComponent {
-	buttons := []discordgo.MessageComponent{
-		discordgo.Button{CustomID: "fm-detail:" + key + ":abilities", Label: "Способности", Style: discordgo.SecondaryButton},
-		discordgo.Button{CustomID: "fm-detail:" + key + ":inventory", Label: "Снаряжение", Style: discordgo.SecondaryButton},
-		discordgo.Button{CustomID: "fm-detail:" + key + ":spells", Label: "Заклинания", Style: discordgo.SecondaryButton},
-		discordgo.Button{CustomID: "fm-detail:" + key + ":metrics", Label: "Метрики кампании", Style: discordgo.SecondaryButton},
+func characterDetailComponents(key, activeSection string) []discordgo.MessageComponent {
+	sections := []struct { id, label string }{
+		{"overview", "Карточка"}, {"abilities", "Способности"}, {"skills", "Навыки"},
+		{"inventory", "Снаряжение"}, {"spells", "Заклинания"}, {"metrics", "Метрики кампании"},
 	}
-	if includeOverview {
-		buttons = append(buttons, discordgo.Button{CustomID: "fm-detail:" + key + ":overview", Label: "К карточке", Style: discordgo.PrimaryButton})
+	buttons := make([]discordgo.MessageComponent, 0, len(sections))
+	for _, section := range sections {
+		style, disabled := discordgo.SecondaryButton, false
+		if section.id == activeSection {
+			style, disabled = discordgo.PrimaryButton, true
+		}
+		buttons = append(buttons, discordgo.Button{
+			CustomID: "fm-detail:" + key + ":" + section.id,
+			Label: section.label, Style: style, Disabled: disabled,
+		})
 	}
-	return []discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}}
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{Components: buttons[:3]},
+		discordgo.ActionsRow{Components: buttons[3:]},
+	}
 }
 
 func (b *bot) editCharacterCard(s *discordgo.Session, i *discordgo.InteractionCreate, embed *discordgo.MessageEmbed, components []discordgo.MessageComponent) {
@@ -863,6 +877,8 @@ func (b *bot) handleCharacterDetailButton(s *discordgo.Session, i *discordgo.Int
 		embed = characterEmbed(details)
 	case "abilities":
 		embed = characterAbilitiesEmbed(details)
+	case "skills":
+		embed = characterSkillsEmbed(details)
 	case "inventory":
 		embed = characterInventoryEmbed(details)
 	case "spells":
@@ -873,7 +889,7 @@ func (b *bot) handleCharacterDetailButton(s *discordgo.Session, i *discordgo.Int
 		b.edit(s, i, "Неизвестный раздел карточки.", nil)
 		return
 	}
-	b.editCharacterCard(s, i, embed, characterDetailComponents(key, true))
+	b.editCharacterCard(s, i, embed, characterDetailComponents(key, section))
 }
 
 func (b *bot) actorSelectionComponents(key string, flow *selectionFlow) []discordgo.MessageComponent {
@@ -1267,38 +1283,37 @@ func characterSpellsEmbed(c characterDetails) *discordgo.MessageEmbed {
 }
 
 func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
-	type spellGroup struct {
-		tradition string
-		rank      int
-		list      string
-	}
+	type spellGroup struct { tradition string; rank int; list string; state string }
 	groups := make(map[spellGroup][]string)
 	keys := make([]spellGroup, 0)
+	addSpell := func(item characterItem, state string, rank int) {
+		tradition := "Традиция не указана"
+		if item.Tradition != nil && *item.Tradition != "" { tradition = spellTraditionLabel(*item.Tradition) }
+		list := ""
+		if item.SpellList != nil { list = *item.SpellList }
+		key := spellGroup{tradition: tradition, rank: rank, list: list, state: state}
+		if _, ok := groups[key]; !ok { keys = append(keys, key) }
+		groups[key] = append(groups[key], item.Name)
+	}
 	for _, item := range c.Items {
-		if item.Type != "spell" || item.Name == "" {
+		if item.Type != "spell" || item.Name == "" { continue }
+		if item.SpellcastingType != nil && *item.SpellcastingType == "prepared" {
+			if item.Prepared != nil && *item.Prepared && len(item.PreparedRanks) > 0 {
+				for _, rank := range item.PreparedRanks { addSpell(item, "Подготовлено", rank) }
+			} else {
+				rank := -1
+				if item.Level != nil { rank = *item.Level }
+				addSpell(item, "Подготовка", rank)
+			}
 			continue
 		}
-		tradition := "Традиция не указана"
-		if item.Tradition != nil && *item.Tradition != "" {
-			tradition = spellTraditionLabel(*item.Tradition)
-		}
 		rank := -1
-		if item.Level != nil {
-			rank = *item.Level
-		}
-		list := ""
-		if item.SpellList != nil {
-			list = *item.SpellList
-		}
-		key := spellGroup{tradition: tradition, rank: rank, list: list}
-		if _, ok := groups[key]; !ok {
-			keys = append(keys, key)
-		}
-		line := item.Name
-		if item.Prepared != nil && *item.Prepared {
-			line += " · подготовлено"
-		}
-		groups[key] = append(groups[key], line)
+		if item.Level != nil { rank = *item.Level }
+		state := "Доступно"
+		if item.SpellcastingType != nil && *item.SpellcastingType == "spontaneous" {
+			state = "В репертуаре"
+		} else if item.Prepared != nil && *item.Prepared { state = "Подготовлено" }
+		addSpell(item, state, rank)
 	}
 	embed := &discordgo.MessageEmbed{Title: "Заклинания · " + c.Identity.Name, Color: 0x5865F2}
 	if len(keys) == 0 {
@@ -1306,46 +1321,28 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		return []*discordgo.MessageEmbed{embed}
 	}
 	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].tradition != keys[j].tradition {
-			return keys[i].tradition < keys[j].tradition
-		}
-		if keys[i].rank != keys[j].rank {
-			return keys[i].rank < keys[j].rank
-		}
-		return keys[i].list < keys[j].list
+		if keys[i].list != keys[j].list { return keys[i].list < keys[j].list }
+		if keys[i].state != keys[j].state { return keys[i].state < keys[j].state }
+		if keys[i].rank != keys[j].rank { return keys[i].rank < keys[j].rank }
+		return keys[i].tradition < keys[j].tradition
 	})
 	usedRunes, truncated := 0, false
 	for _, key := range keys {
 		chunks := splitCharacterLines(groups[key], 20, 850)
 		for page, chunk := range chunks {
-			if len(embed.Fields) >= 25 {
-				truncated = true
-				break
-			}
-			field := key.tradition
-			if key.rank >= 0 {
-				field += fmt.Sprintf(" · ранг %d", key.rank)
-			} else {
-				field += " · ранг не указан"
-			}
-			if key.list != "" {
-				field += " · " + key.list
-			}
-			if len(chunks) > 1 {
-				field += fmt.Sprintf(" · %d/%d", page+1, len(chunks))
-			}
+			if len(embed.Fields) >= 25 { truncated = true; break }
+			rankLabel := "ранг не указан"
+			if key.rank == 0 { rankLabel = "чары" } else if key.rank > 0 { rankLabel = fmt.Sprintf("ранг %d", key.rank) }
+			field := key.state + " · " + key.tradition + " · " + rankLabel
+			if key.list != "" { field += " · " + key.list }
+			if len(chunks) > 1 { field += fmt.Sprintf(" · %d/%d", page+1, len(chunks)) }
 			value := strings.Join(chunk, "\n")
 			fieldRunes := len([]rune(field)) + len([]rune(value))
-			if usedRunes+fieldRunes > 5500 {
-				truncated = true
-				break
-			}
+			if usedRunes+fieldRunes > 5500 { truncated = true; break }
 			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: field, Value: value, Inline: false})
 			usedRunes += fieldRunes
 		}
-		if truncated {
-			break
-		}
+		if truncated { break }
 	}
 	if truncated && len(embed.Fields) < 25 {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Список сокращён", Value: "Остальные заклинания не поместились в одно сообщение Discord.", Inline: false})
@@ -1438,7 +1435,14 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	if len(abilities) == 0 {
 		abilities = append(abilities, "Нет данных в снимке Foundry")
 	}
-	addCharacterListField(embed, "Характеристики", abilities)
+	abilityFieldName := "Характеристики"
+	if c.Statistics.AbilitiesDerived {
+		abilityFieldName = "Характеристики · расчёт по повышениям"
+	}
+	addCharacterListField(embed, abilityFieldName, abilities)
+	if c.Statistics.AbilitiesDerived {
+		embed.Description = "Значения рассчитаны по выбранным повышениям PF2e из родословной, предыстории, класса и повышений по уровням; это не сохранённые значения Actor."
+	}
 	xp := intValue(c.Progression.Experience.Value)
 	if c.Progression.Experience.Max != nil {
 		xp += " / " + strconv.Itoa(*c.Progression.Experience.Max)
@@ -1450,20 +1454,16 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 
 func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{Title: "Способности · " + c.Identity.Name, Color: 0x5865F2}
-	classAbilities, ancestryAbilities, actions, classFeatures, otherAbilities := []string{}, []string{}, []string{}, []string{}, []string{}
+	classAbilities, ancestryAbilities, actions, classFeatures, otherAbilities, skillAbilities := []string{}, []string{}, []string{}, []string{}, []string{}, []string{}
 	seenClassFeatures := make(map[string]struct{})
 	if c.Build.ClassProficiencies != nil && c.Progression.Level != nil {
 		for _, feature := range c.Build.ClassProficiencies.Features {
-			if feature.Name == "" || feature.Level == nil || *feature.Level > *c.Progression.Level {
-				continue
-			}
+			if feature.Name == "" || feature.Level == nil || *feature.Level > *c.Progression.Level { continue }
 			appendUniqueCharacterEntry(&classFeatures, seenClassFeatures, feature.Name)
 		}
 	}
 	for _, item := range c.Items {
-		if item.Name == "" {
-			continue
-		}
+		if item.Name == "" { continue }
 		switch {
 		case item.Type == "action":
 			actions = append(actions, actionDisplayName(item))
@@ -1475,10 +1475,11 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 				ancestryAbilities = append(ancestryAbilities, item.Name)
 			case "classfeature":
 				appendUniqueCharacterEntry(&classFeatures, seenClassFeatures, item.Name)
+			case "skill":
+				skillAbilities = append(skillAbilities, item.Name)
+				otherAbilities = append(otherAbilities, item.Name)
 			default:
-				if _, exists := seenClassFeatures[characterEntryKey(item.Name)]; !exists {
-					otherAbilities = append(otherAbilities, item.Name)
-				}
+				if _, exists := seenClassFeatures[characterEntryKey(item.Name)]; !exists { otherAbilities = append(otherAbilities, item.Name) }
 			}
 		}
 	}
@@ -1486,13 +1487,43 @@ func characterAbilitiesEmbed(c characterDetails) *discordgo.MessageEmbed {
 	addCharacterListField(embed, "Способности родословной", ancestryAbilities)
 	addCharacterListField(embed, "Действия", actions)
 	addCharacterListField(embed, "Особенности класса", classFeatures)
+	addCharacterListField(embed, "Способности навыков", skillAbilities)
 	addCharacterListField(embed, "Другие способности", otherAbilities)
-	addCharacterListField(embed, "Навыки", characterSkillLines(c.Skills.Standard, c.Skills.Lore))
-	if len(embed.Fields) == 0 {
-		embed.Description = "В снимке Foundry нет подробных данных о способностях."
-	}
+	if len(embed.Fields) == 0 { embed.Description = "В снимке Foundry нет подробных данных о способностях." }
 	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Данные из последней синхронизации Foundry"}
 	return embed
+}
+
+func characterSkillsEmbed(c characterDetails) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{Title: "Навыки · " + c.Identity.Name, Color: 0x5865F2}
+	addCharacterListField(embed, "Обучение навыкам", characterSkillLines(c.Skills.Standard, c.Skills.Lore))
+	groups := make(map[string][]string)
+	for _, item := range c.Items {
+		if item.Type != "feat" || stringValue(item.SystemCategory) != "skill" || item.Name == "" { continue }
+		group := "Навык не определён"
+		if item.Skill != nil && strings.TrimSpace(*item.Skill) != "" { group = characterSkillDisplayName(*item.Skill) }
+		groups[group] = append(groups[group], item.Name)
+	}
+	groupNames := make([]string, 0, len(groups))
+	for name := range groups { groupNames = append(groupNames, name) }
+	sort.Strings(groupNames)
+	for _, name := range groupNames { addCharacterListField(embed, "Способности · "+name, groups[name]) }
+	if len(embed.Fields) == 0 { embed.Description = "В снимке Foundry нет обученных навыков или способностей навыков." }
+	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Навыки и способности из последней синхронизации Foundry"}
+	return embed
+}
+
+func characterSkillDisplayName(slug string) string {
+	names := map[string]string{
+		"acrobatics": "Акробатика", "arcana": "Аркана", "athletics": "Атлетика",
+		"crafting": "Ремесло", "deception": "Обман", "diplomacy": "Дипломатия",
+		"intimidation": "Запугивание", "medicine": "Медицина", "nature": "Природа",
+		"occultism": "Оккультизм", "performance": "Выступление", "religion": "Религия",
+		"society": "Общество", "stealth": "Скрытность", "survival": "Выживание", "thievery": "Воровство",
+	}
+	if name := names[strings.ToLower(strings.TrimSpace(slug))]; name != "" { return name }
+	if strings.HasPrefix(strings.ToLower(slug), "lore-") { return loreSkillName(slug) }
+	return humanizeSkillKey(slug)
 }
 
 func characterMetricsEmbed(c characterDetails) *discordgo.MessageEmbed {
