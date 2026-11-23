@@ -318,7 +318,7 @@ func TestCharacterInventoryIncludesAllPhysicalItemTypesAndState(t *testing.T) {
 }
 
 func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
-	one, two := 1, 2
+	zero, one, two := 0, 1, 2
 	arcane, primal := "arcane", "primal"
 	arcaneList, primalList := "Арканная книга", "Природная книга"
 	prepared := true
@@ -327,13 +327,14 @@ func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
 	c.Items = []characterItem{
 		{Name:"Щит",Type:"spell",Level:&one,Tradition:&arcane,SpellList:&arcaneList,Prepared:&prepared},
 		{Name:"Магическая стрела",Type:"spell",Level:&one,Tradition:&arcane,SpellList:&arcaneList},
+		{Name:"Зажечь огонь",Type:"spell",Level:&zero,Tradition:&arcane,SpellList:&arcaneList},
 		{Name:"Лечебное растение",Type:"spell",Level:&two,Tradition:&primal,SpellList:&primalList},
 	}
 	embeds := characterSpellsEmbeds(c)
-	if len(embeds) != 2 { t.Fatalf("got %d spell groups, want 2",len(embeds)) }
+	if len(embeds) != 3 { t.Fatalf("got %d spell groups, want 3 including cantrips",len(embeds)) }
 	joined := ""
 	for _, embed := range embeds { for _, field := range embed.Fields { joined += field.Name + "\n" + field.Value + "\n" } }
-	for _, want := range []string{"Арканная традиция","Природная традиция","ранг 1","ранг 2","подготовлено","Магическая стрела","Лечебное растение"} {
+	for _, want := range []string{"Арканная традиция","Природная традиция","ранг 0","ранг 1","ранг 2","подготовлено","Магическая стрела","Зажечь огонь","Лечебное растение"} {
 		if !strings.Contains(joined,want) { t.Errorf("spell output missing %q: %s",want,joined) }
 	}
 }
