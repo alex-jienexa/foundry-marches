@@ -302,6 +302,48 @@ func TestResolveFoundryImageURL(t *testing.T) {
 	}
 }
 
+func TestCharacterCardUsesFoundryPlaceholderWithoutPortrait(t *testing.T) {
+	portrait := characterPortraitURL(nil, "https://foundry.example.test")
+	want := "https://foundry.example.test/systems/pf2e/icons/default-icons/character.svg"
+	if portrait == nil || *portrait != want {
+		t.Fatalf("placeholder portrait = %v, want %q", portrait, want)
+	}
+	character := characterDetails{}
+	character.Identity.Name = "Без портрета"
+	character.Identity.Image = portrait
+	embed := characterEmbed(character)
+	if embed.Thumbnail == nil || embed.Thumbnail.URL != want {
+		t.Fatalf("thumbnail = %+v, want Foundry placeholder", embed.Thumbnail)
+	}
+}
+
+func TestCharacterSpellsGroupSpontaneousCantripsSeparately(t *testing.T) {
+	spontaneous := "spontaneous"
+	divine := "divine"
+	entry := "Гармонизация явлений / Apparition Attunement"
+	cantrip, ordinarySpell := true, false
+	rankOne := 1
+	c := characterDetails{}
+	c.Identity.Name = "Оракул"
+	c.Items = []characterItem{
+		{Name: "Престидижитация / Prestidigitation", Type: "spell", Level: &rankOne, Cantrip: cantrip, SpellcastingType: &spontaneous, Tradition: &divine, SpellList: &entry},
+		{Name: "Оплетающая лоза / Tangle Vine", Type: "spell", Level: &rankOne, Cantrip: ordinarySpell, SpellcastingType: &spontaneous, Tradition: &divine, SpellList: &entry},
+	}
+	embeds := characterSpellsEmbeds(c)
+	if len(embeds) != 1 || len(embeds[0].Fields) != 2 {
+		t.Fatalf("got %d embeds and %d fields, want separate cantrip and rank-1 groups", len(embeds), len(embeds[0].Fields))
+	}
+	joined := ""
+	for _, field := range embeds[0].Fields {
+		joined += field.Name + "\n" + field.Value + "\n"
+	}
+	for _, want := range []string{"В репертуаре", "чары", "ранг 1", "Престидижитация", "Оплетающая лоза"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("spontaneous spell output missing %q: %s", want, joined)
+		}
+	}
+}
+
 func TestCharacterEmbedUsesPublicFoundryPortrait(t *testing.T) {
 	path := "assets/westmarches/pc/portrait.jpg"
 	resolved := resolveFoundryImageURL(&path, "https://foundry.jiene.ru")
