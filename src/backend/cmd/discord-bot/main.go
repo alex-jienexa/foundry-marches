@@ -288,7 +288,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		lines := make([]string, 0, len(out.Actors))
 		for _, a := range out.Actors {
-			lines = append(lines, a.Name)
+			lines = append(lines, truncateLabel(a.Name))
 		}
 		if len(lines) == 0 {
 			b.edit(s, i, "✨ **Все персонажи Foundry уже связаны.**\n\nЕсли ожидаемый персонаж отсутствует, запусти синхронизацию мира.", nil)
@@ -305,7 +305,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		lines := make([]string, 0, len(out.Characters))
 		for _, item := range out.Characters {
-			lines = append(lines, fmt.Sprintf("%s · %s", item.Name, characterStatusLabel(item.Status)))
+			lines = append(lines, fmt.Sprintf("%s · %s", truncateLabel(item.Name), characterStatusLabel(item.Status)))
 		}
 		if len(lines) == 0 {
 			b.edit(s, i, "📝 **Пока нет персонажей приложения.**\n\nСоздай первого командой `/character-create`.", nil)
@@ -329,7 +329,7 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		ownerText := "ты"
 		if o["owner"] != "" { ownerText = "<@" + o["owner"] + ">" }
-		b.edit(s, i, fmt.Sprintf("**Черновик персонажа создан**\n\nИмя: **%s**\nВладелец: %s\nСтатус: `draft`\n\nМастер сможет связать его с Foundry Actor командой `/character-link`.", created.Name, ownerText), nil)
+		b.edit(s, i, fmt.Sprintf("**Черновик персонажа создан**\n\nИмя: **%s**\nВладелец: %s\nСтатус: **Черновик**\n\nМастер сможет связать его с Foundry Actor командой `/character-link`.", created.Name, ownerText), nil)
 	case "character-draft":
 		b.startSelection(s, i, id, u, "draft", "")
 	case "character":
@@ -605,7 +605,7 @@ func (b *bot) actorSelectionComponents(key string, flow *selectionFlow) []discor
 	minValues := 1
 	options := make([]discordgo.SelectMenuOption, 0, end-start)
 	for _, item := range flow.actors[start:end] {
-		options = append(options, discordgo.SelectMenuOption{Label: truncateLabel(item.Name), Value: item.ActorUUID, Description: truncateLabel(item.ActorUUID)})
+		options = append(options, discordgo.SelectMenuOption{Label: truncateLabel(item.Name), Value: item.ActorUUID, Description: "Персонаж из Foundry"})
 	}
 	rows := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{MenuType: discordgo.StringSelectMenu, CustomID: "fm-actor:" + key, Placeholder: "Выбери Foundry Actor", MinValues: &minValues, MaxValues: 1, Options: options}}}}
 	if len(flow.actors) > 25 {
@@ -619,7 +619,7 @@ func (b *bot) characterSelectionComponents(key string, flow *selectionFlow) []di
 	minValues := 1
 	options := make([]discordgo.SelectMenuOption, 0, end-start)
 	for _, item := range flow.characters[start:end] {
-		options = append(options, discordgo.SelectMenuOption{Label: truncateLabel(item.Name + " [" + item.Status + "]"), Value: item.ID, Description: truncateLabel(item.ID)})
+		options = append(options, discordgo.SelectMenuOption{Label: truncateLabel(item.Name + " [" + characterStatusLabel(item.Status) + "]"), Value: item.ID, Description: "Персонаж приложения"})
 	}
 	rows := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{MenuType: discordgo.StringSelectMenu, CustomID: "fm-character:" + key, Placeholder: "Выбери персонажа приложения", MinValues: &minValues, MaxValues: 1, Options: options}}}}
 	if len(flow.characters) > 25 {
@@ -863,7 +863,7 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	addCharacterListField(embed, "Предметы", items)
 
 	embed.Footer = &discordgo.MessageEmbedFooter{
-		Text: "Источник: последний сохранённый снимок Foundry · " + c.Identity.UUID,
+		Text: "Данные персонажа из последней синхронизации Foundry",
 	}
 	return embed
 }
