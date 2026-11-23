@@ -174,8 +174,16 @@ func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
 
 	embed := characterAbilitiesEmbed(c)
 	fields := make(map[string]string, len(embed.Fields))
+	fieldOrder := make([]string, 0, len(embed.Fields))
 	for _, field := range embed.Fields {
 		fields[field.Name] = field.Value
+		fieldOrder = append(fieldOrder, field.Name)
+	}
+	wantOrder := []string{"Особенности класса", "Способности класса", "Особенности родословной", "Способности родословной", "Способности навыков", "Другие способности"}
+	for index, name := range wantOrder {
+		if index >= len(fieldOrder) || fieldOrder[index] != name {
+			t.Fatalf("ability field order = %v, want prefix %v", fieldOrder, wantOrder)
+		}
 	}
 	checks := []struct {
 		field string
