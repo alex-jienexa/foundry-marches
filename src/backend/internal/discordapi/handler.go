@@ -475,7 +475,7 @@ LIMIT 25
 }
 
 // foundryCharacterDetails decodes a saved Actor snapshot. GMs can inspect all
-// character Actors; players can inspect only their own active, confirmed links.
+// character Actors; players can inspect only their own linked drafts, pending approvals and active characters.
 func (h *Handler) foundryCharacterDetails(w http.ResponseWriter, r *http.Request) {
 	var req characterDetailRequest
 	if !decodeRequest(w, r, &req) {
