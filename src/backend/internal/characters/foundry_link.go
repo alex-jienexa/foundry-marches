@@ -13,12 +13,21 @@ var (
 	ErrActorNotCharacter      = errors.New("only Foundry character Actors can be linked")
 	ErrActorAlreadyLinked     = errors.New("Foundry Actor is already linked to another character")
 	ErrCharacterAlreadyLinked = errors.New("application character is already linked to another Foundry Actor")
+	ErrCharacterOwnerRequired = errors.New("an owner must be assigned before linking the Foundry Actor")
+	ErrCharacterOwnerConflict = errors.New("application character already belongs to another user")
 )
 
 // LinkActor explicitly links a previously discovered Foundry character Actor to an
 // existing application character. It never creates a character, assigns an owner,
 // or confirms player ownership. Repeating the same link is idempotent.
 func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, characterID, linkedByUserID string) error {
+	return r.LinkActorWithOwner(ctx, worldID, actorUUID, characterID, linkedByUserID, "")
+}
+
+// LinkActorWithOwner links a Foundry Actor and explicitly assigns an owner when
+// supplied. An existing owner is never silently replaced. Once linked, an
+// assigned owner is marked confirmed for this link.
+func (r *FoundryRepository) LinkActorWithOwner(ctx context.Context, worldID, actorUUID, characterID, linkedByUserID, ownerUserID string) error {
 	if r == nil || r.db == nil {
 		return errors.New("Foundry repository is not initialized")
 	}
@@ -35,9 +44,10 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 	// Lock the target first. The unique constraint on foundry_actors.character_id
 	// remains the final concurrency guard across different Actor/world rows.
 	var foundCharacterID string
+	var currentOwnerID sql.NullString
 	if err = tx.QueryRowContext(ctx,
-		"SELECT id::text FROM characters WHERE id = $1 FOR UPDATE", characterID,
-	).Scan(&foundCharacterID); err != nil {
+		"SELECT id::text, owner_user_id::text FROM characters WHERE id = $1 FOR UPDATE", characterID,
+	).Scan(&foundCharacterID, &currentOwnerID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrCharacterNotFound
 		}
@@ -58,6 +68,20 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 	if actorType != "character" {
 		return ErrActorNotCharacter
 	}
+	if ownerUserID != "" && currentOwnerID.Valid && currentOwnerID.String != ownerUserID {
+		return ErrCharacterOwnerConflict
+	}
+	if !currentOwnerID.Valid && ownerUserID == "" {
+		return ErrCharacterOwnerRequired
+	}
+	if !currentOwnerID.Valid && ownerUserID != "" {
+		if _, err = tx.ExecContext(ctx, "SELECT set_config('app.user_id', $1, true), set_config('app.reason', 'Discord GM assigned character owner during Foundry link', true)", linkedByUserID); err != nil {
+			return fmt.Errorf("set ownership audit context: %w", err)
+		}
+		if _, err = tx.ExecContext(ctx, "UPDATE characters SET owner_user_id = $2, updated_at = now() WHERE id = $1 AND owner_user_id IS NULL", characterID, ownerUserID); err != nil {
+			return fmt.Errorf("assign character owner: %w", err)
+		}
+	}
 	if existingCharacterID.Valid {
 		if existingCharacterID.String == characterID {
 			return tx.Commit()
@@ -66,8 +90,8 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 	}
 
 	result, err := tx.ExecContext(ctx,
-		"UPDATE foundry_actors SET character_id = $3, linked_at = now(), updated_at = now() WHERE world_id = $1 AND actor_uuid = $2 AND character_id IS NULL",
-		worldID, actorUUID, characterID,
+		"UPDATE foundry_actors SET character_id = $3, linked_at = now(), owner_confirmed_at = CASE WHEN $4::boolean THEN clock_timestamp() ELSE owner_confirmed_at END, updated_at = now() WHERE world_id = $1 AND actor_uuid = $2 AND character_id IS NULL",
+		worldID, actorUUID, characterID, currentOwnerID.Valid || ownerUserID != "",
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
