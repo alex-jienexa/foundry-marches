@@ -149,7 +149,7 @@ Fundamental build choices (ancestry, heritage, background and class) are not rep
 Access is enforced by the backend, not only by Discord command visibility:
 - GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
 - A registered player with `characters.create` can search and open only their own `draft`, `pending_approval` or `active` character, whose linked `foundry_actors.owner_confirmed_at` is set after the latest ownership transfer (or after the original link if there was no transfer).
-- Unlinked, unconfirmed, archived, retired and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
+- Unlinked, unconfirmed, unavailable, dead, retired, NPC, archived and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
 
 Character ownership is assigned explicitly during `/character-create` or `/character-link`. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A linked character becomes visible to its assigned player only after the explicit owner assignment is committed and `owner_confirmed_at` is recorded for that link.
 
