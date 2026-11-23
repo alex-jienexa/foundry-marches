@@ -208,7 +208,7 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 	commands := []*discordgo.ApplicationCommand{
 		{Name: "register", Description: "Зарегистрироваться в FoundryMarches"},
 		{Name: "foundry-actors", Description: "Показать несвязанных персонажей Foundry"},
-		{Name: "characters", Description: "Показать персонажей приложения и их ID"},
+		{Name: "characters", Description: "Показать список персонажей приложения"},
 		{Name: "character-link", Description: "Связать Foundry Actor с персонажем и назначить владельца", Options: []*discordgo.ApplicationCommandOption{{Name: "owner", Description: "Владелец персонажа (обязательно)", Type: discordgo.ApplicationCommandOptionUser, Required: true}}},
 		{Name: "character-create", Description: "Создать черновик персонажа для себя или игрока", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Владелец персонажа (для мастера)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
@@ -406,7 +406,7 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 	components := b.actorSelectionComponents(key, flow)
 	label := "Выбери Foundry Actor, из которого создать черновик:"
 	if mode == "link" {
-		label = "Выбери Foundry Actor для привязки:"
+		label = "Выбери Foundry Actor для привязки к персонажу. Владелец: <@" + ownerDiscordID + ">"
 	}
 	b.edit(s, i, label, components)
 }
