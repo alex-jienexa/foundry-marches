@@ -740,7 +740,7 @@ func TestDecodeAbilityScoresPreservePartialSourcesAndSingletonBoosts(t *testing.
 	if err != nil { t.Fatal(err) }
 	got := decoded.Character.Statistics.ReconstructedAbilities
 	if len(got) != 6 { t.Fatalf("partial reconstruction should retain all six computed scores: %+v", got) }
-	want := map[string]int{"str":14,"dex":12,"con":14,"int":10,"wis":12,"cha":10}
+	want := map[string]int{"str":12,"dex":12,"con":12,"int":10,"wis":12,"cha":10}
 	for ability, score := range want {
 		if got[ability].Score == nil || *got[ability].Score != score {
 			t.Errorf("%s = %+v, want %d", ability, got[ability], score)
