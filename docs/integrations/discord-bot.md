@@ -138,23 +138,7 @@ The draft creation operation writes one `characters` row and one audit event. Th
 
 ## 8. Character lookup and integration monitoring
 
-The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu. The `/my-character` command lists only the caller's own linked, owner-confirmed characters using the same ownership and lifecycle predicates as player lookup.
-
-The character Embed shows fundamental build choices (ancestry, heritage, background and class), level, current/max HP, XP, hero points, stored ability scores when available, skills and categorized features. If hp.max is absent, the decoder derives it from the class HP per level, ancestry HP, character level and Constitution modifier. The Constitution modifier is read from prepared Actor abilities when available; otherwise it is reconstructed only when the required ancestry/background/class selections and level-based boosts are present. If the inputs are incomplete, maximum HP remains unknown rather than being guessed. The class key ability is taken from the class Item (system.keyAbility), which takes precedence over the Actor-level details.keyability value.
-
-The post-session regression fixture at src/backend/internal/foundrysync/testdata/actor-after-session.json is a complete Actor export with 46 Items, level 2 and 400 XP. It verifies the Investigator key ability is INT and the derived maximum HP is 24. The fixture also has no system.attributes.dying; the decoder leaves that condition unknown when absent. When a dying value and maximum are present and the current dying value reaches that maximum, the Discord card is marked МЁРТВ.
-
-Relative portrait paths are resolved against FOUNDRY_PUBLIC_BASE_URL, and the character card uses the resolved URL as its main Embed image. Set the variable to the externally reachable Foundry base URL, not the Relay URL. Discord must be able to fetch the resulting image URL without an interactive Foundry login. If an image still does not render, open the exact resolved URL in a private/incognito browser window; a login page, 403 or 404 means the image is not publicly fetchable by Discord. Absolute HTTP(S) image URLs work without this setting.
-
-The Embed separates PF2e documents by their source type/category:
-- class abilities (`feat` with `system.category=class`);
-- ancestry abilities (`feat` with `system.category=ancestry`);
-- actions (`type=action`), with the action kind shown where available;
-- class features from the class progression table, limited to the character's current level and deduplicated against matching Actor Items;
-- other feats (for example, general and skill feats);
-- equipment (`CharacterItemDto.category=equipment`) in the `Предметы` field.
-
-Skills are displayed with PF2e proficiency names — Обучен, Эксперт, Мастер or Легенда. Rank 0/untrained and absent ranks are omitted. The decoder preserves source categories and action types; the bot does not infer a category from an Item's localized name.
+The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If exactly one Actor matches, the bot opens its card immediately; if multiple Actors match, choose the correct one from the ephemeral select menu. The same single-result shortcut is used by /my-character and /character-unlink (unlink still requires an explicit confirmation button).
 
 Access is enforced by the backend, not only by Discord command visibility:
 - GM/admin/owner users with `foundry.manage` can search all synchronized character Actors.
