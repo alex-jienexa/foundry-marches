@@ -315,6 +315,22 @@ func TestDecodeAbilityScoresFromBuildBoostSelections(t *testing.T) {
 	if class.SavingThrows["fortitude"] != 2 || class.SavingThrows["reflex"] != 2 || class.SavingThrows["will"] != 1 { t.Fatalf("unexpected class save baseline: %+v", class.SavingThrows) }
 	if class.AdditionalSkills == nil || *class.AdditionalSkills != 3 { t.Fatalf("class additional skill count missing: %+v", class.AdditionalSkills) }
 }
+func TestDecodeAbilityBoostsApplyInLevelOrderAfterAncestryFlaw(t *testing.T) {
+	raw := []byte(`{"_id":"ordered-boosts","type":"character","items":[
+		{"_id":"ancestry","type":"ancestry","system":{"boosts":{},"flaws":{"0":{"value":["dex"],"selected":"dex"}}}},
+		{"_id":"background","type":"background","system":{"boosts":{"0":{"value":["str","dex"],"selected":"dex"}}}},
+		{"_id":"class","type":"class","system":{"keyAbility":{"value":["dex"],"selected":"dex"}}}
+	],"system":{"details":{"level":{"value":9}},"build":{"attributes":{"boosts":{
+		"1":["dex","str","con","int"],"5":["dex","str","con","wis"],"9":["dex","str","int","cha"]
+	}}},"abilities":null}}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	got := decoded.Character.Statistics.Abilities["dex"]
+	if got.Score == nil || *got.Score != 18 {
+		t.Fatalf("DEX = %+v, want 18 after ancestry flaw and subsequent boosts", got)
+	}
+}
+
 func TestDecodeAbilityScoresIncludeClassItemBoostSelections(t *testing.T) {
 	raw := []byte(`{"_id":"class-boosts","type":"character","items":[
 		{"_id":"ancestry","type":"ancestry","system":{"boosts":{"0":{"value":["str","dex","con","int","wis","cha"],"selected":"cha"}}}},
