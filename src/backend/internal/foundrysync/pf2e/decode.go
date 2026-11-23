@@ -299,15 +299,27 @@ func logActorDecodeDiagnostics(actor FoundryActorDto, character CharacterDto, ra
 	attributes := objectAt(system, "attributes")
 	abilities := objectAt(system, "abilities")
 	logCharacterDiagnostic(
-		"decode actor_uuid=%q name=%q type=%q items=%d raw_fields={details:%t,details.level:%t,details.xp.value:%t,details.xp.max:%t,attributes:%t,attributes.hp:%t,abilities:%t} decoded={level:%v,xp:%v/%v,hp:%v/%v,class:%q,class_hp:%v,ancestry:%q,ancestry_hp:%v,background:%q,ability_keys:%v}",
+		"decode actor_uuid=%q name=%q type=%q items=%d raw_fields={details:%t,details.level:%t,details.xp.value:%t,details.xp.max:%t,attributes:%t,attributes.hp:%t,abilities:%t} decoded={level:%s,xp:%s/%s,hp:%s/%s,class:%q,class_hp:%s,ancestry:%q,ancestry_hp:%s,background:%q,ability_keys:%v,ability_raw={str:%s,dex:%s,con:%s,int:%s,wis:%s,cha:%s}}",
 		"Actor."+actor.ID, actor.Name, actor.Type, len(items),
 		system["details"] != nil, details["level"] != nil, xp["value"] != nil, xp["max"] != nil,
 		system["attributes"] != nil, attributes["hp"] != nil, abilities != nil,
-		character.Progression.Level, character.Progression.Experience.Value, character.Progression.Experience.Max,
-		hpCurrentValue(character.Attributes.HP), hpMaxValue(character.Attributes.HP),
-		className, classHP, ancestryName, ancestryHP, backgroundName, rawObjectKeys(abilities),
+		diagnosticIntPointer(character.Progression.Level), diagnosticIntPointer(character.Progression.Experience.Value), diagnosticIntPointer(character.Progression.Experience.Max),
+		diagnosticIntPointer(hpCurrentValue(character.Attributes.HP)), diagnosticIntPointer(hpMaxValue(character.Attributes.HP)),
+		className, diagnosticIntPointer(classHP), ancestryName, diagnosticIntPointer(ancestryHP), backgroundName, rawObjectKeys(abilities),
+		rawJSONValue(abilities["str"]), rawJSONValue(abilities["dex"]), rawJSONValue(abilities["con"]),
+		rawJSONValue(abilities["int"]), rawJSONValue(abilities["wis"]), rawJSONValue(abilities["cha"]),
 	)
 	_ = rawItems
+}
+
+func diagnosticIntPointer(value *int) string {
+	if value == nil { return "<nil>" }
+	return strconv.Itoa(*value)
+}
+
+func rawJSONValue(value json.RawMessage) string {
+	if len(value) == 0 { return "<absent>" }
+	return strings.TrimSpace(string(value))
 }
 
 func rawObjectKeys(raw map[string]json.RawMessage) []string {
