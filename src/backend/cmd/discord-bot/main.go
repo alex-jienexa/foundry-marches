@@ -103,9 +103,7 @@ type characterDetails struct {
 		} `json:"experience"`
 	} `json:"progression"`
 	Build struct {
-		ClassProficiencies *struct {
-			Features []classFeatureReference `json:"features"`
-		} `json:"classProficiencies"`
+		ClassProficiencies *classProficiencyDetails `json:"classProficiencies"`
 	} `json:"build"`
 	Attributes struct {
 		HP *struct {
@@ -139,6 +137,9 @@ type characterItem struct {
 	SystemCategory *string `json:"systemCategory"`
 	ActionType     *string `json:"actionType"`
 	Quantity       *int    `json:"quantity"`
+}
+type classProficiencyDetails struct {
+	Features []classFeatureReference `json:"features"`
 }
 type classFeatureReference struct {
 	Name  string `json:"name"`
@@ -798,7 +799,7 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 			}
 			items = append(items, line)
 		case item.Type == "action":
-			actions = append(actions, item.Name)
+			actions = append(actions, actionDisplayName(item))
 		case item.Type == "feat":
 			switch stringValue(item.SystemCategory) {
 			case "class":
@@ -860,6 +861,23 @@ func appendUniqueCharacterEntry(entries *[]string, seen map[string]struct{}, nam
 	}
 	seen[key] = struct{}{}
 	*entries = append(*entries, name)
+}
+
+func actionDisplayName(item characterItem) string {
+	name := item.Name
+	if item.ActionType == nil {
+		return name
+	}
+	labels := map[string]string{
+		"action":   "действие",
+		"reaction": "реакция",
+		"free":     "свободное действие",
+		"passive":  "пассивное",
+	}
+	if label := labels[stringValue(item.ActionType)]; label != "" {
+		return name + " — " + label
+	}
+	return name
 }
 
 func stringValue(value *string) string {
