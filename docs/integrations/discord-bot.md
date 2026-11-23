@@ -41,6 +41,8 @@ DISCORD_CAMPAIGN_ROLE_ID=1574386309584388106
 DISCORD_HEALTH_INTERVAL_SECONDS=60
 # Public Foundry URL used to resolve relative Actor portrait paths in Discord embeds
 FOUNDRY_PUBLIC_BASE_URL=https://foundry.example.com
+# Automatic Foundry world snapshot refresh interval (30..86400 seconds; default 300)
+FOUNDRY_SYNC_INTERVAL_SECONDS=300
 ```
 
 Generate the service-to-service token independently:
@@ -138,11 +140,11 @@ The draft creation operation writes one `characters` row and one audit event. Th
 
 The `/character name:<имя>` command searches the latest Actor snapshots stored in PostgreSQL. It does not call Relay or Foundry for each lookup. If multiple Actors match, choose the correct one from the ephemeral select menu. The `/my-character` command lists only the caller's own linked, owner-confirmed characters using the same ownership and lifecycle predicates as player lookup.
 
-The character Embed shows fundamental build choices (ancestry, heritage, background and class) when present in the Actor's actual Items, plus level, current HP, XP, hero points, ability scores when the Actor snapshot contains them, skills and categorized features. A missing HP maximum is shown as current HP only, not as a misleading `current / —` pair.
+The character Embed shows fundamental build choices (ancestry, heritage, background and class), level, current/max HP, XP, hero points, stored ability scores when available, skills and categorized features. If hp.max is absent, the decoder derives it from the class HP per level, ancestry HP, character level and Constitution modifier. The Constitution modifier is read from prepared Actor abilities when available; otherwise it is reconstructed only when the required ancestry/background/class selections and level-based boosts are present. If the inputs are incomplete, maximum HP remains unknown rather than being guessed. The class key ability is taken from the class Item (system.keyAbility), which takes precedence over the Actor-level details.keyability value.
 
-The current example Actor snapshot stores `system.attributes.hp.value` and `temp`, but does not include `hp.max` or the prepared six ability scores under `system.abilities`. The decoder deliberately does not reconstruct these values from class/ancestry/gear rules. Therefore the card cannot yet display a maximum HP or six ability scores for that snapshot; those require a Foundry-side prepared-data export rather than guessing in the application.
+The post-session regression fixture at src/backend/internal/foundrysync/testdata/actor-after-session.json is a complete Actor export with 46 Items, level 2 and 400 XP. It verifies the Investigator key ability is INT and the derived maximum HP is 24. The fixture also has no system.attributes.dying; the decoder leaves that condition unknown when absent. When a dying value and maximum are present and the current dying value reaches that maximum, the Discord card is marked МЁРТВ.
 
-Relative portrait paths (for example `systems/pf2e/icons/...`) are converted to public URLs only when `FOUNDRY_PUBLIC_BASE_URL` is configured. Set it to the externally reachable base URL of the Foundry instance; do not set it to the Relay URL. Absolute HTTP(S) image URLs work without this setting.
+Relative portrait paths are resolved against FOUNDRY_PUBLIC_BASE_URL, and the character card uses the resolved URL as its main Embed image. Set the variable to the externally reachable Foundry base URL, not the Relay URL. Discord must be able to fetch the resulting image URL without an interactive Foundry login. If an image still does not render, open the exact resolved URL in a private/incognito browser window; a login page, 403 or 404 means the image is not publicly fetchable by Discord. Absolute HTTP(S) image URLs work without this setting.
 
 The Embed separates PF2e documents by their source type/category:
 - class abilities (`feat` with `system.category=class`);
@@ -196,10 +198,12 @@ Then test:
 | `/character-create` | Create a draft for yourself, or as GM for a mentioned player | `characters.create` for self; `foundry.manage` for another player |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
 | `/character-link owner:@player` | Select Actor and application character, assign/confirm owner, preview and confirm link | `foundry.manage` |
+| `/character-unlink name:<имя> [owner:@player]` | Detach an Actor; optionally explicitly reassign the application character owner. Without owner, the current owner is preserved. Transfer history is retained. | `foundry.manage` |
+| `/foundry-sync` | Refresh all Actor snapshots immediately | `foundry.manage` |
 | `/character` | Search and display character data; GM sees all, players see only their own linked and owner-confirmed drafts, pending approvals and active characters | `characters.create` for own characters; `foundry.manage` for global access |
 | `/my-character` | Show the caller's own linked and owner-confirmed character(s) | `characters.create` or `foundry.manage` |
-| `/character-inventory name:<имя>` | Show equipment and quantities for a selected character | Same visibility as `/character` |
-| `/character-spells name:<имя>` | Show spell Items and their ranks for a selected character | Same visibility as `/character` |
+| `/character-inventory name:<имя>` | Show all physical Actor Items, grouped by type, with equipment/container state | Same visibility as `/character` |
+| `/character-spells name:<имя>` | Show all spell Items grouped by tradition, rank and spellcasting entry | Same visibility as `/character` |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
 | `/role-grant` | Grant `player` or `gm` | `settings.manage` |
 | `/role-map` | Map a Discord role to `player` or `gm` | `settings.manage` |
@@ -211,4 +215,4 @@ Then test:
 - The pending confirmation button expires after 10 minutes and is bound to the Discord user and guild that initiated it. A bot restart invalidates pending confirmations.
 - Do not grant privileged Discord roles to untrusted users. A role mapping intentionally grants the corresponding application role to every member who has that Discord role.
 - Select menus show up to 25 entries per page; navigation buttons paginate longer Actor/character lists. Selection flows expire after 10 minutes and are bound to the initiating Discord user and guild. A bot restart invalidates them.
-- The current implementation covers registration, automatic campaign Discord-role assignment, RBAC checks, role assignment/mapping, player/GM character draft creation, explicit owner assignment during Foundry linking, owner-aware character directory output, personal character lookup, categorized character cards, inventory and spell views, and integration health alerts. Maximum HP and prepared ability scores are not available from the current persisted Actor source snapshot and are intentionally not guessed. Web OAuth2/browser sessions and character approval remain separate work.
+- The current implementation covers registration, automatic campaign Discord-role assignment, RBAC checks, role assignment/mapping, player/GM character draft creation, explicit owner assignment during Foundry linking, owner-aware character directory output, personal character lookup, categorized character cards, inventory and spell views, explicit Actor unlinking/owner reassignment with audit history, startup/manual/periodic Foundry sync, and integration health alerts. Maximum HP is derived only when all required source inputs are present; missing inputs remain explicitly unknown. Web OAuth2/browser sessions and character approval remain separate work.
