@@ -123,6 +123,10 @@ type characterDetails struct {
 			Temp    *int `json:"temp"`
 			Max     *int `json:"max"`
 		} `json:"hp"`
+		Dying *struct {
+			Current *int `json:"current"`
+			Max     *int `json:"max"`
+		} `json:"dying"`
 	} `json:"attributes"`
 	Statistics struct {
 		Abilities map[string]struct {
@@ -143,13 +147,28 @@ type characterDetails struct {
 	Items []characterItem `json:"items"`
 }
 type characterItem struct {
-	Name           string  `json:"name"`
-	Type           string  `json:"type"`
-	Category       string  `json:"category"`
-	SystemCategory *string `json:"systemCategory"`
-	ActionType     *string `json:"actionType"`
-	Quantity       *int    `json:"quantity"`
-	Level          *int    `json:"level"`
+	ID                  string             `json:"id"`
+	Name                string             `json:"name"`
+	Type                string             `json:"type"`
+	Category            string             `json:"category"`
+	SystemCategory      *string            `json:"systemCategory"`
+	ActionType          *string            `json:"actionType"`
+	Quantity            *int               `json:"quantity"`
+	Level               *int               `json:"level"`
+	Equipped            *characterEquipped `json:"equipped"`
+	ContainerID         *string            `json:"containerId"`
+	Usage               *string            `json:"usage"`
+	SpellcastingEntryID *string            `json:"spellcastingEntryId"`
+	Tradition           *string            `json:"tradition"`
+	SpellList           *string            `json:"spellList"`
+	Prepared            *bool              `json:"prepared"`
+}
+
+type characterEquipped struct {
+	CarryType *string `json:"carryType"`
+	HandsHeld *int    `json:"handsHeld"`
+	InSlot    *bool   `json:"inSlot"`
+	Invested  *bool   `json:"invested"`
 }
 type characterReference struct {
 	Name string `json:"name"`
@@ -594,9 +613,9 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
 			switch mode {
 			case "inventory":
-				b.editEmbed(s, i, characterInventoryEmbed(details))
+				b.editEmbeds(s, i, characterInventoryEmbeds(details))
 			case "spells":
-				b.editEmbed(s, i, characterSpellsEmbed(details))
+				b.editEmbeds(s, i, characterSpellsEmbeds(details))
 			default:
 				b.editEmbed(s, i, characterEmbed(details))
 			}
@@ -791,6 +810,20 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 }
 
+func (b *bot) editEmbeds(s *discordgo.Session, i *discordgo.InteractionCreate, embeds []*discordgo.MessageEmbed) {
+	if len(embeds) == 0 {
+		b.edit(s, i, "Нет данных для отображения.", nil)
+		return
+	}
+	b.editEmbed(s, i, embeds[0])
+	for _, embed := range embeds[1:] {
+		if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{Embeds: []*discordgo.MessageEmbed{embed}}); err != nil {
+			log.Printf("Discord follow-up embed: %v", err)
+			return
+		}
+	}
+}
+
 func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *discordgo.MessageEmbed) {
 	content := ""
 	components := []discordgo.MessageComponent{}
@@ -834,47 +867,135 @@ func resolveFoundryImageURL(image *string, publicBaseURL string) *string {
 }
 
 func characterInventoryEmbed(c characterDetails) *discordgo.MessageEmbed {
-	embed := &discordgo.MessageEmbed{Title: "Инвентарь · " + c.Identity.Name, Color: 0x5865F2}
-	lines := make([]string, 0)
+	embeds := characterInventoryEmbeds(c)
+	if len(embeds) == 0 {
+		return &discordgo.MessageEmbed{Title: "Инвентарь · " + c.Identity.Name, Description: "В инвентаре нет предметов.", Color: 0x5865F2}
+	}
+	return embeds[0]
+}
+
+func characterInventoryEmbeds(c characterDetails) []*discordgo.MessageEmbed {
+	containerNames := make(map[string]string)
 	for _, item := range c.Items {
-		if item.Category != "equipment" || item.Name == "" {
-			continue
+		if item.ID != "" && item.Type == "backpack" {
+			containerNames[item.ID] = item.Name
 		}
+	}
+	groupLabels := map[string]string{"weapon":"Оружие","armor":"Доспехи","shield":"Щиты","equipment":"Снаряжение","consumable":"Расходники","backpack":"Контейнеры","treasure":"Сокровища"}
+	order := []string{"weapon","armor","shield","equipment","consumable","backpack","treasure"}
+	groups := make(map[string][]string)
+	total := 0
+	for _, item := range c.Items {
+		if item.Category != "equipment" || item.Name == "" { continue }
+		group := item.Type
+		if groupLabels[group] == "" { group = "equipment" }
 		line := item.Name
-		if item.Quantity != nil && *item.Quantity > 1 {
-			line += " × " + strconv.Itoa(*item.Quantity)
+		if item.Quantity != nil && *item.Quantity > 1 { line = appendLocalizedCharacterSuffix(line, " × "+strconv.Itoa(*item.Quantity)) }
+		if state := inventoryStateLabel(item.Equipped); state != "" { line += " · **" + state + "**" }
+		if item.Usage != nil { if usage := inventoryUsageLabel(*item.Usage); usage != "" { line += " · " + usage } }
+		if item.ContainerID != nil {
+			if name := containerNames[*item.ContainerID]; name != "" { line += " · в " + name } else { line += " · внутри контейнера" }
 		}
-		lines = append(lines, line)
+		groups[group] = append(groups[group], line)
+		total++
 	}
-	if len(lines) == 0 {
-		embed.Description = "В инвентаре нет предметов или они отсутствуют в последней синхронизации."
-	} else {
-		addCharacterListField(embed, "Предметы", lines)
+	if total == 0 { return []*discordgo.MessageEmbed{{Title:"Инвентарь · "+c.Identity.Name,Description:"В инвентаре нет предметов или они отсутствуют в последней синхронизации.",Color:0x5865F2}} }
+	var embeds []*discordgo.MessageEmbed
+	for _, group := range order {
+		lines := groups[group]
+		for start := 0; start < len(lines); start += 12 {
+			end := start + 12
+			if end > len(lines) { end = len(lines) }
+			embed := &discordgo.MessageEmbed{Title:"Инвентарь · "+c.Identity.Name,Color:0x5865F2}
+			embed.Fields = append(embed.Fields,&discordgo.MessageEmbedField{Name:fmt.Sprintf("%s · %d/%d",groupLabels[group],start/12+1,(len(lines)+11)/12),Value:strings.Join(lines[start:end],"\n"),Inline:false})
+			embed.Footer = &discordgo.MessageEmbedFooter{Text:fmt.Sprintf("Всего предметов: %d · данные последней синхронизации Foundry",total)}
+			embeds=append(embeds,embed)
+		}
 	}
-	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Данные из последней синхронизации Foundry"}
-	return embed
+	return embeds
+}
+
+func inventoryStateLabel(equipped *characterEquipped) string {
+	if equipped == nil { return "состояние неизвестно" }
+	if equipped.InSlot != nil && *equipped.InSlot {
+		if equipped.Invested != nil && *equipped.Invested { return "НАДЕТО · ИНВЕСТИРОВАНО" }
+		return "НАДЕТО"
+	}
+	if equipped.CarryType != nil {
+		switch *equipped.CarryType {
+		case "stowed": return "УБРАНО"
+		case "held": return "В РУКАХ"
+		case "worn":
+			if equipped.Invested != nil && *equipped.Invested { return "НОСИТСЯ · ИНВЕСТИРОВАНО" }
+			return "НОСИТСЯ"
+		}
+	}
+	if equipped.Invested != nil && *equipped.Invested { return "ИНВЕСТИРОВАНО" }
+	return ""
+}
+
+func inventoryUsageLabel(usage string) string {
+	switch usage {
+	case "held-in-one-hand": return "1 рука"
+	case "held-in-two-hands": return "2 руки"
+	case "worn": return "носимое"
+	case "wornbackpack": return "рюкзак"
+	default: return ""
+	}
 }
 
 func characterSpellsEmbed(c characterDetails) *discordgo.MessageEmbed {
-	embed := &discordgo.MessageEmbed{Title: "Заклинания · " + c.Identity.Name, Color: 0x5865F2}
-	lines := make([]string, 0)
+	embeds := characterSpellsEmbeds(c)
+	if len(embeds) == 0 { return &discordgo.MessageEmbed{Title:"Заклинания · "+c.Identity.Name,Description:"Заклинания не найдены.",Color:0x5865F2} }
+	return embeds[0]
+}
+
+func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
+	type spellGroup struct { tradition string; rank int; list string }
+	groups := make(map[spellGroup][]string)
+	keys := make([]spellGroup,0)
 	for _, item := range c.Items {
-		if item.Type != "spell" || item.Name == "" {
-			continue
-		}
-		line := item.Name
-		if item.Level != nil {
-			line = fmt.Sprintf("%s · ранг %d", line, *item.Level)
-		}
-		lines = append(lines, line)
+		if item.Type != "spell" || item.Name == "" { continue }
+		tradition := "Традиция не указана"
+		if item.Tradition != nil && *item.Tradition != "" { tradition = spellTraditionLabel(*item.Tradition) }
+		rank := 0
+		if item.Level != nil { rank = *item.Level }
+		list := ""
+		if item.SpellList != nil { list = *item.SpellList }
+		key := spellGroup{tradition:tradition,rank:rank,list:list}
+		if _,ok:=groups[key]; !ok { keys=append(keys,key) }
+		line:=item.Name
+		if rank>0 { line+=fmt.Sprintf(" · ранг %d",rank) } else { line+=" · ранг не указан" }
+		if item.Prepared!=nil && *item.Prepared { line+=" · подготовлено" }
+		groups[key]=append(groups[key],line)
 	}
-	if len(lines) == 0 {
-		embed.Description = "В последней синхронизации Foundry заклинания не найдены."
-	} else {
-		addCharacterListField(embed, "Заклинания", lines)
+	if len(keys)==0 { return []*discordgo.MessageEmbed{{Title:"Заклинания · "+c.Identity.Name,Description:"В последней синхронизации Foundry заклинания не найдены.",Color:0x5865F2}} }
+	sort.Slice(keys,func(i,j int)bool{if keys[i].tradition!=keys[j].tradition{return keys[i].tradition<keys[j].tradition};if keys[i].rank!=keys[j].rank{return keys[i].rank<keys[j].rank};return keys[i].list<keys[j].list})
+	var embeds []*discordgo.MessageEmbed
+	for _,key:=range keys {
+		lines:=groups[key]
+		for start:=0;start<len(lines);start+=12 {
+			end:=start+12;if end>len(lines){end=len(lines)}
+			field:=key.tradition
+			if key.rank>0 { field+=fmt.Sprintf(" · ранг %d",key.rank) } else { field+=" · ранг не указан" }
+			if key.list!="" { field+=" · "+key.list }
+			embed:=&discordgo.MessageEmbed{Title:"Заклинания · "+c.Identity.Name,Color:0x5865F2}
+			embed.Fields=append(embed.Fields,&discordgo.MessageEmbedField{Name:field,Value:strings.Join(lines[start:end],"\n"),Inline:false})
+			embed.Footer=&discordgo.MessageEmbedFooter{Text:fmt.Sprintf("Всего групп: %d · данные последней синхронизации Foundry",len(keys))}
+			embeds=append(embeds,embed)
+		}
 	}
-	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Подготовленные слоты и доступность применений пока не отображаются"}
-	return embed
+	return embeds
+}
+
+func spellTraditionLabel(value string) string {
+	switch strings.ToLower(value) {
+	case "arcane": return "Арканная традиция"
+	case "divine": return "Божественная традиция"
+	case "occult": return "Оккультная традиция"
+	case "primal": return "Природная традиция"
+	default: return value
+	}
 }
 
 func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
@@ -884,7 +1005,7 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	}
 	if c.Identity.Image != nil &&
 		(strings.HasPrefix(*c.Identity.Image, "https://") || strings.HasPrefix(*c.Identity.Image, "http://")) {
-		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
+		embed.Image = &discordgo.MessageEmbedImage{URL: *c.Identity.Image}
 	}
 
 	addBuildField := func(label string, ref *characterReference) {
@@ -896,6 +1017,11 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	addBuildField("Наследие", c.Build.Heritage)
 	addBuildField("Предыстория", c.Build.Background)
 	addBuildField("Класс", c.Build.Class)
+
+	if c.Attributes.Dying != nil && c.Attributes.Dying.Current != nil && c.Attributes.Dying.Max != nil && *c.Attributes.Dying.Max > 0 && *c.Attributes.Dying.Current >= *c.Attributes.Dying.Max {
+		embed.Title = "💀 МЁРТВ · " + c.Identity.Name
+		embed.Color = 0xED4245
+	}
 
 	level := "—"
 	if c.Progression.Level != nil {
