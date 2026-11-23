@@ -141,6 +141,11 @@ type characterDetails struct {
 			Modifier *int  `json:"modifier"`
 			Derived  bool  `json:"derived"`
 		} `json:"abilities"`
+		ReconstructedAbilities map[string]struct {
+			Score    *int  `json:"score"`
+			Modifier *int  `json:"modifier"`
+			Derived  bool  `json:"derived"`
+		} `json:"reconstructedAbilities"`
 	} `json:"statistics"`
 	Resources struct {
 		HeroPoints *struct {
@@ -1424,7 +1429,11 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	abilityNames := map[string]string{"str": "СИЛ", "dex": "ЛОВ", "con": "ТЕЛ", "int": "ИНТ", "wis": "МДР", "cha": "ХАР"}
 	abilities := make([]string, 0, 6)
 	for _, key := range abilityOrder {
-		if value, ok := c.Statistics.Abilities[key]; ok {
+		value, ok := c.Statistics.Abilities[key]
+		if !ok {
+			value, ok = c.Statistics.ReconstructedAbilities[key]
+		}
+		if ok {
 			line := abilityNames[key] + ": "
 			if value.Score != nil {
 				line += strconv.Itoa(*value.Score)
