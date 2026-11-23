@@ -405,6 +405,32 @@ func TestDecodePreparedSpellSlotsAndSpellbook(t *testing.T) {
 	if got := spells["spellbook"]; got.Prepared == nil || *got.Prepared || len(got.PreparedRanks) != 0 { t.Errorf("spellbook spell = %+v, want available for preparation only", got) }
 }
 
+func TestDecodeSpontaneousCantripClassification(t *testing.T) {
+	raw := []byte(`{"_id":"caster","type":"character","items":[
+		{"_id":"entry","name":"Гармонизация явлений / Apparition Attunement","type":"spellcastingEntry","system":{"tradition":{"value":"divine"},"prepared":{"value":"spontaneous"}}},
+		{"_id":"cantrip","name":"Престидижитация / Prestidigitation","type":"spell","system":{"location":"entry","level":{"value":1},"traits":{"value":["cantrip","manipulate"]}}},
+		{"_id":"spell","name":"Оплетающая лоза / Tangle Vine","type":"spell","system":{"location":"entry","level":{"value":1},"traits":{"value":["plant"]}}}
+	]}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := make(map[string]CharacterItemDto)
+	for _, item := range decoded.Character.Items {
+		if item.Type == "spell" {
+			items[item.ID] = item
+		}
+	}
+	cantrip := items["cantrip"]
+	if !cantrip.Cantrip || cantrip.SpellcastingType == nil || *cantrip.SpellcastingType != "spontaneous" {
+		t.Fatalf("cantrip = %+v, want spontaneous cantrip", cantrip)
+	}
+	spell := items["spell"]
+	if spell.Cantrip || spell.SpellcastingType == nil || *spell.SpellcastingType != "spontaneous" {
+		t.Fatalf("spell = %+v, want ordinary spontaneous spell", spell)
+	}
+}
+
 func TestDecodeEquipmentCalculationInputs(t *testing.T) {
 	decoded, err := DecodeActor(readFixture(t, fixtureActor))
 	if err != nil {
