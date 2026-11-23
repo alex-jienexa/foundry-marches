@@ -1139,8 +1139,10 @@ func resolveFoundryImageURL(image *string, publicBaseURL string) *string {
 }
 
 func characterPortraitURL(image *string, publicBaseURL string) *string {
-	if resolved := resolveFoundryImageURL(image, publicBaseURL); resolved != nil {
-		return resolved
+	if image != nil && strings.TrimSpace(*image) != "" {
+		if resolved := resolveFoundryImageURL(image, publicBaseURL); resolved != nil {
+			return resolved
+		}
 	}
 	placeholder := "systems/pf2e/icons/default-icons/character.svg"
 	return resolveFoundryImageURL(&placeholder, publicBaseURL)
@@ -1441,8 +1443,10 @@ func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
 	abilities := make([]string, 0, 6)
 	for _, key := range abilityOrder {
 		value, ok := c.Statistics.Abilities[key]
-		if !ok {
-			value, ok = c.Statistics.ReconstructedAbilities[key]
+		if !ok || (value.Score == nil && value.Modifier == nil) {
+			if reconstructed, exists := c.Statistics.ReconstructedAbilities[key]; exists {
+				value, ok = reconstructed, true
+			}
 		}
 		if ok {
 			modifier := value.Modifier
