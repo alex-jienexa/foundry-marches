@@ -166,7 +166,7 @@ func DecodeItem(payload []byte) (*DecodedItem, error) {
 		Equipped:            decodeEquipped(objectAt(system, "equipped")),
 		ContainerID:         stringAt(system, "containerId"),
 		Usage:               stringAt(objectAt(system, "usage"), "value"),
-		SpellcastingEntryID: stringAt(system, "location"),
+		SpellcastingEntryID: firstString(stringAt(system, "location"), stringAt(objectAt(system, "location"), "value")),
 		Prepared:            boolAt(system, "prepared"),
 		Armor:            decodeArmorData(system),
 		Runes:            decodeItemRunes(system),
@@ -409,7 +409,8 @@ func enrichSpellcastingItems(items []CharacterItemDto, foundryItems []FoundryIte
 			tradition = stringAt(entry.System, "tradition")
 		}
 		items[i].Tradition = tradition
-		items[i].SpellList = stringAt(entry.System, "name")
+		entryName := entry.Name
+		if entryName != "" { items[i].SpellList = &entryName }
 		prepared := boolAt(entry.System, "prepared")
 		if prepared == nil {
 			prepared = boolAt(objectAt(entry.System, "prepared"), "value")
@@ -571,6 +572,13 @@ func boolMapAt(raw map[string]json.RawMessage, key string) map[string]bool {
 		return nil
 	}
 	return result
+}
+
+func firstString(values ...*string) *string {
+	for _, value := range values {
+		if value != nil && *value != "" { return value }
+	}
+	return nil
 }
 
 func firstInt(values ...*int) *int {
