@@ -779,3 +779,17 @@ func TestDecodeMaximumHPPreservesAvailableTerms(t *testing.T) {
 		t.Fatalf("ancestry HP plus known CON contribution should be retained without class: %+v", decoded.Character.Attributes.HP)
 	}
 }
+
+
+func TestDecodeMaximumHPWhenActorHPObjectIsMissing(t *testing.T) {
+	raw := []byte(`{
+		"_id":"no-hp-object","type":"character",
+		"system":{"details":{"level":{"value":2}},"abilities":{"con":{"mod":1}}},
+		"items":[{"_id":"human","type":"ancestry","system":{"hp":8}}]
+	}`)
+	decoded, err := DecodeActor(raw)
+	if err != nil { t.Fatal(err) }
+	if decoded.Character.Attributes.HP == nil || decoded.Character.Attributes.HP.Max == nil || *decoded.Character.Attributes.HP.Max != 10 {
+		t.Fatalf("missing Actor HP object should not prevent partial derivation: %+v", decoded.Character.Attributes.HP)
+	}
+}
