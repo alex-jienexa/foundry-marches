@@ -177,6 +177,8 @@ type CharacterItemDto struct {
 	Slug             *string               `json:"slug"`
 	Image            *string               `json:"image"`
 	Category         CharacterItemCategory `json:"category"`
+	SystemCategory   *string               `json:"systemCategory,omitempty"`
+	ActionType       *string               `json:"actionType,omitempty"`
 	Quantity         *int                  `json:"quantity"`
 	Level            *int                  `json:"level"`
 	Equipped         *CharacterEquippedDto `json:"equipped"`
