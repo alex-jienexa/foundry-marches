@@ -681,92 +681,182 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *discordgo.MessageEmbed) {
 	components := []discordgo.MessageComponent{}
 	embeds := []*discordgo.MessageEmbed{embed}
-	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{Embeds: &embeds, Components: &components})
-	if err != nil { log.Printf("Discord embed edit: %v", err) }
+	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds:     &embeds,
+		Components: &components,
+	})
+	if err != nil {
+		log.Printf("Discord embed edit: %v", err)
+	}
 }
 
 func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
-	embed := &discordgo.MessageEmbed{Title: c.Identity.Name, Color: 0x5865F2}
-	if c.Identity.Image != nil && (strings.HasPrefix(*c.Identity.Image, "https://") || strings.HasPrefix(*c.Identity.Image, "http://")) {
+	embed := &discordgo.MessageEmbed{
+		Title: c.Identity.Name,
+		Color: 0x5865F2,
+	}
+	if c.Identity.Image != nil &&
+		(strings.HasPrefix(*c.Identity.Image, "https://") || strings.HasPrefix(*c.Identity.Image, "http://")) {
 		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
 	}
+
 	build := make([]string, 0, 4)
-	for _, part := range []struct { label string; item *characterItemReference }{
-		{"Родословная", c.Build.Ancestry}, {"Наследие", c.Build.Heritage},
-		{"Предыстория", c.Build.Background}, {"Класс", c.Build.Class},
+	for _, part := range []struct {
+		label string
+		item  *characterItemReference
+	}{
+		{"Родословная", c.Build.Ancestry},
+		{"Наследие", c.Build.Heritage},
+		{"Предыстория", c.Build.Background},
+		{"Класс", c.Build.Class},
 	} {
-		if part.item != nil && part.item.Name != "" { build = append(build, part.label+": "+part.item.Name) }
+		if part.item != nil && part.item.Name != "" {
+			build = append(build, part.label+": "+part.item.Name)
+		}
 	}
-	if len(build) > 0 { embed.Description = strings.Join(build, "\n") }
+	if len(build) > 0 {
+		embed.Description = strings.Join(build, "\n")
+	}
+
 	level := "—"
-	if c.Progression.Level != nil { level = strconv.Itoa(*c.Progression.Level) }
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Уровень", Value: level, Inline: true})
+	if c.Progression.Level != nil {
+		level = strconv.Itoa(*c.Progression.Level)
+	}
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+		Name: "Уровень", Value: level, Inline: true,
+	})
 	if c.Attributes.HP != nil {
 		hp := fmt.Sprintf("%s / %s", intValue(c.Attributes.HP.Current), intValue(c.Attributes.HP.Max))
-		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 { hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp) }
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Здоровье", Value: hp, Inline: true})
+		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 {
+			hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp)
+		}
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Здоровье", Value: hp, Inline: true,
+		})
 	}
+
 	xp := intValue(c.Progression.Experience.Value)
-	if c.Progression.Experience.Max != nil { xp += " / " + strconv.Itoa(*c.Progression.Experience.Max) }
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Опыт", Value: xp, Inline: true})
+	if c.Progression.Experience.Max != nil {
+		xp += " / " + strconv.Itoa(*c.Progression.Experience.Max)
+	}
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+		Name: "Опыт", Value: xp, Inline: true,
+	})
 
 	abilityOrder := []string{"str", "dex", "con", "int", "wis", "cha"}
-	abilityNames := map[string]string{"str":"СИЛ", "dex":"ЛОВ", "con":"ТЕЛ", "int":"ИНТ", "wis":"МДР", "cha":"ХАР"}
+	abilityNames := map[string]string{
+		"str": "СИЛ",
+		"dex": "ЛОВ",
+		"con": "ТЕЛ",
+		"int": "ИНТ",
+		"wis": "МДР",
+		"cha": "ХАР",
+	}
 	abilities := make([]string, 0, len(c.Statistics.Abilities))
 	for _, key := range abilityOrder {
 		if value, ok := c.Statistics.Abilities[key]; ok {
 			line := abilityNames[key] + ": "
-			if value.Score != nil { line += strconv.Itoa(*value.Score) } else { line += "—" }
-			if value.Modifier != nil { line += fmt.Sprintf(" (%+d)", *value.Modifier) }
+			if value.Score != nil {
+				line += strconv.Itoa(*value.Score)
+			} else {
+				line += "—"
+			}
+			if value.Modifier != nil {
+				line += fmt.Sprintf(" (%+d)", *value.Modifier)
+			}
 			abilities = append(abilities, line)
 		}
 	}
 	if len(abilities) > 0 {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Характеристики", Value: strings.Join(abilities, " · "), Inline: false})
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Характеристики", Value: strings.Join(abilities, " · "), Inline: false,
+		})
 	}
+
 	if c.Resources.HeroPoints != nil {
 		hero := intValue(c.Resources.HeroPoints.Value)
-		if c.Resources.HeroPoints.Max != nil { hero += " / " + strconv.Itoa(*c.Resources.HeroPoints.Max) }
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Очки героизма", Value: hero, Inline: true})
+		if c.Resources.HeroPoints.Max != nil {
+			hero += " / " + strconv.Itoa(*c.Resources.HeroPoints.Max)
+		}
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Очки героизма", Value: hero, Inline: true,
+		})
 	}
+
 	skillNames := map[string]string{
-		"acrobatics":"Акробатика", "arcana":"Аркана", "athletics":"Атлетика", "crafting":"Ремесло",
-		"deception":"Обман", "diplomacy":"Дипломатия", "intimidation":"Запугивание", "medicine":"Медицина",
-		"nature":"Природа", "occultism":"Оккультизм", "performance":"Выступление", "religion":"Религия",
-		"society":"Общество", "stealth":"Скрытность", "survival":"Выживание", "thievery":"Воровство",
+		"acrobatics":   "Акробатика",
+		"arcana":       "Аркана",
+		"athletics":    "Атлетика",
+		"crafting":     "Ремесло",
+		"deception":    "Обман",
+		"diplomacy":    "Дипломатия",
+		"intimidation": "Запугивание",
+		"medicine":     "Медицина",
+		"nature":       "Природа",
+		"occultism":    "Оккультизм",
+		"performance":  "Выступление",
+		"religion":     "Религия",
+		"society":      "Общество",
+		"stealth":      "Скрытность",
+		"survival":     "Выживание",
+		"thievery":     "Воровство",
 	}
 	skills := make([]string, 0, len(c.Skills.Standard))
 	keys := make([]string, 0, len(c.Skills.Standard))
-	for key := range c.Skills.Standard { keys = append(keys, key) }
+	for key := range c.Skills.Standard {
+		keys = append(keys, key)
+	}
 	sort.Strings(keys)
 	for _, key := range keys {
 		skill := c.Skills.Standard[key]
-		if skill.Rank == nil { continue }
+		if skill.Rank == nil {
+			continue
+		}
 		name := skillNames[key]
-		if name == "" { name = key }
+		if name == "" {
+			name = key
+		}
 		skills = append(skills, fmt.Sprintf("%s — ранг %d", name, *skill.Rank))
 	}
 	if len(skills) > 0 {
-		if len(skills) > 8 { skills = skills[:8] }
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Навыки", Value: strings.Join(skills, "\n"), Inline: false})
+		if len(skills) > 8 {
+			skills = skills[:8]
+		}
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Навыки", Value: strings.Join(skills, "\n"), Inline: false,
+		})
 	}
+
 	items := make([]string, 0, len(c.Items))
 	for _, item := range c.Items {
-		if item.Name == "" { continue }
+		if item.Name == "" {
+			continue
+		}
 		line := item.Name
-		if item.Quantity != nil && *item.Quantity > 1 { line += " × " + strconv.Itoa(*item.Quantity) }
+		if item.Quantity != nil && *item.Quantity > 1 {
+			line += " × " + strconv.Itoa(*item.Quantity)
+		}
 		items = append(items, line)
 	}
 	if len(items) > 0 {
-		if len(items) > 8 { items = items[:8] }
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Предметы", Value: strings.Join(items, "\n"), Inline: false})
+		if len(items) > 8 {
+			items = items[:8]
+		}
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Предметы", Value: strings.Join(items, "\n"), Inline: false,
+		})
 	}
-	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Источник: последний сохранённый снимок Foundry · " + c.Identity.UUID}
+
+	embed.Footer = &discordgo.MessageEmbedFooter{
+		Text: "Источник: последний сохранённый снимок Foundry · " + c.Identity.UUID,
+	}
 	return embed
 }
 
 func intValue(value *int) string {
-	if value == nil { return "—" }
+	if value == nil {
+		return "—"
+	}
 	return strconv.Itoa(*value)
 }
 
@@ -777,18 +867,30 @@ func (b *bot) fetchIntegrationStatus() (integrationStatus, error) {
 }
 
 func integrationStatusEmbed(status integrationStatus) *discordgo.MessageEmbed {
-	components := []struct { name string; value healthComponent }{
-		{"PostgreSQL", status.Database}, {"Foundry Relay", status.Relay}, {"Foundry", status.Foundry},
+	components := []struct {
+		name  string
+		value healthComponent
+	}{
+		{"PostgreSQL", status.Database},
+		{"Foundry Relay", status.Relay},
+		{"Foundry", status.Foundry},
 	}
-	embed := &discordgo.MessageEmbed{Title: "Состояние интеграций", Color: 0x57F287}
+	embed := &discordgo.MessageEmbed{
+		Title: "Состояние интеграций",
+		Color: 0x57F287,
+	}
 	for _, item := range components {
 		value := "🟢 Доступен"
 		if !item.value.OK {
 			value = "🔴 Недоступен"
 			embed.Color = 0xED4245
 		}
-		if item.value.Detail != "" { value += "\n" + truncateLabel(item.value.Detail) }
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: item.name, Value: value, Inline: false})
+		if item.value.Detail != "" {
+			value += "\n" + truncateLabel(item.value.Detail)
+		}
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: item.name, Value: value, Inline: false,
+		})
 	}
 	embed.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return embed
@@ -807,7 +909,9 @@ func (b *bot) monitorIntegrations(s *discordgo.Session) {
 	b.checkIntegrationStatus(s)
 	ticker := time.NewTicker(b.healthInterval)
 	defer ticker.Stop()
-	for range ticker.C { b.checkIntegrationStatus(s) }
+	for range ticker.C {
+		b.checkIntegrationStatus(s)
+	}
 }
 
 func (b *bot) checkIntegrationStatus(s *discordgo.Session) {
@@ -824,22 +928,32 @@ func (b *bot) checkIntegrationStatus(s *discordgo.Session) {
 	b.reportMu.Unlock()
 	if changed {
 		embed := integrationStatusEmbed(status)
-		if allHealthy { embed.Title = "Интеграции доступны или восстановлены" } else { embed.Title = "Изменилось состояние интеграций" }
+		if allHealthy {
+			embed.Title = "Интеграции доступны или восстановлены"
+		} else {
+			embed.Title = "Изменилось состояние интеграций"
+		}
 		b.sendAdminEmbed(s, embed)
 	}
 }
 
 func (b *bot) sendAdminEmbed(s *discordgo.Session, embed *discordgo.MessageEmbed) {
-	if b.adminChannelID == "" { return }
+	if b.adminChannelID == "" {
+		return
+	}
 	if _, err := s.ChannelMessageSendEmbed(b.adminChannelID, embed); err != nil {
 		log.Printf("Discord admin channel notification failed: %v", err)
 	}
 }
 
 func (b *bot) reportAdminError(operation string, err error) {
-	if err == nil { return }
+	if err == nil {
+		return
+	}
 	log.Printf("application error [%s]: %v", operation, err)
-	if b.adminChannelID == "" || b.session == nil { return }
+	if b.adminChannelID == "" || b.session == nil {
+		return
+	}
 	fingerprint := operation + ": " + err.Error()
 	now := time.Now()
 	b.reportMu.Lock()
@@ -849,9 +963,12 @@ func (b *bot) reportAdminError(operation string, err error) {
 	}
 	b.reportedErrors[fingerprint] = now
 	b.reportMu.Unlock()
-	embed := &discordgo.MessageEmbed{Title: "Ошибка приложения", Color: 0xED4245,
-		Description: truncateMessage("Операция: "+operation+"\nОшибка: "+err.Error()),
-		Timestamp: now.UTC().Format(time.RFC3339)}
+	embed := &discordgo.MessageEmbed{
+		Title:       "Ошибка приложения",
+		Color:       0xED4245,
+		Description: truncateMessage("Операция: " + operation + "\nОшибка: " + err.Error()),
+		Timestamp:   now.UTC().Format(time.RFC3339),
+	}
 	b.sendAdminEmbed(b.session, embed)
 }
 
