@@ -897,16 +897,16 @@ func decodeStatistics(system map[string]json.RawMessage, items []FoundryItemDto,
 			break
 		}
 	}
+	reconstructed := make(map[string]AbilityScoreDto)
 	if scores, ok := reconstructAbilityScores(system, items, level); ok {
 		for key, score := range scores {
-			current := abilities[key]
-			if current.Score == nil && current.Modifier == nil {
-				current.Score = intPointerValue(score)
-				current.Modifier = intPointerValue(abilityModifierFromScore(score))
-				current.Derived = true
-				abilities[key] = current
-				derived = true
+			if current, exists := abilities[key]; exists && (current.Score != nil || current.Modifier != nil) {
+				continue
 			}
+			reconstructed[key] = AbilityScoreDto{
+				Score: intPointerValue(score), Modifier: intPointerValue(abilityModifierFromScore(score)), Derived: true,
+			}
+			derived = true
 		}
 	}
 	proficiencies := objectAt(system, "proficiencies")
@@ -933,7 +933,7 @@ func decodeStatistics(system map[string]json.RawMessage, items []FoundryItemDto,
 		defensesSource = "actor.defenses"
 	}
 	return CharacterStatisticsInputDto{
-		Abilities: abilities, AbilitiesDerived: derived,
+		Abilities: abilities, ReconstructedAbilities: reconstructed, AbilitiesDerived: derived,
 		Proficiencies: CharacterProficienciesDto{
 			Perception: perception,
 			Saves:      proficiencyMap(savesRaw, savesSource),
