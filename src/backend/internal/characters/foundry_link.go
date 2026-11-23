@@ -18,8 +18,8 @@ var (
 )
 
 // LinkActor explicitly links a previously discovered Foundry character Actor to an
-// existing application character. It never creates a character, assigns an owner,
-// or confirms player ownership. Repeating the same link is idempotent.
+// existing application character that already has an assigned owner. It never creates
+// a character or changes an existing owner. Repeating the same link is idempotent.
 func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, characterID, linkedByUserID string) error {
 	return r.LinkActorWithOwner(ctx, worldID, actorUUID, characterID, linkedByUserID, "")
 }
