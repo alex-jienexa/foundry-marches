@@ -1351,7 +1351,7 @@ func characterSpellsEmbeds(c characterDetails) []*discordgo.MessageEmbed {
 		}
 		if spellType == "focus" || strings.Contains(listName, "focus") || strings.Contains(listName, "фокус") {
 			focusOrder := 1
-			if item.Cantrip {
+			if item.Cantrip || rank == 0 {
 				focusOrder = 0
 			}
 			addSpell(item, 2, 0, "Фокусные заклинания", focusOrder)
