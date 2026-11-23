@@ -787,7 +787,7 @@ func (b *bot) showLookupMatch(s *discordgo.Session, i *discordgo.InteractionCrea
 		b.edit(s, i, "Не удалось загрузить данные персонажа: "+err.Error(), nil)
 		return
 	}
-	details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
+	details.Identity.Image = characterPortraitURL(details.Identity.Image, b.foundryPublicBaseURL)
 	switch mode {
 	case "inventory":
 		b.editEmbed(s, i, characterInventoryEmbed(details))
@@ -876,7 +876,7 @@ func (b *bot) handleCharacterDetailButton(s *discordgo.Session, i *discordgo.Int
 		b.edit(s, i, "Не удалось обновить данные персонажа: "+err.Error(), nil)
 		return
 	}
-	details.Identity.Image = resolveFoundryImageURL(details.Identity.Image, b.foundryPublicBaseURL)
+	details.Identity.Image = characterPortraitURL(details.Identity.Image, b.foundryPublicBaseURL)
 	var embed *discordgo.MessageEmbed
 	switch section {
 	case "overview":
