@@ -91,6 +91,7 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	ancestryCategory := "ancestry"
 	classFeatureCategory := "classfeature"
 	generalCategory := "general"
+	skillCategory := "skill"
 	reaction := "reaction"
 
 	c := characterDetails{}
@@ -107,6 +108,7 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 		{Name: "Реагирующий удар / Reactive Strike", Type: "action", ActionType: &reaction},
 		{Name: "Реагирующий удар / Reactive Strike", Type: "feat", SystemCategory: &classFeatureCategory},
 		{Name: "Блок щитом / Shield Block", Type: "feat", SystemCategory: &generalCategory},
+		{Name: "Сильный носильщик / Hefty Hauler", Type: "feat", SystemCategory: &skillCategory},
 		{Name: "Длинный меч / Longsword", Type: "weapon", Category: "equipment"},
 		{Name: "Золотые монеты / Gold Pieces", Type: "treasure", Category: "equipment"},
 	}
@@ -142,7 +144,7 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 		{"Способности родословной", "Видящий во мраке"},
 		{"Действия", "Реагирующий удар — реакция"},
 		{"Особенности класса", "Реагирующий удар"},
-		{"Другие способности", "Блок щитом"},
+		{"Другие способности", "Сильный носильщик"},
 		{"Предметы", "Длинный меч"},
 		{"Предметы", "Золотые монеты × 2"},
 	}
@@ -153,6 +155,9 @@ func TestCharacterEmbedSeparatesAbilitiesActionsAndEquipment(t *testing.T) {
 	}
 	if strings.Contains(fields["Особенности класса"], "Храбрость") {
 		t.Error("class feature above the character's level must be hidden")
+	}
+	if strings.Contains(fields["Другие способности"], "Блок щитом") {
+		t.Errorf("class feature duplicate must not appear under other abilities: %q", fields["Другие способности"])
 	}
 	if strings.Contains(fields["Предметы"], "Двойной разрез") ||
 		strings.Contains(fields["Предметы"], "Реагирующий удар") ||
