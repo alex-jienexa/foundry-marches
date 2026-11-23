@@ -1948,20 +1948,22 @@ func characterSkillLines(standard, lore map[string]characterSkill) []string {
 	}
 	entries := make([]skillLine, 0, len(standard)+len(lore))
 	for key, skill := range standard {
-		if skill.Rank == nil || *skill.Rank <= 0 {
-			continue
-		}
 		name := names[key]
 		if name == "" {
 			name = humanizeSkillKey(key)
 		}
-		entries = append(entries, skillLine{name: name, rank: *skill.Rank})
+		rank := -1
+		if skill.Rank != nil {
+			rank = *skill.Rank
+		}
+		entries = append(entries, skillLine{name: name, rank: rank})
 	}
 	for key, skill := range lore {
-		if skill.Rank == nil || *skill.Rank <= 0 {
-			continue
+		rank := -1
+		if skill.Rank != nil {
+			rank = *skill.Rank
 		}
-		entries = append(entries, skillLine{name: loreSkillName(key), rank: *skill.Rank})
+		entries = append(entries, skillLine{name: loreSkillName(key), rank: rank})
 	}
 	sort.SliceStable(entries, func(i, j int) bool {
 		if entries[i].rank != entries[j].rank {
@@ -1971,7 +1973,11 @@ func characterSkillLines(standard, lore map[string]characterSkill) []string {
 	})
 	lines := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		lines = append(lines, fmt.Sprintf("%s — %s", entry.name, proficiencyLabel(&entry.rank)))
+		label := "—"
+		if entry.rank >= 0 {
+			label = proficiencyLabel(&entry.rank)
+		}
+		lines = append(lines, fmt.Sprintf("%s — %s", entry.name, label))
 	}
 	return lines
 }
@@ -1981,6 +1987,8 @@ func proficiencyLabel(rank *int) string {
 		return ""
 	}
 	switch *rank {
+	case 0:
+		return "Не обучен"
 	case 1:
 		return "Обучен"
 	case 2:
