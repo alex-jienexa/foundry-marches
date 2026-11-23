@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"os"
 	"strconv"
 	"strings"
@@ -28,14 +29,23 @@ const (
 	GrantRolePath      = "/api/internal/discord/roles/grant"
 	MapRolePath        = "/api/internal/discord/roles/map"
 	DraftCharacterPath = "/api/internal/discord/characters/draft"
+	CharacterSearchPath = "/api/internal/discord/characters/search"
+	CharacterDetailPath = "/api/internal/discord/characters/detail"
+	IntegrationStatusPath = "/api/internal/discord/integration-status"
 )
 
 type bot struct {
 	apiURL, apiToken, guildID string
+	adminChannelID            string
+	healthInterval            time.Duration
 	client                    *http.Client
+	session                   *discordgo.Session
 	mu                        sync.Mutex
+	reportMu                  sync.Mutex
 	pending                   map[string]pendingLink
 	flows                     map[string]*selectionFlow
+	reportedErrors            map[string]time.Time
+	lastHealthState           string
 }
 type pendingLink struct {
 	actorUUID, characterID, discordID, guildID string
@@ -79,11 +89,86 @@ type linkPreview struct {
 	CharacterName string `json:"character_name"`
 }
 
+type characterDetails struct {
+	Identity struct {
+		Name  string  `json:"name"`
+		UUID  string  `json:"uuid"`
+		Image *string `json:"image"`
+	} `json:"identity"`
+	Progression struct {
+		Level *int `json:"level"`
+		Experience struct {
+			Value *int `json:"value"`
+			Max   *int `json:"max"`
+		} `json:"experience"`
+	} `json:"progression"`
+	Build struct {
+		Ancestry   *characterItemReference `json:"ancestry"`
+		Heritage   *characterItemReference `json:"heritage"`
+		Background *characterItemReference `json:"background"`
+		Class      *characterItemReference `json:"class"`
+		KeyAbility *string                 `json:"keyAbility"`
+	} `json:"build"`
+	Attributes struct {
+		HP *struct {
+			Current *int `json:"current"`
+			Temp    *int `json:"temp"`
+			Max     *int `json:"max"`
+		} `json:"hp"`
+	} `json:"attributes"`
+	Statistics struct {
+		Abilities map[string]struct {
+			Score    *int `json:"score"`
+			Modifier *int `json:"modifier"`
+		} `json:"abilities"`
+	} `json:"statistics"`
+	Resources struct {
+		HeroPoints *struct {
+			Value *int `json:"value"`
+			Max   *int `json:"max"`
+		} `json:"heroPoints"`
+	} `json:"resources"`
+	Skills struct {
+		Standard map[string]struct {
+			Rank *int `json:"rank"`
+		} `json:"standard"`
+		Lore map[string]struct {
+			Rank *int `json:"rank"`
+		} `json:"lore"`
+	} `json:"skills"`
+	Items []struct {
+		Name     string `json:"name"`
+		Type     string `json:"type"`
+		Quantity *int   `json:"quantity"`
+	} `json:"items"`
+}
+type characterItemReference struct { Name string `json:"name"` }
+type healthComponent struct {
+	OK     bool   `json:"ok"`
+	Detail string `json:"detail,omitempty"`
+}
+type integrationStatus struct {
+	Database healthComponent `json:"database"`
+	Relay    healthComponent `json:"relay"`
+	Foundry  healthComponent `json:"foundry"`
+}
+
 func main() {
 	token, appID := requiredEnv("DISCORD_BOT_TOKEN"), requiredEnv("DISCORD_APPLICATION_ID")
 	guildID, apiToken := requiredEnv("DISCORD_GUILD_ID"), requiredEnv("DISCORD_BOT_API_TOKEN")
+	adminChannelID := strings.TrimSpace(os.Getenv("DISCORD_ADMIN_CHANNEL_ID"))
+	healthInterval := 60 * time.Second
+	if raw := strings.TrimSpace(os.Getenv("DISCORD_HEALTH_INTERVAL_SECONDS")); raw != "" {
+		seconds, err := strconv.Atoi(raw)
+		if err != nil || seconds < 15 || seconds > 3600 {
+			log.Fatal("DISCORD_HEALTH_INTERVAL_SECONDS must be between 15 and 3600")
+		}
+		healthInterval = time.Duration(seconds) * time.Second
+	}
 	b := &bot{apiURL: strings.TrimRight(requiredEnv("BACKEND_INTERNAL_URL"), "/"), apiToken: apiToken,
-		guildID: guildID, client: &http.Client{Timeout: 8 * time.Second}, pending: make(map[string]pendingLink), flows: make(map[string]*selectionFlow)}
+		guildID: guildID, adminChannelID: adminChannelID, healthInterval: healthInterval,
+		client: &http.Client{Timeout: 12 * time.Second}, pending: make(map[string]pendingLink),
+		flows: make(map[string]*selectionFlow), reportedErrors: make(map[string]time.Time)}
 	if len(apiToken) < 32 {
 		log.Fatal("DISCORD_BOT_API_TOKEN must contain at least 32 characters")
 	}
@@ -92,6 +177,7 @@ func main() {
 		log.Fatal(err)
 	}
 	s.Identify.Intents = discordgo.IntentsGuilds
+	b.session = s
 	s.AddHandler(b.handle)
 	if err := s.Open(); err != nil {
 		log.Fatal(err)
@@ -101,6 +187,11 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("FoundryMarches bot connected; guild=%s", guildID)
+	if adminChannelID != "" {
+		go b.monitorIntegrations(s)
+	} else {
+		log.Printf("DISCORD_ADMIN_CHANNEL_ID is not set; Discord health alerts are disabled")
+	}
 	select {}
 }
 
@@ -111,6 +202,8 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "characters", Description: "Показать персонажей приложения и их ID"},
 		{Name: "character-link", Description: "Выбрать Foundry Actor и персонажа приложения для привязки"},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
+		{Name: "character", Description: "Найти персонажа и показать данные из Foundry", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
+		{Name: "integration-status", Description: "Проверить доступность API, Relay и Foundry"},
 		{Name: "role-grant", Description: "Назначить роль зарегистрированному участнику",
 			Options: []*discordgo.ApplicationCommandOption{
 				{Name: "discord_user_id", Description: "Discord ID участника", Type: discordgo.ApplicationCommandOptionString, Required: true},
@@ -201,6 +294,11 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.startSelection(s, i, id, u, "link")
 	case "character-draft":
 		b.startSelection(s, i, id, u, "draft")
+	case "character":
+		o := commandOptions(i.ApplicationCommandData().Options)
+		b.startCharacterLookup(s, i, id, u, o["name"])
+	case "integration-status":
+		b.showIntegrationStatus(s, i)
 	case "role-grant":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		payload := struct {
@@ -273,6 +371,33 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 		label = "Выбери Foundry Actor для привязки:"
 	}
 	b.edit(s, i, label, components)
+}
+
+func (b *bot) startCharacterLookup(s *discordgo.Session, i *discordgo.InteractionCreate, id identity, u *discordgo.User, query string) {
+	var result struct { Actors []actor `json:"actors"` }
+	if err := b.post(CharacterSearchPath, struct {
+		identity
+		Query string `json:"query"`
+	}{id, query}, &result); err != nil {
+		b.edit(s, i, "Не удалось найти персонажа: "+err.Error(), nil)
+		return
+	}
+	if len(result.Actors) == 0 {
+		b.edit(s, i, "Персонажи с таким именем не найдены в последней синхронизации Foundry.", nil)
+		return
+	}
+	flow := &selectionFlow{mode: "view", stage: "actor", discordID: u.ID, guildID: i.GuildID,
+		actors: result.Actors, expiresAt: time.Now().Add(10 * time.Minute)}
+	key, err := randomKey()
+	if err != nil {
+		b.edit(s, i, "Не удалось подготовить выбор персонажа.", nil)
+		return
+	}
+	b.mu.Lock()
+	b.pruneFlowsLocked()
+	b.flows[key] = flow
+	b.mu.Unlock()
+	b.edit(s, i, fmt.Sprintf("Найдено персонажей: %d. Выбери нужного:", len(result.Actors)), b.actorSelectionComponents(key, flow))
 }
 
 func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -350,6 +475,24 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			return
 		}
 		flow.actorUUID = chosen.ActorUUID
+		if flow.mode == "view" {
+			delete(b.flows, key)
+			b.mu.Unlock()
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
+				return
+			}
+			var details characterDetails
+			err := b.post(CharacterDetailPath, struct {
+				identity
+				ActorUUID string `json:"actor_uuid"`
+			}{b.identity(i, u), chosen.ActorUUID}, &details)
+			if err != nil {
+				b.edit(s, i, "Не удалось загрузить данные персонажа: "+err.Error(), nil)
+				return
+			}
+			b.editEmbed(s, i, characterEmbed(details))
+			return
+		}
 		if flow.mode == "draft" {
 			delete(b.flows, key)
 			b.mu.Unlock()
@@ -535,6 +678,183 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 }
 
+func (b *bot) editEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *discordgo.MessageEmbed) {
+	components := []discordgo.MessageComponent{}
+	embeds := []*discordgo.MessageEmbed{embed}
+	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{Embeds: &embeds, Components: &components})
+	if err != nil { log.Printf("Discord embed edit: %v", err) }
+}
+
+func characterEmbed(c characterDetails) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{Title: c.Identity.Name, Color: 0x5865F2}
+	if c.Identity.Image != nil && (strings.HasPrefix(*c.Identity.Image, "https://") || strings.HasPrefix(*c.Identity.Image, "http://")) {
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *c.Identity.Image}
+	}
+	build := make([]string, 0, 4)
+	for _, part := range []struct { label string; item *characterItemReference }{
+		{"Родословная", c.Build.Ancestry}, {"Наследие", c.Build.Heritage},
+		{"Предыстория", c.Build.Background}, {"Класс", c.Build.Class},
+	} {
+		if part.item != nil && part.item.Name != "" { build = append(build, part.label+": "+part.item.Name) }
+	}
+	if len(build) > 0 { embed.Description = strings.Join(build, "\n") }
+	level := "—"
+	if c.Progression.Level != nil { level = strconv.Itoa(*c.Progression.Level) }
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Уровень", Value: level, Inline: true})
+	if c.Attributes.HP != nil {
+		hp := fmt.Sprintf("%s / %s", intValue(c.Attributes.HP.Current), intValue(c.Attributes.HP.Max))
+		if c.Attributes.HP.Temp != nil && *c.Attributes.HP.Temp > 0 { hp += fmt.Sprintf(" (+%d временных)", *c.Attributes.HP.Temp) }
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Здоровье", Value: hp, Inline: true})
+	}
+	xp := intValue(c.Progression.Experience.Value)
+	if c.Progression.Experience.Max != nil { xp += " / " + strconv.Itoa(*c.Progression.Experience.Max) }
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Опыт", Value: xp, Inline: true})
+
+	abilityOrder := []string{"str", "dex", "con", "int", "wis", "cha"}
+	abilityNames := map[string]string{"str":"СИЛ", "dex":"ЛОВ", "con":"ТЕЛ", "int":"ИНТ", "wis":"МДР", "cha":"ХАР"}
+	abilities := make([]string, 0, len(c.Statistics.Abilities))
+	for _, key := range abilityOrder {
+		if value, ok := c.Statistics.Abilities[key]; ok {
+			line := abilityNames[key] + ": "
+			if value.Score != nil { line += strconv.Itoa(*value.Score) } else { line += "—" }
+			if value.Modifier != nil { line += fmt.Sprintf(" (%+d)", *value.Modifier) }
+			abilities = append(abilities, line)
+		}
+	}
+	if len(abilities) > 0 {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Характеристики", Value: strings.Join(abilities, " · "), Inline: false})
+	}
+	if c.Resources.HeroPoints != nil {
+		hero := intValue(c.Resources.HeroPoints.Value)
+		if c.Resources.HeroPoints.Max != nil { hero += " / " + strconv.Itoa(*c.Resources.HeroPoints.Max) }
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Очки героизма", Value: hero, Inline: true})
+	}
+	skillNames := map[string]string{
+		"acrobatics":"Акробатика", "arcana":"Аркана", "athletics":"Атлетика", "crafting":"Ремесло",
+		"deception":"Обман", "diplomacy":"Дипломатия", "intimidation":"Запугивание", "medicine":"Медицина",
+		"nature":"Природа", "occultism":"Оккультизм", "performance":"Выступление", "religion":"Религия",
+		"society":"Общество", "stealth":"Скрытность", "survival":"Выживание", "thievery":"Воровство",
+	}
+	skills := make([]string, 0, len(c.Skills.Standard))
+	keys := make([]string, 0, len(c.Skills.Standard))
+	for key := range c.Skills.Standard { keys = append(keys, key) }
+	sort.Strings(keys)
+	for _, key := range keys {
+		skill := c.Skills.Standard[key]
+		if skill.Rank == nil { continue }
+		name := skillNames[key]
+		if name == "" { name = key }
+		skills = append(skills, fmt.Sprintf("%s — ранг %d", name, *skill.Rank))
+	}
+	if len(skills) > 0 {
+		if len(skills) > 8 { skills = skills[:8] }
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Навыки", Value: strings.Join(skills, "\n"), Inline: false})
+	}
+	items := make([]string, 0, len(c.Items))
+	for _, item := range c.Items {
+		if item.Name == "" { continue }
+		line := item.Name
+		if item.Quantity != nil && *item.Quantity > 1 { line += " × " + strconv.Itoa(*item.Quantity) }
+		items = append(items, line)
+	}
+	if len(items) > 0 {
+		if len(items) > 8 { items = items[:8] }
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Предметы", Value: strings.Join(items, "\n"), Inline: false})
+	}
+	embed.Footer = &discordgo.MessageEmbedFooter{Text: "Источник: последний сохранённый снимок Foundry · " + c.Identity.UUID}
+	return embed
+}
+
+func intValue(value *int) string {
+	if value == nil { return "—" }
+	return strconv.Itoa(*value)
+}
+
+func (b *bot) fetchIntegrationStatus() (integrationStatus, error) {
+	var status integrationStatus
+	err := b.post(IntegrationStatusPath, struct{}{}, &status)
+	return status, err
+}
+
+func integrationStatusEmbed(status integrationStatus) *discordgo.MessageEmbed {
+	components := []struct { name string; value healthComponent }{
+		{"PostgreSQL", status.Database}, {"Foundry Relay", status.Relay}, {"Foundry", status.Foundry},
+	}
+	embed := &discordgo.MessageEmbed{Title: "Состояние интеграций", Color: 0x57F287}
+	for _, item := range components {
+		value := "🟢 Доступен"
+		if !item.value.OK {
+			value = "🔴 Недоступен"
+			embed.Color = 0xED4245
+		}
+		if item.value.Detail != "" { value += "\n" + truncateLabel(item.value.Detail) }
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: item.name, Value: value, Inline: false})
+	}
+	embed.Timestamp = time.Now().UTC().Format(time.RFC3339)
+	return embed
+}
+
+func (b *bot) showIntegrationStatus(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	status, err := b.fetchIntegrationStatus()
+	if err != nil {
+		b.edit(s, i, "Не удалось проверить интеграции: "+err.Error(), nil)
+		return
+	}
+	b.editEmbed(s, i, integrationStatusEmbed(status))
+}
+
+func (b *bot) monitorIntegrations(s *discordgo.Session) {
+	b.checkIntegrationStatus(s)
+	ticker := time.NewTicker(b.healthInterval)
+	defer ticker.Stop()
+	for range ticker.C { b.checkIntegrationStatus(s) }
+}
+
+func (b *bot) checkIntegrationStatus(s *discordgo.Session) {
+	status, err := b.fetchIntegrationStatus()
+	if err != nil {
+		b.reportAdminError("integration health check", err)
+		return
+	}
+	state := "healthy"
+	if !status.Database.OK || !status.Relay.OK || !status.Foundry.OK { state = "degraded" }
+	b.reportMu.Lock()
+	changed := b.lastHealthState != state
+	b.lastHealthState = state
+	b.reportMu.Unlock()
+	if changed {
+		embed := integrationStatusEmbed(status)
+		if state == "healthy" { embed.Title = "Интеграции восстановлены" } else { embed.Title = "Обнаружена проблема интеграции" }
+		b.sendAdminEmbed(s, embed)
+	}
+}
+
+func (b *bot) sendAdminEmbed(s *discordgo.Session, embed *discordgo.MessageEmbed) {
+	if b.adminChannelID == "" { return }
+	if _, err := s.ChannelMessageSendEmbed(b.adminChannelID, embed); err != nil {
+		log.Printf("Discord admin channel notification failed: %v", err)
+	}
+}
+
+func (b *bot) reportAdminError(operation string, err error) {
+	if err == nil { return }
+	log.Printf("application error [%s]: %v", operation, err)
+	if b.adminChannelID == "" || b.session == nil { return }
+	fingerprint := operation + ": " + err.Error()
+	now := time.Now()
+	b.reportMu.Lock()
+	if previous, ok := b.reportedErrors[fingerprint]; ok && now.Sub(previous) < 5*time.Minute {
+		b.reportMu.Unlock()
+		return
+	}
+	b.reportedErrors[fingerprint] = now
+	b.reportMu.Unlock()
+	embed := &discordgo.MessageEmbed{Title: "Ошибка приложения", Color: 0xED4245,
+		Description: truncateMessage("Операция: "+operation+"\nОшибка: "+err.Error()),
+		Timestamp: now.UTC().Format(time.RFC3339)}
+	b.sendAdminEmbed(b.session, embed)
+}
+
 func (b *bot) identity(i *discordgo.InteractionCreate, u *discordgo.User) identity {
 	roles := []string{}
 	if i.Member != nil {
@@ -568,11 +888,13 @@ func (b *bot) post(path string, payload, target any) error {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := b.client.Do(req)
 	if err != nil {
+		b.reportAdminError("backend request "+path, err)
 		return err
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
+		b.reportAdminError("backend response "+path, err)
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -583,10 +905,17 @@ func (b *bot) post(path string, payload, target any) error {
 		if apiErr.Error == "" {
 			apiErr.Error = http.StatusText(resp.StatusCode)
 		}
-		return errors.New(apiErr.Error)
+		apiError := errors.New(apiErr.Error)
+		if resp.StatusCode >= 500 {
+			b.reportAdminError("backend request "+path, apiError)
+		}
+		return apiError
 	}
 	if target != nil && len(data) > 0 {
-		return json.Unmarshal(data, target)
+		if err := json.Unmarshal(data, target); err != nil {
+			b.reportAdminError("decode backend response "+path, err)
+			return err
+		}
 	}
 	return nil
 }
