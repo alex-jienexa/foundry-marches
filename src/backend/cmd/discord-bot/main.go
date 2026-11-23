@@ -207,7 +207,7 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "characters", Description: "Показать персонажей приложения и их ID"},
 		{Name: "character-link", Description: "Выбрать Foundry Actor и персонажа приложения для привязки"},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
-		{Name: "character", Description: "Найти персонажа и показать данные из Foundry", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
+		{Name: "character", Description: "Найти своего персонажа (GM видит всех) и показать данные Foundry", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "integration-status", Description: "Проверить доступность API, Relay и Foundry"},
 		{Name: "role-grant", Description: "Назначить роль зарегистрированному участнику",
 			Options: []*discordgo.ApplicationCommandOption{
