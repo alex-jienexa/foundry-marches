@@ -63,7 +63,21 @@ The database schema contains a generic `integration_jobs` queue for future Found
 
 Foundry/Relay outages do not make the API unready: existing synchronized character data remains available while the source is temporarily offline. Monitor Relay and Foundry using `/integration-status` and the private admin channel.
 
+## Container hardening
+
+The production overlay applies additional restrictions to the API and Discord bot:
+
+- Both application images run as the unprivileged `app` user defined by their Dockerfiles.
+- The API and bot root filesystems are read-only; writable temporary files are limited to bounded `/tmp` tmpfs mounts.
+- Linux capabilities are dropped, privilege escalation is disabled, and process-count limits are applied through Compose deploy resource limits.
+- CPU and memory limits are set for all three services; container logs use Docker's rotating local logging driver.
+- PostgreSQL data remains in its persistent named volume. The database is not exposed on a host port.
+
+These controls reduce the impact of a compromised application container; they do not replace host patching, firewall policy, secret rotation or external monitoring.
+
 ## Pre-deployment validation
+
+GitHub Actions validates documentation and generated database projections, Go formatting/tests/vet, baseline SQL and concurrency checks, migrations and PostgreSQL integration tests on PostgreSQL 15, 16 and 18. It also validates both development and production Compose configurations and builds the service images. A successful CI run is required before treating a revision as deployable.
 
 Before merging or deploying, run the backend checks from the repository root:
 
