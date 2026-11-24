@@ -20,6 +20,7 @@ services:
       - ./docker/init/20-bootstrap.sql:/docker-entrypoint-initdb.d/20-bootstrap.sql:ro
       - ./docs/database/migrations/0002_discord_bot_auth.sql:/docker-entrypoint-initdb.d/30-0002-discord-bot-auth.sql:ro
       - ./docs/database/migrations/0003_discord_character_self_connect.sql:/docker-entrypoint-initdb.d/31-0003-discord-character-self-connect.sql:ro
+      - ./docs/database/migrations/0004_foundry_sync_runs.sql:/docker-entrypoint-initdb.d/32-0004-foundry-sync-runs.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U foundry_admin -d foundry_marches"]
       interval: 5s
