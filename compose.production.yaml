@@ -23,7 +23,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 256
     logging:
       driver: local
       options:
@@ -34,6 +33,7 @@ services:
         limits:
           cpus: "1.0"
           memory: 512M
+          pids: 256
 
   discord-bot:
     environment:
@@ -47,7 +47,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 128
     logging:
       driver: local
       options:
@@ -58,3 +57,4 @@ services:
         limits:
           cpus: "0.5"
           memory: 256M
+          pids: 128
