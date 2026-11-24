@@ -101,7 +101,13 @@ jobs:
           cache-dependency-path: src/backend/go.mod
       - name: Verify Go formatting
         working-directory: src/backend
-        run: test -z "$(gofmt -l .)"
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            printf 'Go files requiring gofmt:\n%s\n' "$unformatted"
+            gofmt -d $unformatted
+            exit 1
+          fi
       - name: Run Go tests
         working-directory: src/backend
         run: go test ./...
