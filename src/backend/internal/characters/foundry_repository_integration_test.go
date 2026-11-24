@@ -352,8 +352,11 @@ VALUES ($1, $2, '{"_id":"linked","name":"Foundry Hero","type":"character"}'::jso
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.LinkActor(ctx, worldID, actorUUID, characterID, userID); err != nil {
-		t.Fatalf("link discovered Actor: %v", err)
+	if err := repo.LinkActor(ctx, worldID, actorUUID, characterID, userID); err != ErrCharacterOwnerRequired {
+		t.Fatalf("link without an assigned owner error = %v, want ErrCharacterOwnerRequired", err)
+	}
+	if err := repo.LinkActorWithOwner(ctx, worldID, actorUUID, characterID, userID, userID); err != nil {
+		t.Fatalf("link discovered Actor with explicit owner: %v", err)
 	}
 
 	var linkedCharacterID string
@@ -366,8 +369,8 @@ WHERE fa.world_id = $1 AND fa.actor_uuid = $2
 `, worldID, actorUUID).Scan(&linkedCharacterID, &ownerID, &ownerConfirmedAt); err != nil {
 		t.Fatalf("read linked Actor: %v", err)
 	}
-	if linkedCharacterID != characterID || ownerID.Valid || ownerConfirmedAt.Valid {
-		t.Fatalf("link changed unexpected ownership fields: character=%q owner=%v ownerConfirmed=%v", linkedCharacterID, ownerID, ownerConfirmedAt)
+	if linkedCharacterID != characterID || !ownerID.Valid || ownerID.String != userID || !ownerConfirmedAt.Valid {
+		t.Fatalf("link ownership fields mismatch: character=%q owner=%v ownerConfirmed=%v", linkedCharacterID, ownerID, ownerConfirmedAt)
 	}
 
 	// Repeating the same explicit operation is safe and does not duplicate audit.
