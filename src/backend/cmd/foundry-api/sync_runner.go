@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/alex-jienexa/foundry-marches/internal/foundrysync"
 )
@@ -26,28 +25,21 @@ func (r *coordinatedSyncRunner) SyncAll(ctx context.Context) (foundrysync.SyncRe
 		return foundrysync.SyncReport{}, errors.New("Foundry sync runner is not initialized")
 	}
 
-	conn, err := r.db.Conn(ctx)
+	// A transaction-scoped advisory lock is automatically released on rollback,
+	// including when the caller context is cancelled or the connection is lost.
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return foundrysync.SyncReport{}, fmt.Errorf("reserve PostgreSQL connection for Foundry sync lock: %w", err)
+		return foundrysync.SyncReport{}, fmt.Errorf("begin transaction for Foundry sync lock: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = tx.Rollback() }()
 
 	var acquired bool
-	if err := conn.QueryRowContext(ctx, "SELECT pg_try_advisory_lock($1)", foundrySyncLockID).Scan(&acquired); err != nil {
+	if err := tx.QueryRowContext(ctx, "SELECT pg_try_advisory_xact_lock($1)", foundrySyncLockID).Scan(&acquired); err != nil {
 		return foundrysync.SyncReport{}, fmt.Errorf("acquire Foundry sync lock: %w", err)
 	}
 	if !acquired {
 		return foundrysync.SyncReport{}, foundrysync.ErrSyncInProgress
 	}
-	defer func() {
-		unlockCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		var unlocked bool
-		if err := conn.QueryRowContext(unlockCtx, "SELECT pg_advisory_unlock($1)", foundrySyncLockID).Scan(&unlocked); err != nil {
-			// Closing the dedicated connection also releases the session lock.
-			return
-		}
-	}()
 
 	return r.inner.SyncAll(ctx)
 }
