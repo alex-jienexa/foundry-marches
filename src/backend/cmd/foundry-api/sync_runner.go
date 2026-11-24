@@ -27,10 +27,10 @@ type coordinatedSyncRunner struct {
 }
 
 const (
-	foundrySyncLockID       int64 = 0x464D53594E43
-	foundrySyncStaleAfter         = 15 * time.Minute
-	foundrySyncUnlockTimeout      = 3 * time.Second
-	foundrySyncPersistTimeout     = 5 * time.Second
+	foundrySyncLockID         int64 = 0x464D53594E43
+	foundrySyncStaleAfter           = 15 * time.Minute
+	foundrySyncUnlockTimeout        = 3 * time.Second
+	foundrySyncPersistTimeout       = 5 * time.Second
 )
 
 func (r *coordinatedSyncRunner) SyncAll(ctx context.Context) (foundrysync.SyncReport, error) {
