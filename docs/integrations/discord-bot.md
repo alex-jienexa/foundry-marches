@@ -37,6 +37,8 @@ DISCORD_BOT_API_TOKEN=generated-random-secret
 DISCORD_ADMIN_CHANNEL_ID=discord-admin-channel-id
 # Discord role that grants access to campaign channels
 DISCORD_CAMPAIGN_ROLE_ID=1574386309584388106
+# Master audit channel for self-connect review/undo and integration alerts
+DISCORD_ADMIN_CHANNEL_ID=discord-master-chat-channel-id
 # Optional; default 60 seconds, allowed range 15..3600
 DISCORD_HEALTH_INTERVAL_SECONDS=60
 # Public Foundry URL used to resolve relative Actor portrait paths in Discord embeds
