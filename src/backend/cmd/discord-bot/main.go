@@ -433,6 +433,10 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			b.editEmbed(s, i, directoryEmbed("Персонажи приложения", "Черновики и зарегистрированные персонажи кампании.", lines, 40))
 		}
 	case "character-connect":
+		if b.adminChannelID == "" {
+			b.edit(s, i, "Самостоятельная привязка пока недоступна: мастер-чат не настроен. Сообщи мастеру о необходимости задать DISCORD_ADMIN_CHANNEL_ID.", nil)
+			return
+		}
 		b.startSelection(s, i, id, u, "connect", "")
 	case "character-link":
 		o := commandOptions(i.ApplicationCommandData().Options)
@@ -734,8 +738,10 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				b.edit(s, i, "Не удалось привязать персонажа: "+err.Error(), nil)
 				return
 			}
-			b.sendConnectAudit(s, u, chosen.Name, result)
-			b.edit(s, i, fmt.Sprintf("✅ **Персонаж привязан!**\n\n**%s** теперь связан с твоим аккаунтом и сразу занимает один из двух активных слотов.\n\nПосмотреть всех своих персонажей и свободные слоты: `/my-characters`. Карточка персонажа: `/my-character`.", result.Character.Name), nil)
+			auditSent := b.sendConnectAudit(s, u, chosen.Name, result)
+			message := fmt.Sprintf("✅ **Персонаж привязан!**\n\n**%s** теперь связан с твоим аккаунтом и сразу занимает один из двух активных слотов.\n\nПосмотреть всех своих персонажей и свободные слоты: `/my-characters`. Карточка персонажа: `/my-character`.", result.Character.Name)
+			if !auditSent { message += "\n\n⚠️ Не удалось отправить уведомление в мастер-чат. Сообщи мастеру об этой привязке." }
+			b.edit(s, i, message, nil)
 			return
 		}
 		if flow.mode == "view" || flow.mode == "inventory" || flow.mode == "spells" {
@@ -1113,10 +1119,10 @@ func unlinkConfirmationComponents(key string) []discordgo.MessageComponent {
 	}
 }
 
-func (b *bot) sendConnectAudit(s *discordgo.Session, player *discordgo.User, actorName string, result connectResult) {
+func (b *bot) sendConnectAudit(s *discordgo.Session, player *discordgo.User, actorName string, result connectResult) bool {
 	if b.adminChannelID == "" {
 		log.Printf("DISCORD_ADMIN_CHANNEL_ID is not set; self-connect undo button was not delivered for action %s", result.ActionID)
-		return
+		return false
 	}
 	embed := &discordgo.MessageEmbed{
 		Title: "Новая привязка персонажа",
@@ -1135,7 +1141,9 @@ func (b *bot) sendConnectAudit(s *discordgo.Session, player *discordgo.User, act
 	}}}
 	if _, err := s.ChannelMessageSendComplex(b.adminChannelID, &discordgo.MessageSend{Embeds: []*discordgo.MessageEmbed{embed}, Components: components}); err != nil {
 		log.Printf("Discord self-connect audit notification failed for action %s: %v", result.ActionID, err)
+		return false
 	}
+	return true
 }
 
 func (b *bot) handleConnectUndoButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
