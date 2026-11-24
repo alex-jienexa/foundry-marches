@@ -13,6 +13,8 @@ services:
           memory: 2G
 
   api:
+    environment:
+      DISCORD_ADMIN_USER_IDS: ${DISCORD_ADMIN_USER_IDS:?Set DISCORD_ADMIN_USER_IDS in .env.prod}
     init: true
     read_only: true
     tmpfs:
@@ -34,6 +36,9 @@ services:
           memory: 512M
 
   discord-bot:
+    environment:
+      DISCORD_ADMIN_CHANNEL_ID: ${DISCORD_ADMIN_CHANNEL_ID:?Set DISCORD_ADMIN_CHANNEL_ID in .env.prod}
+      DISCORD_CAMPAIGN_ROLE_ID: ${DISCORD_CAMPAIGN_ROLE_ID:?Set DISCORD_CAMPAIGN_ROLE_ID in .env.prod}
     init: true
     read_only: true
     tmpfs:
