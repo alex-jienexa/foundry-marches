@@ -34,11 +34,10 @@ DISCORD_APPLICATION_ID=the-application-id
 DISCORD_GUILD_ID=the-server-id
 DISCORD_ADMIN_USER_IDS=your-discord-user-id
 DISCORD_BOT_API_TOKEN=generated-random-secret
-DISCORD_ADMIN_CHANNEL_ID=discord-admin-channel-id
+# Private master audit channel; required for self-connect undo notifications
+DISCORD_ADMIN_CHANNEL_ID=discord-master-chat-channel-id
 # Discord role that grants access to campaign channels
 DISCORD_CAMPAIGN_ROLE_ID=1574386309584388106
-# Master audit channel for self-connect review/undo and integration alerts
-DISCORD_ADMIN_CHANNEL_ID=discord-master-chat-channel-id
 # Optional; default 60 seconds, allowed range 15..3600
 DISCORD_HEALTH_INTERVAL_SECONDS=60
 # Public Foundry URL used to resolve relative Actor portrait paths in Discord embeds
