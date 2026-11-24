@@ -2495,7 +2495,7 @@ func (b *bot) post(path string, payload, target any) error {
 	req.Header.Set("Authorization", "Bearer "+b.apiToken)
 	req.Header.Set("Content-Type", "application/json")
 	client := b.client
-	if path == FoundrySyncPath || path == StartupFoundrySyncPath {
+	if path == FoundrySyncPath {
 		client = b.syncClient
 	}
 	resp, err := client.Do(req)
