@@ -34,7 +34,7 @@ Generate independent secrets for every environment. For example:
 openssl rand -hex 32
 ```
 
-Use separate values for `POSTGRES_PASSWORD`, `POSTGRES_APP_PASSWORD`, `FOUNDRY_SYNC_API_TOKEN`, and `DISCORD_BOT_API_TOKEN`. The two service tokens must differ. Never commit the resulting `.env.dev` or `.env.prod` files.
+Use separate values for `POSTGRES_PASSWORD`, `POSTGRES_APP_PASSWORD`, `FOUNDRY_SYNC_API_TOKEN`, and `DISCORD_BOT_API_TOKEN`. The two service tokens must differ. Never commit the resulting `.env.dev` or `.env.prod` files. On an already initialized PostgreSQL volume, changing `POSTGRES_APP_PASSWORD` in the environment file does not automatically change the existing `foundry_api` database role password; rotate the database role and application environment together using a controlled maintenance procedure.
 
 ## Background Foundry synchronization
 
@@ -62,6 +62,30 @@ The database schema contains a generic `integration_jobs` queue for future Found
 - When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot periodically checks integrations and posts state changes and rate-limited command errors to the private admin channel.
 
 Foundry/Relay outages do not make the API unready: existing synchronized character data remains available while the source is temporarily offline. Monitor Relay and Foundry using `/integration-status` and the private admin channel.
+
+## Pre-deployment validation
+
+Before merging or deploying, run the backend checks from the repository root:
+
+```sh
+cd src/backend
+test -z "$(gofmt -l .)"
+go test ./...
+go vet ./...
+go build ./cmd/foundry-api ./cmd/discord-bot
+cd ../..
+```
+
+Validate the development Compose configuration and build both images before testing the bot in the development guild:
+
+```sh
+docker compose --env-file .env.dev -p foundry-marches-dev \
+  -f compose.yaml config --quiet
+docker compose --env-file .env.dev -p foundry-marches-dev \
+  -f compose.yaml build
+```
+
+Do not treat a successful image build as proof of runtime connectivity. Verify registration, character lookup, manual sync, automatic sync logs and the private audit channel in the development guild.
 
 ## First deployment
 
