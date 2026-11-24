@@ -527,7 +527,7 @@ SELECT fa.actor_uuid, c.id::text, c.name, c.portrait_url, c.level, c.xp,
 FROM foundry_actors fa
 JOIN characters c ON c.id = fa.character_id
 WHERE fa.world_id = $1 AND c.owner_user_id = $2
-  AND c.status NOT IN ('archived', 'npc')
+  AND c.status IN ('draft', 'pending_approval', 'active')
   AND fa.owner_confirmed_at IS NOT NULL
   AND fa.owner_confirmed_at > COALESCE(
     (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
@@ -559,7 +559,9 @@ SELECT
 	if err != nil { log.Printf("Discord character slot lookup failed: %v", err); writeError(w, 500, "could not determine active character slots"); return }
 	remaining := maxSlots - activeSlots
 	if remaining < 0 { remaining = 0 }
-	writeJSON(w, 200, map[string]any{"characters": items, "active_slots": activeSlots, "max_active_slots": maxSlots, "remaining_slots": remaining})
+	actors := make([]foundryCharacterSearchView, 0, len(items))
+	for _, item := range items { actors = append(actors, foundryCharacterSearchView{ActorUUID: item.ActorUUID, Name: item.Name}) }
+	writeJSON(w, 200, map[string]any{"characters": items, "actors": actors, "active_slots": activeSlots, "max_active_slots": maxSlots, "remaining_slots": remaining})
 }
 
 func (h *Handler) listConnectableActors(w http.ResponseWriter, r *http.Request) {
