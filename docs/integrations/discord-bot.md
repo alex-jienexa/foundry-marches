@@ -104,7 +104,7 @@ The API must be healthy. The bot log should report that it connected and registe
 - Each active, pending-approval or unavailable character consumes one of the two active-character slots. PostgreSQL enforces the limit transactionally; simultaneous requests cannot claim a third slot.
 - The configured `DISCORD_ADMIN_CHANNEL_ID` is also the master audit chat. Each self-connection posts the player, Actor and character with a persistent **Отменить привязку** button. Only a user with the backend `foundry.manage` permission can use it.
 - Undo detaches the Actor, releases the owner and changes the application record to an unowned draft. It does not delete the character or audit history. If the character has an active signup/expedition or its ownership/link has since changed, the backend refuses an unsafe automatic undo.
-- `/my-characters` shows the player's linked characters with portrait, name, level, XP, ancestry, class, status and occupied/free active slots. `/my-character` continues to open the selected character card.
+- `/my-characters` shows the player's linked characters with name, level, XP, ancestry, class, status and occupied/free active slots. `/my-character` continues to open the selected character card.
 
 This self-service flow intentionally does not verify the Foundry account identity. The player claims an unlinked Actor; the master can review the claim and reverse it from the audit chat. Do not treat the claim as proof of Foundry-side ownership.
 
@@ -121,7 +121,7 @@ Ability scores are read from Actor values when present. When Actor ability value
 2. Have a registered player run `/character-connect`.
 3. The player selects an unlinked Actor. The backend creates an active application character, assigns it to that Discord account and links the Actor in one transaction.
 4. Confirm the player receives the success message and the master audit channel configured by `DISCORD_ADMIN_CHANNEL_ID` receives a notification with **Отменить привязку**.
-5. Run `/my-characters` as that player. Confirm the roster shows the portrait, name, level, XP, ancestry, class and slot usage.
+5. Run `/my-characters` as that player. Confirm the roster shows the name, level, XP, ancestry, class and slot usage.
 6. With two counted characters already owned by the same player, try to connect a third. PostgreSQL must reject the operation with the two-slot limit message; no partial character or Actor link should remain.
 7. In the master audit channel, click **Отменить привязку** as a user with `foundry.manage`. Confirm the Actor becomes available again, the application character becomes an unowned draft, the slot is freed, and the audit/action history records the undo.
 8. Try the same button as a player without `foundry.manage`. The backend must reject the action.
