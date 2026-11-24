@@ -92,3 +92,32 @@ func TestListActorsRejectsDifferentWorld(t *testing.T) {
 		t.Fatalf("got %v, want ErrWorldMismatch", err)
 	}
 }
+
+func TestListActorsRetriesTransientServerFailure(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		if requests == 1 {
+			w.Header().Set("Retry-After", "0")
+			http.Error(w, "temporarily unavailable", http.StatusBadGateway)
+			return
+		}
+		fmt.Fprint(w, `{"type":"search-result","data":[{"uuid":"Actor.hero","name":"Hero"}]}`)
+	}))
+	defer server.Close()
+
+	client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	actors, err := client.ListActors(context.Background(), "world")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(actors) != 1 || actors[0].UUID != "Actor.hero" {
+		t.Fatalf("unexpected Actor search result: %+v", actors)
+	}
+	if requests != 2 {
+		t.Fatalf("requests = %d, want 2", requests)
+	}
+}
