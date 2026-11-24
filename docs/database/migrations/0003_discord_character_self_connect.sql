@@ -24,11 +24,10 @@ CREATE INDEX IF NOT EXISTS character_link_actions_actor_idx
 CREATE INDEX IF NOT EXISTS character_link_actions_owner_idx
     ON character_link_actions (owner_user_id, created_at DESC);
 
--- The existing slot trigger defaults to two when this setting is absent.
--- Seed the explicit campaign setting without overwriting a deliberate later change.
+-- Set the campaign-wide active character limit to the requested two slots.
 INSERT INTO campaign_settings (key, value)
 VALUES ('max_characters_per_player', '2'::jsonb)
-ON CONFLICT (key) DO NOTHING;
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 
 GRANT SELECT ON campaign_settings TO foundry_api;
 GRANT SELECT, INSERT, UPDATE ON character_link_actions TO foundry_api;
