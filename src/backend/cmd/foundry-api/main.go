@@ -179,10 +179,25 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	var backgroundDone chan struct{}
 	if syncEnabled {
-		go runPeriodicFoundrySync(stopCtx, syncRunner, syncInterval)
+		backgroundDone = make(chan struct{})
+		go func() {
+			defer close(backgroundDone)
+			runPeriodicFoundrySync(stopCtx, syncRunner, syncInterval)
+		}()
 	} else {
 		log.Printf("Foundry periodic sync is disabled by FOUNDRY_SYNC_ENABLED=false")
+	}
+	waitForBackground := func() {
+		if backgroundDone == nil {
+			return
+		}
+		select {
+		case <-backgroundDone:
+		case <-time.After(15 * time.Second):
+			log.Printf("Timed out waiting for Foundry background sync to stop")
+		}
 	}
 	serverErr := make(chan error, 1)
 	go func() {
@@ -192,14 +207,24 @@ func run() error {
 
 	select {
 	case err := <-serverErr:
+		stop()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		shutdownErr := server.Shutdown(shutdownCtx)
+		cancel()
+		waitForBackground()
 		if errors.Is(err, http.ErrServerClosed) {
-			return nil
+			return shutdownErr
+		}
+		if shutdownErr != nil {
+			return fmt.Errorf("HTTP server failed: %v; graceful shutdown failed: %w", err, shutdownErr)
 		}
 		return err
 	case <-stopCtx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		return server.Shutdown(shutdownCtx)
+		shutdownErr := server.Shutdown(shutdownCtx)
+		cancel()
+		waitForBackground()
+		return shutdownErr
 	}
 }
 
