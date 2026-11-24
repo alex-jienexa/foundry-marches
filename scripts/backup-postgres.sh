@@ -33,7 +33,7 @@ if [[ ! -s "$backup_file" ]]; then
   exit 1
 fi
 
-pg_restore --list "$backup_file" >/dev/null
+cat "$backup_file" | "${compose[@]}" exec -T postgres pg_restore --list >/dev/null
 sha256sum "$backup_file" > "$checksum_file"
 
 find "$BACKUP_DIR" -maxdepth 1 -type f -name 'foundry_marches_*.dump' -mtime "+$RETENTION_DAYS" -print -delete |
