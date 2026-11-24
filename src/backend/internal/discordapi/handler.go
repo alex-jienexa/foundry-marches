@@ -873,9 +873,9 @@ VALUES ($1, 'user', 'foundry.actor.self_link_undone', 'foundry_actor', $2,
         jsonb_build_object('character_id', $3::text, 'owner_user_id', $4::text),
         jsonb_build_object('world_id', $5::text, 'character_id', NULL, 'link_action_id', $6::text))
 `, masterID, actorUUID, characterID, ownerID, worldID, req.ActionID); err != nil {
-	writeError(w, 500, "could not write link undo audit")
-	return
-}
+		writeError(w, 500, "could not write link undo audit")
+		return
+	}
 	if err = tx.Commit(); err != nil {
 		writeError(w, 500, "could not commit link undo")
 		return
