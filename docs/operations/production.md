@@ -20,7 +20,7 @@ Do not point the development bot at the production API token, production guild, 
 
 The production project starts with its own database volume; it does not copy data from the development project. If the existing local database contains campaign data that must become production data, do not assume that creating `.env.prod` migrates it. Take a verified backup and plan an explicit import into the new production volume, with a restore rehearsal first. This runbook intentionally does not automate a destructive database replacement or use `pg_restore --clean`.
 
-The development template is `.env.example`; the production template is `.env.prod.example`. Copy them to ignored local files:
+The development template is `.env.example`; the production template is `.env.prod.example`. Copy them to ignored local files. The existing Compose project historically used the name `foundry-marches` when no project name was set. If your current local database must remain attached to the existing volume, keep that project name in its local environment; the template's `foundry-marches-dev` name intentionally creates a separate, empty development database.
 
 ```sh
 cp .env.example .env.dev
