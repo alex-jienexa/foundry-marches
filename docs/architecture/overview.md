@@ -47,16 +47,6 @@
 - **relay** — Foundry REST API relay (свой экземпляр, готовый контейнер). Сам Foundry остаётся на вашем удалённом сервере.
 - **postgres** (15+), **caddy**.
 
-#### 4.2.1. Discord identity boundary (реализация первого bot-only этапа)
-
-Discord Gateway — доверенная точка получения Discord identity. Бот принимает только guild-scoped interactions и извлекает Discord user ID, guild ID и актуальные member role IDs из payload DiscordGo. Он не принимает пользовательский ID из произвольного аргумента команды как доказательство личности.
-
-Bot-to-backend запросы защищены отдельным случайным `DISCORD_BOT_API_TOKEN`; он не совпадает с `FOUNDRY_SYNC_API_TOKEN`. Бот доступен как отдельный Compose service и обращается к API по внутренней сети Compose. Backend повторно проверяет `DISCORD_GUILD_ID`, активную зарегистрированную Discord account и разрешение в PostgreSQL. Сервисный токен аутентифицирует процесс бота, а Discord identity в запросе является утверждением только этого доверенного процесса.
-
-Регистрация открыта участникам единственного настроенного сервера. Новая учётная запись получает `player`; Discord IDs из `DISCORD_ADMIN_USER_IDS` получают `owner` при `/register`. Приложение хранит назначения ролей в `user_roles` и permissions в `role_permissions`; `discord_role_map` добавляет permissions по текущим member role IDs. Discord role mapping не может назначить `owner` или `admin` через bot commands; эти привилегии выдаются только доверенной конфигурацией/оператором БД.
-
-Первый bot slice реализует регистрацию, просмотр несвязанных Foundry character Actors и существующих application characters, preview/confirmation привязки, grant `player`/`gm` и mapping Discord role → application role. Confirmation button привязана к инициатору и guild и истекает через 10 минут. Web OAuth2 и browser sessions отложены до появления браузерного интерфейса.
-
 ### 4.3. Модули монолита
 
 Модули общаются через интерфейсы и доменные события и не лезут в таблицы друг друга.
@@ -126,4 +116,3 @@ Bot-to-backend запросы защищены отдельным случайн
 - Для `If-Match` годится только сильный ETag. Если сервер отдаёт слабый (`W/...`), приложение перечитывает ETag и сравнивает хэш.
 - Пароль WebDAV и ключ relay хранятся зашифрованными, в журналы не попадают.
 
-<!-- Конец полного перенесённого раздела; исходные абзацы выше сохранены дословно. -->
