@@ -65,7 +65,7 @@ for migration in docs/database/migrations/0002_discord_bot_auth.sql docs/databas
 done
 ```
 
-Both migrations are safe to re-run. Migration 0002 seeds Discord permissions and grants the API database role the access needed for the bot. Migration 0003 adds persistent reversible self-connect actions, explicitly seeds the two-character limit if it is not already configured, and grants the API the required action/slot access. Neither migration deletes campaign data or touches the PostgreSQL volume.
+Both migrations are safe to re-run. Migration 0002 seeds Discord permissions and grants the API database role the access needed for the bot. Migration 0003 adds persistent reversible self-connect actions, sets the campaign-wide active character limit to two, and grants the API the required action/slot access. Neither migration deletes campaign data or touches the PostgreSQL volume.
 
 ## 5. Build and start
 
