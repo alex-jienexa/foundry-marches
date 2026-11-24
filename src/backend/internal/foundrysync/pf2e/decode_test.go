@@ -882,12 +882,11 @@ func TestDecodeMaximumHPWhenActorHPObjectIsMissing(t *testing.T) {
 	}
 }
 
-
 func TestDecodeAbilityScoresUseAlternateAncestryBoosts(t *testing.T) {
 	tests := []struct {
-		name  string
-		alt   string
-		want  map[string]int
+		name string
+		alt  string
+		want map[string]int
 	}{
 		{
 			name: "one selected alternate boost",
@@ -912,7 +911,7 @@ func TestDecodeAbilityScoresUseAlternateAncestryBoosts(t *testing.T) {
 				"_id":"alternate-ancestry","type":"character",
 				"items":[
 					{"_id":"elf","type":"ancestry","system":{
-						"alternateAncestryBoosts":`+tt.alt+`,
+						"alternateAncestryBoosts":` + tt.alt + `,
 						"boosts":{
 							"0":{"value":["dex"],"selected":"dex"},
 							"1":{"value":["int"],"selected":"int"},
