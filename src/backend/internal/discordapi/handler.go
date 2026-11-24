@@ -517,9 +517,13 @@ SELECT
 
 func (h *Handler) listMyCharacters(w http.ResponseWriter, r *http.Request) {
 	var req identityRequest
-	if !decodeRequest(w, r, &req) { return }
+	if !decodeRequest(w, r, &req) {
+		return
+	}
 	userID, _, ok := h.authorizeCharacterRead(w, r.Context(), req)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	rows, err := h.db.QueryContext(r.Context(), `
 SELECT fa.actor_uuid, c.id::text, c.name, c.portrait_url, c.level, c.xp,
@@ -536,7 +540,11 @@ WHERE fa.world_id = $1 AND c.owner_user_id = $2
   AND fa.snapshot->>'type' = 'character'
 ORDER BY c.name, fa.actor_uuid LIMIT 25
 `, h.worldID, userID)
-	if err != nil { log.Printf("Discord own character list failed: %v", err); writeError(w, 500, "could not list your linked characters"); return }
+	if err != nil {
+		log.Printf("Discord own character list failed: %v", err)
+		writeError(w, 500, "could not list your linked characters")
+		return
+	}
 	defer rows.Close()
 	items := make([]ownCharacterView, 0)
 	for rows.Next() {
@@ -545,11 +553,19 @@ ORDER BY c.name, fa.actor_uuid LIMIT 25
 		if err := rows.Scan(&item.ActorUUID, &item.ID, &item.Name, &portrait, &item.Level, &item.XP, &item.Ancestry, &item.Class, &item.Status); err != nil {
 			writeError(w, 500, "could not read your linked characters"); return
 		}
-		if portrait.Valid { item.PortraitURL = &portrait.String }
+		if portrait.Valid {
+			item.PortraitURL = &portrait.String
+		}
 		items = append(items, item)
 	}
-	if err := rows.Err(); err != nil { writeError(w, 500, "could not read your linked characters"); return }
-	if err := rows.Close(); err != nil { writeError(w, 500, "could not close your character list"); return }
+	if err := rows.Err(); err != nil {
+		writeError(w, 500, "could not read your linked characters")
+		return
+	}
+	if err := rows.Close(); err != nil {
+		writeError(w, 500, "could not close your character list")
+		return
+	}
 
 	var activeSlots, maxSlots int
 	err = h.db.QueryRowContext(r.Context(), `
@@ -557,45 +573,76 @@ SELECT
   (SELECT count(*) FROM characters WHERE owner_user_id = $1 AND status IN ('pending_approval', 'active', 'unavailable')),
   COALESCE((SELECT (value #>> '{}')::integer FROM campaign_settings WHERE key = 'max_characters_per_player'), 2)
 `, userID).Scan(&activeSlots, &maxSlots)
-	if err != nil { log.Printf("Discord character slot lookup failed: %v", err); writeError(w, 500, "could not determine active character slots"); return }
+	if err != nil {
+		log.Printf("Discord character slot lookup failed: %v", err)
+		writeError(w, 500, "could not determine active character slots")
+		return
+	}
 	remaining := maxSlots - activeSlots
-	if remaining < 0 { remaining = 0 }
+	if remaining < 0 {
+		remaining = 0
+	}
 	actors := make([]foundryCharacterSearchView, 0, len(items))
-	for _, item := range items { actors = append(actors, foundryCharacterSearchView{ActorUUID: item.ActorUUID, Name: item.Name}) }
+	for _, item := range items {
+		actors = append(actors, foundryCharacterSearchView{ActorUUID: item.ActorUUID, Name: item.Name})
+	}
 	writeJSON(w, 200, map[string]any{"characters": items, "actors": actors, "active_slots": activeSlots, "max_active_slots": maxSlots, "remaining_slots": remaining})
 }
 
 func (h *Handler) listConnectableActors(w http.ResponseWriter, r *http.Request) {
 	var req identityRequest
-	if !decodeRequest(w, r, &req) { return }
-	if _, _, ok := h.authorizeCharacterRead(w, r.Context(), req); !ok { return }
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	if _, _, ok := h.authorizeCharacterRead(w, r.Context(), req); !ok {
+		return
+	}
 	rows, err := h.db.QueryContext(r.Context(), `
 SELECT actor_uuid, COALESCE(snapshot->>'name', actor_uuid)
 FROM foundry_actors
 WHERE world_id = $1 AND character_id IS NULL AND snapshot->>'type' = 'character'
 ORDER BY COALESCE(snapshot->>'name', actor_uuid), actor_uuid LIMIT 100
 `, h.worldID)
-	if err != nil { writeError(w, 500, "could not list connectable Foundry Actors"); return }
+	if err != nil {
+		writeError(w, 500, "could not list connectable Foundry Actors")
+		return
+	}
 	defer rows.Close()
 	items := make([]actorView, 0)
 	for rows.Next() {
 		var item actorView
-		if err := rows.Scan(&item.ActorUUID, &item.Name); err != nil { writeError(w, 500, "could not read connectable Foundry Actors"); return }
+		if err := rows.Scan(&item.ActorUUID, &item.Name); err != nil {
+			writeError(w, 500, "could not read connectable Foundry Actors")
+			return
+		}
 		items = append(items, item)
 	}
-	if err := rows.Err(); err != nil { writeError(w, 500, "could not read connectable Foundry Actors"); return }
+	if err := rows.Err(); err != nil {
+		writeError(w, 500, "could not read connectable Foundry Actors")
+		return
+	}
 	writeJSON(w, 200, map[string]any{"actors": items})
 }
 
 func (h *Handler) connectActor(w http.ResponseWriter, r *http.Request) {
 	var req connectActorRequest
-	if !decodeRequest(w, r, &req) { return }
+	if !decodeRequest(w, r, &req) {
+		return
+	}
 	userID, _, ok := h.authorizeCharacterRead(w, r.Context(), req.identityRequest)
-	if !ok { return }
-	if strings.TrimSpace(req.ActorUUID) == "" { writeError(w, 400, "Actor UUID is required"); return }
+	if !ok {
+		return
+	}
+	if strings.TrimSpace(req.ActorUUID) == "" {
+		writeError(w, 400, "Actor UUID is required")
+		return
+	}
 
 	tx, err := h.db.BeginTx(r.Context(), &sql.TxOptions{Isolation: sql.LevelReadCommitted})
-	if err != nil { writeError(w, 500, "could not start character connection"); return }
+	if err != nil {
+		writeError(w, 500, "could not start character connection")
+		return
+	}
 	defer func() { _ = tx.Rollback() }()
 
 	var snapshot []byte
@@ -605,8 +652,15 @@ WHERE world_id = $1 AND actor_uuid = $2
   AND character_id IS NULL AND snapshot->>'type' = 'character'
 FOR UPDATE
 `, h.worldID, req.ActorUUID).Scan(&snapshot)
-	if errors.Is(err, sql.ErrNoRows) { writeError(w, 409, "this Foundry Actor is already connected or unavailable"); return }
-	if err != nil { log.Printf("Discord self-connect Actor lookup failed: %v", err); writeError(w, 500, "could not read Foundry Actor"); return }
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, 409, "this Foundry Actor is already connected or unavailable")
+		return
+	}
+	if err != nil {
+		log.Printf("Discord self-connect Actor lookup failed: %v", err)
+		writeError(w, 500, "could not read Foundry Actor")
+		return
+	}
 
 	decoded, err := pf2e.DecodeActor(snapshot)
 	if err != nil || decoded == nil || decoded.Character.Identity.Type != "character" || decoded.Character.Identity.UUID != req.ActorUUID {
@@ -614,9 +668,16 @@ FOR UPDATE
 		writeError(w, 422, "Foundry Actor snapshot is not a valid character"); return
 	}
 	var characterID string
-	if err = tx.QueryRowContext(r.Context(), "SELECT gen_random_uuid()::text").Scan(&characterID); err != nil { writeError(w, 500, "could not allocate character ID"); return }
+	if err = tx.QueryRowContext(r.Context(), "SELECT gen_random_uuid()::text").Scan(&characterID); err != nil {
+		writeError(w, 500, "could not allocate character ID")
+		return
+	}
 	record, err := characters.MapFoundryActor(characters.FoundrySyncInput{WorldID: h.worldID, CharacterID: characterID, ActorUUID: req.ActorUUID, Decoded: *decoded})
-	if err != nil { log.Printf("Discord self-connect Actor mapping failed for %s: %v", req.ActorUUID, err); writeError(w, 422, "Foundry character data cannot be mapped"); return }
+	if err != nil {
+		log.Printf("Discord self-connect Actor mapping failed for %s: %v", req.ActorUUID, err)
+		writeError(w, 422, "Foundry character data cannot be mapped")
+		return
+	}
 	c := record.Character
 	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO characters (
@@ -653,8 +714,15 @@ SET character_id = $3, linked_at = now(),
     owner_confirmed_at = clock_timestamp(), updated_at = now()
 WHERE world_id = $1 AND actor_uuid = $2 AND character_id IS NULL
 `, h.worldID, req.ActorUUID, characterID)
-	if err != nil { log.Printf("Discord self-connect Actor link failed: %v", err); writeError(w, 500, "could not link Foundry Actor"); return }
-	if affected, rowsErr := result.RowsAffected(); rowsErr != nil || affected != 1 { writeError(w, 409, "this Foundry Actor was connected by another request"); return }
+	if err != nil {
+		log.Printf("Discord self-connect Actor link failed: %v", err)
+		writeError(w, 500, "could not link Foundry Actor")
+		return
+	}
+	if affected, rowsErr := result.RowsAffected(); rowsErr != nil || affected != 1 {
+		writeError(w, 409, "this Foundry Actor was connected by another request")
+		return
+	}
 
 	if _, err = tx.ExecContext(r.Context(), `
 INSERT INTO character_status_history (character_id, from_status, to_status, changed_by, reason)
@@ -668,7 +736,11 @@ VALUES
 INSERT INTO character_link_actions (world_id, actor_uuid, character_id, owner_user_id, linked_by_user_id)
 VALUES ($1, $2, $3, $4, $4) RETURNING id::text
 `, h.worldID, req.ActorUUID, characterID, userID).Scan(&actionID)
-	if err != nil { log.Printf("Discord self-connect action insert failed: %v", err); writeError(w, 500, "could not create reversible link record"); return }
+	if err != nil {
+		log.Printf("Discord self-connect action insert failed: %v", err)
+		writeError(w, 500, "could not create reversible link record")
+		return
+	}
 	_, err = tx.ExecContext(r.Context(), `
 INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, old_value, new_value)
 VALUES ($1, 'user', 'foundry.actor.self_linked', 'foundry_actor', $2,
@@ -676,8 +748,15 @@ VALUES ($1, 'user', 'foundry.actor.self_linked', 'foundry_actor', $2,
         jsonb_build_object('world_id', $3::text, 'actor_uuid', $2::text,
                            'character_id', $4::text, 'owner_user_id', ($1::uuid)::text, 'link_action_id', $5::text))
 `, userID, req.ActorUUID, h.worldID, characterID, actionID)
-	if err != nil { log.Printf("Discord self-connect audit insert failed: %v", err); writeError(w, 500, "could not write character link audit"); return }
-	if err = tx.Commit(); err != nil { writeError(w, 500, "could not commit character connection"); return }
+	if err != nil {
+		log.Printf("Discord self-connect audit insert failed: %v", err)
+		writeError(w, 500, "could not write character link audit")
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		writeError(w, 500, "could not commit character connection")
+		return
+	}
 	writeJSON(w, 201, map[string]any{
 		"action_id": actionID, "character": map[string]any{"id": characterID, "name": c.Name, "status": "active"},
 		"actor_uuid": req.ActorUUID, "owner_user_id": userID,
@@ -686,12 +765,22 @@ VALUES ($1, 'user', 'foundry.actor.self_linked', 'foundry_actor', $2,
 
 func (h *Handler) undoCharacterConnect(w http.ResponseWriter, r *http.Request) {
 	var req undoConnectRequest
-	if !decodeRequest(w, r, &req) { return }
+	if !decodeRequest(w, r, &req) {
+		return
+	}
 	masterID, ok := h.authorize(w, r.Context(), req.identityRequest, "foundry.manage")
-	if !ok { return }
-	if strings.TrimSpace(req.ActionID) == "" { writeError(w, 400, "link action ID is required"); return }
+	if !ok {
+		return
+	}
+	if strings.TrimSpace(req.ActionID) == "" {
+		writeError(w, 400, "link action ID is required")
+		return
+	}
 	tx, err := h.db.BeginTx(r.Context(), &sql.TxOptions{Isolation: sql.LevelReadCommitted})
-	if err != nil { writeError(w, 500, "could not start link undo"); return }
+	if err != nil {
+		writeError(w, 500, "could not start link undo")
+		return
+	}
 	defer func() { _ = tx.Rollback() }()
 
 	var worldID, actorUUID, characterID, ownerID, state string
@@ -699,13 +788,26 @@ func (h *Handler) undoCharacterConnect(w http.ResponseWriter, r *http.Request) {
 SELECT world_id::text, actor_uuid, character_id::text, owner_user_id::text, state
 FROM character_link_actions WHERE id = $1 FOR UPDATE
 `, req.ActionID).Scan(&worldID, &actorUUID, &characterID, &ownerID, &state)
-	if errors.Is(err, sql.ErrNoRows) { writeError(w, 404, "link action was not found"); return }
-	if err != nil { log.Printf("Discord link undo action lookup failed: %v", err); writeError(w, 500, "could not read link action"); return }
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, 404, "link action was not found")
+		return
+	}
+	if err != nil {
+		log.Printf("Discord link undo action lookup failed: %v", err)
+		writeError(w, 500, "could not read link action")
+		return
+	}
 	if state == "undone" {
-		if err = tx.Commit(); err != nil { writeError(w, 500, "could not finish link undo lookup"); return }
+		if err = tx.Commit(); err != nil {
+			writeError(w, 500, "could not finish link undo lookup")
+			return
+		}
 		writeJSON(w, 200, map[string]string{"status": "already_undone", "actor_uuid": actorUUID}); return
 	}
-	if worldID != h.worldID { writeError(w, 409, "link action belongs to another Foundry world"); return }
+	if worldID != h.worldID {
+		writeError(w, 409, "link action belongs to another Foundry world")
+		return
+	}
 
 	// Keep the same lock order as the GM link path: Character first, then Actor.
 	var currentOwnerID sql.NullString
@@ -749,7 +851,10 @@ VALUES ($1, 'user', 'foundry.actor.self_link_undone', 'foundry_actor', $2,
         jsonb_build_object('character_id', $3::text, 'owner_user_id', $4::text),
         jsonb_build_object('world_id', $5::text, 'character_id', NULL, 'link_action_id', $6::text))
 `, masterID, actorUUID, characterID, ownerID, worldID, req.ActionID); err != nil { writeError(w, 500, "could not write link undo audit"); return }
-	if err = tx.Commit(); err != nil { writeError(w, 500, "could not commit link undo"); return }
+	if err = tx.Commit(); err != nil {
+		writeError(w, 500, "could not commit link undo")
+		return
+	}
 	writeJSON(w, 200, map[string]any{"status": "undone", "actor_uuid": actorUUID, "character_name": characterName})
 }
 
