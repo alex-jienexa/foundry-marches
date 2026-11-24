@@ -623,7 +623,7 @@ INSERT INTO characters (
   id, owner_user_id, name, portrait_url, status, ancestry, heritage, background, class,
   level, xp, hp_current, hp_max, attributes, skills
 ) VALUES (
-  $1, $2, $3, $4, 'active', $5, $6, $7, $8,
+  $1, $2, $3, $4, 'pending_approval', $5, $6, $7, $8,
   COALESCE($9, 1), COALESCE($10, 0), $11, $12, $13::jsonb, $14::jsonb
 )
 `, characterID, userID, c.Name, nullableStringValue(c.PortraitURL), nullableStringValue(c.Ancestry),
@@ -639,6 +639,14 @@ INSERT INTO characters (
 		writeError(w, 500, "could not create application character"); return
 	}
 
+	// The state machine requires a new character to enter pending_approval first.
+	// Self-connect is immediately approved within this transaction; the intermediate
+	// state is never visible outside the transaction.
+	if _, err = tx.ExecContext(r.Context(), "UPDATE characters SET status = 'active', updated_at = now() WHERE id = $1", characterID); err != nil {
+		log.Printf("Discord self-connect character activation failed: %v", err)
+		writeError(w, 500, "could not activate application character"); return
+	}
+
 	result, err := tx.ExecContext(r.Context(), `
 UPDATE foundry_actors
 SET character_id = $3, linked_at = now(),
@@ -650,7 +658,9 @@ WHERE world_id = $1 AND actor_uuid = $2 AND character_id IS NULL
 
 	if _, err = tx.ExecContext(r.Context(), `
 INSERT INTO character_status_history (character_id, from_status, to_status, changed_by, reason)
-VALUES ($1, NULL, 'active', $2, 'Player connected a Foundry character')
+VALUES
+  ($1, NULL, 'pending_approval', $2, 'Player connected a Foundry character'),
+  ($1, 'pending_approval', 'active', $2, 'Self-service connection is immediately approved')
 `, characterID, userID); err != nil { log.Printf("Discord self-connect status history insert failed: %v", err); writeError(w, 500, "could not write character status history"); return }
 
 	var actionID string
