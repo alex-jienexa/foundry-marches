@@ -112,7 +112,7 @@ Do not paste rendered Compose configuration into public logs: it may contain int
 
 ### 4. Existing database versus fresh installation
 
-For a fresh PostgreSQL volume, Compose mounts the baseline schema, bootstrap script, and migrations 0002/0003 into `/docker-entrypoint-initdb.d`. PostgreSQL executes these only during first initialization.
+For a fresh PostgreSQL volume, Compose mounts the baseline schema, bootstrap script, and migrations 0002/0003/0004 into `/docker-entrypoint-initdb.d`. PostgreSQL executes these only during first initialization.
 
 For an existing database, take a backup first, then apply the incremental migrations in order if they have not already been applied:
 
@@ -126,6 +126,11 @@ docker compose --env-file .env.prod -p foundry-marches-prod \
   -f compose.yaml -f compose.production.yaml exec -T postgres \
   psql -X -v ON_ERROR_STOP=1 -U foundry_admin -d foundry_marches \
   < docs/database/migrations/0003_discord_character_self_connect.sql
+
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml exec -T postgres \
+  psql -X -v ON_ERROR_STOP=1 -U foundry_admin -d foundry_marches \
+  < docs/database/migrations/0004_foundry_sync_runs.sql
 ```
 
 Both migrations are designed to be safe to re-run. Do not reinitialize the database, remove its volume, or run `docker compose down -v`.
@@ -216,7 +221,7 @@ Never use `docker compose down -v`, `docker volume rm`, or database drop/recreat
 ## Operational limits and future work
 
 - Automatic sync is periodic and full-world, not incremental. Tune the interval to the world size and Relay capacity; do not set it below 30 seconds.
-- The sync report is logged but is not yet persisted as a durable run-history table or exported as Prometheus metrics.
+- Each scheduled or manual sync is recorded in `foundry_sync_runs` with status, timestamps, counts, error text and the structured report. The latest 20 runs are available through `GET /api/internal/discord/sync-history`, protected by `DISCORD_BOT_API_TOKEN`. Metrics are not yet exported to Prometheus.
 - There is no generic integration queue worker by design while Foundry writes are prohibited.
 - Backups are initiated by the host scheduler, not by an in-process goroutine.
 - Production deployment still requires a real TLS reverse proxy, off-host backup storage, host monitoring and a rehearsed restore procedure. Compose alone does not provide those external services.
