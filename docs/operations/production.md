@@ -4,7 +4,7 @@ This document describes the operational model for the API, Discord bot, Foundry 
 
 ## Environment isolation: development and production
 
-Run two independent Compose projects from the same repository revision and Docker images:
+Run two independent Compose projects from the same repository revision and Dockerfiles:
 
 | Setting | Development | Production |
 |---|---|---|
@@ -17,6 +17,8 @@ Run two independent Compose projects from the same repository revision and Docke
 | Compose files | `compose.yaml` | `compose.yaml` + `compose.production.yaml` |
 
 Do not point the development bot at the production API token, production guild, or production database. Use a separate Discord application and test guild. The two Compose project names create separate service names and PostgreSQL volumes. Never rename a project while expecting it to reuse the old database volume.
+
+The production project starts with its own database volume; it does not copy data from the development project. If the existing local database contains campaign data that must become production data, do not assume that creating `.env.prod` migrates it. Take a verified backup and plan an explicit import into the new production volume, with a restore rehearsal first. This runbook intentionally does not automate a destructive database replacement or use `pg_restore --clean`.
 
 The development template is `.env.example`; the production template is `.env.prod.example`. Copy them to ignored local files:
 
