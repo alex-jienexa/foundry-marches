@@ -729,7 +729,11 @@ INSERT INTO character_status_history (character_id, from_status, to_status, chan
 VALUES
   ($1, NULL, 'pending_approval', $2, 'Player connected a Foundry character'),
   ($1, 'pending_approval', 'active', $2, 'Self-service connection is immediately approved')
-`, characterID, userID); err != nil { log.Printf("Discord self-connect status history insert failed: %v", err); writeError(w, 500, "could not write character status history"); return }
+`, characterID, userID); err != nil {
+	log.Printf("Discord self-connect status history insert failed: %v", err)
+	writeError(w, 500, "could not write character status history")
+	return
+}
 
 	var actionID string
 	err = tx.QueryRowContext(r.Context(), `
@@ -830,7 +834,10 @@ SELECT character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid
 	if err = tx.QueryRowContext(r.Context(), `
 SELECT set_config('app.user_id', $1, true),
        set_config('app.reason', 'GM reversed a self-service Foundry character connection', true)
-`, masterID).Scan(&configuredUserID, &configuredReason); err != nil { writeError(w, 500, "could not set undo audit context"); return }
+`, masterID).Scan(&configuredUserID, &configuredReason); err != nil {
+	writeError(w, 500, "could not set undo audit context")
+	return
+}
 	if _, err = tx.ExecContext(r.Context(), "UPDATE characters SET owner_user_id = NULL, status = 'draft', updated_at = now() WHERE id = $1", characterID); err != nil {
 		log.Printf("Discord character link undo owner release failed: %v", err)
 		writeError(w, 409, "the character cannot be released safely (it may have an active signup or expedition)"); return
@@ -841,7 +848,10 @@ SELECT set_config('app.user_id', $1, true),
 	if _, err = tx.ExecContext(r.Context(), `
 INSERT INTO character_status_history (character_id, from_status, to_status, changed_by, reason)
 VALUES ($1, $2, 'draft', $3, 'GM reversed self-service Foundry connection')
-`, characterID, currentStatus, masterID); err != nil { writeError(w, 500, "could not write undo status history"); return }
+`, characterID, currentStatus, masterID); err != nil {
+	writeError(w, 500, "could not write undo status history")
+	return
+}
 	if _, err = tx.ExecContext(r.Context(), "UPDATE character_link_actions SET state = 'undone', undone_at = now(), undone_by_user_id = $2 WHERE id = $1 AND state = 'linked'", req.ActionID, masterID); err != nil {
 		writeError(w, 500, "could not update link action state"); return
 	}
@@ -850,7 +860,10 @@ INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id
 VALUES ($1, 'user', 'foundry.actor.self_link_undone', 'foundry_actor', $2,
         jsonb_build_object('character_id', $3::text, 'owner_user_id', $4::text),
         jsonb_build_object('world_id', $5::text, 'character_id', NULL, 'link_action_id', $6::text))
-`, masterID, actorUUID, characterID, ownerID, worldID, req.ActionID); err != nil { writeError(w, 500, "could not write link undo audit"); return }
+`, masterID, actorUUID, characterID, ownerID, worldID, req.ActionID); err != nil {
+	writeError(w, 500, "could not write link undo audit")
+	return
+}
 	if err = tx.Commit(); err != nil {
 		writeError(w, 500, "could not commit link undo")
 		return
@@ -858,8 +871,18 @@ VALUES ($1, 'user', 'foundry.actor.self_link_undone', 'foundry_actor', $2,
 	writeJSON(w, 200, map[string]any{"status": "undone", "actor_uuid": actorUUID, "character_name": characterName})
 }
 
-func nullableStringValue(value *string) any { if value == nil { return nil }; return *value }
-func nullableIntValue(value *int) any { if value == nil { return nil }; return *value }
+func nullableStringValue(value *string) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
+func nullableIntValue(value *int) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
 
 // searchFoundryCharacters searches persisted Actor snapshots. It never calls Relay,
 // so repeated Discord lookups do not create additional Foundry requests.
