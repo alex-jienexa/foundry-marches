@@ -696,18 +696,19 @@ FROM character_link_actions WHERE id = $1 FOR UPDATE
 	}
 	if worldID != h.worldID { writeError(w, 409, "link action belongs to another Foundry world"); return }
 
+	// Keep the same lock order as the GM link path: Character first, then Actor.
+	var currentOwnerID sql.NullString
+	var characterName, currentStatus string
+	err = tx.QueryRowContext(r.Context(), "SELECT owner_user_id::text, name, status FROM characters WHERE id = $1 FOR UPDATE", characterID).Scan(&currentOwnerID, &characterName, &currentStatus)
+	if err != nil || !currentOwnerID.Valid || currentOwnerID.String != ownerID {
+		writeError(w, 409, "the character owner has changed since this action; automatic undo is unsafe"); return
+	}
 	var currentCharacterID sql.NullString
 	err = tx.QueryRowContext(r.Context(), `
 SELECT character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid = $2 FOR UPDATE
 `, worldID, actorUUID).Scan(&currentCharacterID)
 	if err != nil || !currentCharacterID.Valid || currentCharacterID.String != characterID {
 		writeError(w, 409, "the Actor link has changed since this action; automatic undo is unsafe"); return
-	}
-	var currentOwnerID sql.NullString
-	var characterName, currentStatus string
-	err = tx.QueryRowContext(r.Context(), "SELECT owner_user_id::text, name, status FROM characters WHERE id = $1 FOR UPDATE", characterID).Scan(&currentOwnerID, &characterName, &currentStatus)
-	if err != nil || !currentOwnerID.Valid || currentOwnerID.String != ownerID {
-		writeError(w, 409, "the character owner has changed since this action; automatic undo is unsafe"); return
 	}
 	var configuredUserID, configuredReason string
 	if err = tx.QueryRowContext(r.Context(), `
