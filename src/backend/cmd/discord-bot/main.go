@@ -38,6 +38,7 @@ const (
 	FoundrySyncPath        = "/api/internal/discord/foundry-sync"
 	StartupFoundrySyncPath = "/api/internal/discord/foundry-sync/startup"
 	IntegrationStatusPath  = "/api/internal/discord/integration-status"
+	HelpStatusPath         = "/api/internal/discord/help-status"
 )
 
 type bot struct {
@@ -271,6 +272,7 @@ func main() {
 
 func registerCommands(s *discordgo.Session, appID, guildID string) error {
 	commands := []*discordgo.ApplicationCommand{
+		{Name: "help", Description: "Показать справку по боту"},
 		{Name: "register", Description: "Зарегистрироваться в FoundryMarches"},
 		{Name: "foundry-actors", Description: "Показать несвязанных персонажей Foundry"},
 		{Name: "characters", Description: "Показать список персонажей приложения"},
@@ -326,6 +328,13 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	id := b.identity(i, u)
 	switch i.ApplicationCommandData().Name {
+	case "help":
+		var status helpStatus
+		if err := b.post(HelpStatusPath, id, &status); err != nil {
+			b.edit(s, i, "Не удалось определить состояние аккаунта: "+err.Error(), nil)
+			return
+		}
+		b.editEmbed(s, i, helpEmbed(status))
 	case "register":
 		var out struct {
 			UserID string `json:"user_id"`
