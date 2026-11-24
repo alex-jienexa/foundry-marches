@@ -298,13 +298,25 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("FoundryMarches bot connected; guild=%s", guildID)
+	var monitorDone chan struct{}
 	if adminChannelID != "" {
-		go b.monitorIntegrations(ctx, s)
+		monitorDone = make(chan struct{})
+		go func() {
+			defer close(monitorDone)
+			b.monitorIntegrations(ctx, s)
+		}()
 	} else {
 		log.Printf("DISCORD_ADMIN_CHANNEL_ID is not set; Discord health alerts are disabled")
 	}
 	<-ctx.Done()
 	log.Printf("Discord bot shutdown requested")
+	if monitorDone != nil {
+		select {
+		case <-monitorDone:
+		case <-time.After(15 * time.Second):
+			log.Printf("Timed out waiting for integration monitor to stop")
+		}
+	}
 }
 
 func registerCommands(s *discordgo.Session, appID, guildID string) error {
