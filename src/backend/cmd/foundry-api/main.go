@@ -139,6 +139,7 @@ func run() error {
 		_ = json.NewEncoder(w).Encode(status)
 	})))
 	mux.Handle(httpapi.SyncPath, bearerTokenMiddleware(syncToken, syncHandler))
+	mux.Handle("/api/internal/discord/sync-history", discordapi.ServiceTokenMiddleware(discordBotToken, syncHistoryHandler(db, worldID)))
 
 	mux.Handle("/api/internal/discord/", discordapi.ServiceTokenMiddleware(discordBotToken, discordHandler))
 	mux.HandleFunc("/livez", func(w http.ResponseWriter, r *http.Request) {
