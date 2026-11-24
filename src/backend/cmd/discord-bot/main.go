@@ -30,9 +30,9 @@ const (
 	CharactersPath        = "/api/internal/discord/characters"
 	PreviewPath           = "/api/internal/discord/link/preview"
 	LinkPath              = "/api/internal/discord/link"
-	UnlinkPath             = "/api/internal/discord/unlink"
+	UnlinkPath            = "/api/internal/discord/unlink"
 	GrantRolePath         = "/api/internal/discord/roles/grant"
-	MapRolePath            = "/api/internal/discord/roles/map"
+	MapRolePath           = "/api/internal/discord/roles/map"
 	DraftCharacterPath    = "/api/internal/discord/characters/draft"
 	CharacterCreatePath   = "/api/internal/discord/characters/create"
 	CharacterSearchPath   = "/api/internal/discord/characters/search"
@@ -40,7 +40,7 @@ const (
 	MyCharactersPath      = "/api/internal/discord/characters/mine"
 	ConnectActorsPath     = "/api/internal/discord/characters/connect/actors"
 	ConnectActorPath      = "/api/internal/discord/characters/connect"
-	UndoConnectPath        = "/api/internal/discord/characters/connect/undo"
+	UndoConnectPath       = "/api/internal/discord/characters/connect/undo"
 	FoundrySyncPath       = "/api/internal/discord/foundry-sync"
 	IntegrationStatusPath = "/api/internal/discord/integration-status"
 	HelpStatusPath        = "/api/internal/discord/help-status"
@@ -119,9 +119,9 @@ type ownedCharacter struct {
 
 type myCharactersResult struct {
 	Characters     []ownedCharacter `json:"characters"`
-	ActiveSlots    int               `json:"active_slots"`
-	MaxActiveSlots int               `json:"max_active_slots"`
-	RemainingSlots int               `json:"remaining_slots"`
+	ActiveSlots    int              `json:"active_slots"`
+	MaxActiveSlots int              `json:"max_active_slots"`
+	RemainingSlots int              `json:"remaining_slots"`
 }
 
 type connectResult struct {
@@ -753,7 +753,10 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				return
 			}
 			var result connectResult
-			payload := struct { identity; ActorUUID string `json:"actor_uuid"` }{b.identity(i, u), chosen.ActorUUID}
+			payload := struct {
+				identity
+				ActorUUID string `json:"actor_uuid"`
+			}{b.identity(i, u), chosen.ActorUUID}
 			if err := b.post(ConnectActorPath, payload, &result); err != nil {
 				b.edit(s, i, "Не удалось привязать персонажа: "+err.Error(), nil)
 				return
@@ -1147,15 +1150,15 @@ func (b *bot) sendConnectAudit(s *discordgo.Session, player *discordgo.User, act
 		return false
 	}
 	embed := &discordgo.MessageEmbed{
-		Title: "Новая привязка персонажа",
+		Title:       "Новая привязка персонажа",
 		Description: fmt.Sprintf("Игрок <@%s> самостоятельно привязал персонажа из Foundry. Если мастер против этой привязки, её можно отменить кнопкой ниже.", player.ID),
-		Color: 0xFEE75C,
+		Color:       0xFEE75C,
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Персонаж", Value: result.Character.Name, Inline: true},
 			{Name: "Foundry Actor", Value: actorName, Inline: true},
 			{Name: "Статус", Value: "Активен · занимает слот", Inline: true},
 		},
-		Footer: &discordgo.MessageEmbedFooter{Text: "Действие сохраняется в журнале; отмена не удаляет историю"},
+		Footer:    &discordgo.MessageEmbedFooter{Text: "Действие сохраняется в журнале; отмена не удаляет историю"},
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 	components := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{
@@ -1177,14 +1180,19 @@ func (b *bot) handleConnectUndoButton(s *discordgo.Session, i *discordgo.Interac
 	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{Flags: discordgo.MessageFlagsEphemeral},
-	}); err != nil { return }
+	}); err != nil {
+		return
+	}
 	actionID := strings.TrimPrefix(i.MessageComponentData().CustomID, "fm-connect-undo:")
 	var result struct {
-		Status string `json:"status"`
-		ActorUUID string `json:"actor_uuid"`
+		Status        string `json:"status"`
+		ActorUUID     string `json:"actor_uuid"`
 		CharacterName string `json:"character_name"`
 	}
-	payload := struct { identity; ActionID string `json:"action_id"` }{b.identity(i, u), actionID}
+	payload := struct {
+		identity
+		ActionID string `json:"action_id"`
+	}{b.identity(i, u), actionID}
 	if err := b.post(UndoConnectPath, payload, &result); err != nil {
 		b.edit(s, i, "Отмена привязки не выполнена: "+err.Error(), nil)
 		return
