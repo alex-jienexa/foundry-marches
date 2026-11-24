@@ -20,21 +20,24 @@ umask 077
 mkdir -p "$BACKUP_DIR"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_file="$BACKUP_DIR/foundry_marches_$stamp.dump"
+partial_file="$backup_file.partial"
 checksum_file="$backup_file.sha256"
+trap 'rm -f "$partial_file"' EXIT
 
 compose=(docker compose --env-file "$ENV_FILE" -f compose.yaml -f compose.production.yaml)
 
 echo "Creating PostgreSQL custom-format backup: $backup_file"
-"${compose[@]}" exec -T postgres pg_dump -U foundry_admin -d foundry_marches -Fc > "$backup_file"
+"${compose[@]}" exec -T postgres pg_dump -U foundry_admin -d foundry_marches -Fc > "$partial_file"
 
-if [[ ! -s "$backup_file" ]]; then
-  rm -f "$backup_file"
+if [[ ! -s "$partial_file" ]]; then
   echo "Backup is empty; refusing to keep it" >&2
   exit 1
 fi
 
-cat "$backup_file" | "${compose[@]}" exec -T postgres pg_restore --list >/dev/null
+cat "$partial_file" | "${compose[@]}" exec -T postgres pg_restore --list >/dev/null
+mv "$partial_file" "$backup_file"
 sha256sum "$backup_file" > "$checksum_file"
+trap - EXIT
 
 find "$BACKUP_DIR" -maxdepth 1 -type f -name 'foundry_marches_*.dump' -mtime "+$RETENTION_DAYS" -print -delete |
 while IFS= read -r expired; do
