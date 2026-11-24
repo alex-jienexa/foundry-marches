@@ -393,7 +393,7 @@ WHERE actor_user_id = $1 AND action = 'foundry.actor.linked' AND entity_id = $2
 		t.Fatalf("insert other character: %v", err)
 	}
 	t.Cleanup(func() { _, _ = db.ExecContext(ctx, "DELETE FROM characters WHERE id = $1", otherCharacterID) })
-	if err := repo.LinkActor(ctx, worldID, actorUUID, otherCharacterID, userID); err != ErrActorAlreadyLinked {
+	if err := repo.LinkActorWithOwner(ctx, worldID, actorUUID, otherCharacterID, userID, userID); err != ErrActorAlreadyLinked {
 		t.Fatalf("link already linked Actor error = %v, want ErrActorAlreadyLinked", err)
 	}
 
