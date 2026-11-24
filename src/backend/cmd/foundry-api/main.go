@@ -165,6 +165,7 @@ func run() error {
 	server := &http.Server{
 		Addr: address, Handler: mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    1 << 20,
 	}
