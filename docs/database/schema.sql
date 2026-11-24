@@ -829,7 +829,7 @@ CREATE TABLE foundry_actors (
   world_id uuid NOT NULL REFERENCES foundry_worlds(id),
   actor_uuid text NOT NULL,                 -- permanent Foundry UUID, never the name
   character_id uuid UNIQUE REFERENCES characters(id),
-  owner_confirmed_at timestamptz,           -- current app-owner claim/assignment timestamp; not proof of Foundry identity
+  owner_confirmed_at timestamptz,           -- the player confirmed ownership; the owner itself is characters.owner_user_id
   linked_at timestamptz NOT NULL DEFAULT now(),
   last_synced_at timestamptz,
   snapshot jsonb,
