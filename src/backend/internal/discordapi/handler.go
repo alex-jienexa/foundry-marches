@@ -494,7 +494,7 @@ SELECT
         WHERE da.discord_id = $1
           AND da.in_guild = true
           AND u.status = 'active'
-          AND c.status IN ('draft', 'pending_approval', 'active')
+          AND c.status IN ('draft', 'pending_approval', 'active', 'unavailable')
           AND fa.world_id = $2
           AND fa.snapshot->>'type' = 'character'
           AND fa.owner_confirmed_at IS NOT NULL
@@ -527,7 +527,7 @@ SELECT fa.actor_uuid, c.id::text, c.name, c.portrait_url, c.level, c.xp,
 FROM foundry_actors fa
 JOIN characters c ON c.id = fa.character_id
 WHERE fa.world_id = $1 AND c.owner_user_id = $2
-  AND c.status IN ('draft', 'pending_approval', 'active')
+  AND c.status IN ('draft', 'pending_approval', 'active', 'unavailable')
   AND fa.owner_confirmed_at IS NOT NULL
   AND fa.owner_confirmed_at > COALESCE(
     (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
@@ -784,7 +784,7 @@ WHERE fa.world_id = $1
     fa.linked_at
   )
   AND c.owner_user_id = $2
-  AND c.status IN ('draft', 'pending_approval', 'active')
+  AND c.status IN ('draft', 'pending_approval', 'active', 'unavailable')
   AND c.name ILIKE $3
   AND fa.snapshot->>'type' = 'character'
 ORDER BY c.name, fa.actor_uuid
@@ -844,7 +844,7 @@ WHERE fa.world_id = $1
       FROM characters c
       WHERE c.id = fa.character_id
         AND c.owner_user_id = $4
-        AND c.status IN ('draft', 'pending_approval', 'active')
+        AND c.status IN ('draft', 'pending_approval', 'active', 'unavailable')
         AND fa.owner_confirmed_at IS NOT NULL
         AND fa.owner_confirmed_at > COALESCE(
           (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
