@@ -35,6 +35,9 @@ const (
 	CharacterSearchPath    = "/api/internal/discord/characters/search"
 	CharacterDetailPath    = "/api/internal/discord/characters/detail"
 	MyCharactersPath       = "/api/internal/discord/characters/mine"
+	ConnectActorsPath      = "/api/internal/discord/characters/connect/actors"
+	ConnectActorPath       = "/api/internal/discord/characters/connect"
+	UndoConnectPath        = "/api/internal/discord/characters/connect/undo"
 	FoundrySyncPath        = "/api/internal/discord/foundry-sync"
 	StartupFoundrySyncPath = "/api/internal/discord/foundry-sync/startup"
 	IntegrationStatusPath  = "/api/internal/discord/integration-status"
@@ -98,6 +101,36 @@ type character struct {
 	Name      string `json:"name"`
 	Status    string `json:"status"`
 	OwnerName string `json:"owner_name,omitempty"`
+}
+
+type ownedCharacter struct {
+	ID          string  `json:"id"`
+	ActorUUID   string  `json:"actor_uuid"`
+	Name        string  `json:"name"`
+	PortraitURL *string `json:"portrait_url"`
+	Level       int     `json:"level"`
+	XP          int     `json:"xp"`
+	Ancestry    string  `json:"ancestry"`
+	Class       string  `json:"class"`
+	Status      string  `json:"status"`
+}
+
+type myCharactersResult struct {
+	Characters      []ownedCharacter `json:"characters"`
+	ActiveSlots     int               `json:"active_slots"`
+	MaxActiveSlots  int               `json:"max_active_slots"`
+	RemainingSlots  int               `json:"remaining_slots"`
+}
+
+type connectResult struct {
+	ActionID  string `json:"action_id"`
+	ActorUUID string `json:"actor_uuid"`
+	OwnerID   string `json:"owner_user_id"`
+	Character struct {
+		ID     string `json:"id"`
+		Name   string `json:"name"`
+		Status string `json:"status"`
+	} `json:"character"`
 }
 type linkPreview struct {
 	ActorUUID     string `json:"actor_uuid"`
@@ -281,7 +314,9 @@ func registerCommands(s *discordgo.Session, appID, guildID string) error {
 		{Name: "character-create", Description: "Создать черновик персонажа для себя или игрока", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}, {Name: "owner", Description: "Владелец персонажа (для мастера)", Type: discordgo.ApplicationCommandOptionUser, Required: false}}},
 		{Name: "character-draft", Description: "Создать черновик персонажа из выбранного Foundry Actor"},
 		{Name: "character", Description: "Найти персонажа по имени (GM видит всех)", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
-		{Name: "my-character", Description: "Показать своего привязанного персонажа"},
+		{Name: "my-character", Description: "Открыть карточку своего персонажа"},
+		{Name: "my-characters", Description: "Показать своих персонажей и свободные слоты"},
+		{Name: "character-connect", Description: "Самостоятельно привязать персонажа из Foundry"},
 		{Name: "foundry-sync", Description: "Обновить снимки всех Actor из Foundry"},
 		{Name: "character-inventory", Description: "Показать инвентарь персонажа", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
 		{Name: "character-spells", Description: "Показать заклинания персонажа", Options: []*discordgo.ApplicationCommandOption{{Name: "name", Description: "Имя или часть имени персонажа", Type: discordgo.ApplicationCommandOptionString, Required: true}}},
@@ -397,6 +432,8 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else {
 			b.editEmbed(s, i, directoryEmbed("Персонажи приложения", "Черновики и зарегистрированные персонажи кампании.", lines, 40))
 		}
+	case "character-connect":
+		b.startSelection(s, i, id, u, "connect", "")
 	case "character-link":
 		o := commandOptions(i.ApplicationCommandData().Options)
 		b.startSelection(s, i, id, u, "link", o["owner"])
@@ -427,6 +464,13 @@ func (b *bot) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.startCharacterLookup(s, i, id, u, o["name"], "view")
 	case "my-character":
 		b.startMyCharacterLookup(s, i, id, u)
+	case "my-characters":
+		var result myCharactersResult
+		if err := b.post(MyCharactersPath, id, &result); err != nil {
+			b.edit(s, i, "Не удалось получить список персонажей: "+err.Error(), nil)
+			return
+		}
+		b.editEmbeds(s, i, myCharactersEmbeds(result, b.foundryPublicBaseURL))
 	case "foundry-sync":
 		var report syncReport
 		if err := b.post(FoundrySyncPath, id, &report); err != nil {
@@ -475,7 +519,9 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 	var actorResult struct {
 		Actors []actor `json:"actors"`
 	}
-	if err := b.post(ActorsPath, id, &actorResult); err != nil {
+	actorsPath := ActorsPath
+	if mode == "connect" { actorsPath = ConnectActorsPath }
+	if err := b.post(actorsPath, id, &actorResult); err != nil {
 		b.edit(s, i, "Не удалось получить список Foundry Actor: "+err.Error(), nil)
 		return
 	}
@@ -512,6 +558,8 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 	label := "Выбери Foundry Actor, из которого создать черновик:"
 	if mode == "link" {
 		label = "Выбери Foundry Actor для привязки к персонажу. Владелец: <@" + ownerDiscordID + ">"
+	} else if mode == "connect" {
+		label = "Выбери своего персонажа Foundry. Он сразу займёт один из двух активных слотов; мастер сможет отменить привязку в мастер-чате."
 	}
 	b.edit(s, i, label, components)
 }
@@ -674,6 +722,20 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				message += "\nТекущий владелец останется без изменений."
 			}
 			b.edit(s, i, message, unlinkConfirmationComponents(pendingKey))
+			return
+		}
+		if flow.mode == "connect" {
+			delete(b.flows, key)
+			b.mu.Unlock()
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil { return }
+			var result connectResult
+			payload := struct { identity; ActorUUID string `json:"actor_uuid"` }{b.identity(i, u), chosen.ActorUUID}
+			if err := b.post(ConnectActorPath, payload, &result); err != nil {
+				b.edit(s, i, "Не удалось привязать персонажа: "+err.Error(), nil)
+				return
+			}
+			b.sendConnectAudit(s, u, chosen.Name, result)
+			b.edit(s, i, fmt.Sprintf("✅ **Персонаж привязан!**\\n\\n**%s** теперь связан с твоим аккаунтом и сразу занимает один из двух активных слотов.\\n\\nПосмотреть всех своих персонажей и свободные слоты: `/my-characters`. Карточка персонажа: `/my-character`.", result.Character.Name), nil)
 			return
 		}
 		if flow.mode == "view" || flow.mode == "inventory" || flow.mode == "spells" {
@@ -1001,6 +1063,14 @@ func (b *bot) pruneFlowsLocked() {
 
 func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.MessageComponentData()
+	if strings.HasPrefix(data.CustomID, "fm-connect-undo:") {
+		b.handleConnectUndoButton(s, i)
+		return
+	}
+	if strings.HasPrefix(data.CustomID, "fm-connect-undo:") {
+		b.handleConnectUndoButton(s, i)
+		return
+	}
 	if strings.HasPrefix(data.CustomID, "fm-unlink-confirm:") {
 		b.handleUnlinkButton(s, i)
 		return
@@ -1045,6 +1115,83 @@ func unlinkConfirmationComponents(key string) []discordgo.MessageComponent {
 			discordgo.Button{CustomID: "fm-unlink-confirm:" + key, Label: "Подтвердить отвязку", Style: discordgo.DangerButton},
 		}},
 	}
+}
+
+func (b *bot) sendConnectAudit(s *discordgo.Session, player *discordgo.User, actorName string, result connectResult) {
+	if b.adminChannelID == "" {
+		log.Printf("DISCORD_ADMIN_CHANNEL_ID is not set; self-connect undo button was not delivered for action %s", result.ActionID)
+		return
+	}
+	embed := &discordgo.MessageEmbed{
+		Title: "Новая привязка персонажа",
+		Description: fmt.Sprintf("Игрок <@%s> самостоятельно привязал персонажа из Foundry. Если мастер против этой привязки, её можно отменить кнопкой ниже.", player.ID),
+		Color: 0xFEE75C,
+		Fields: []*discordgo.MessageEmbedField{
+			{Name: "Персонаж", Value: result.Character.Name, Inline: true},
+			{Name: "Foundry Actor", Value: actorName, Inline: true},
+			{Name: "Статус", Value: "Активен · занимает слот", Inline: true},
+		},
+		Footer: &discordgo.MessageEmbedFooter{Text: "Действие сохраняется в журнале; отмена не удаляет историю"},
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}
+	components := []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+		discordgo.Button{CustomID: "fm-connect-undo:" + result.ActionID, Label: "Отменить привязку", Style: discordgo.DangerButton},
+	}}}
+	if _, err := s.ChannelMessageSendComplex(b.adminChannelID, &discordgo.MessageSend{Embeds: []*discordgo.MessageEmbed{embed}, Components: components}); err != nil {
+		log.Printf("Discord self-connect audit notification failed for action %s: %v", result.ActionID, err)
+	}
+}
+
+func (b *bot) handleConnectUndoButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	u := interactionUser(i)
+	if u == nil {
+		b.reply(s, i, "Не удалось определить пользователя.", nil)
+		return
+	}
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{Flags: discordgo.MessageFlagsEphemeral},
+	}); err != nil { return }
+	actionID := strings.TrimPrefix(i.MessageComponentData().CustomID, "fm-connect-undo:")
+	var result struct {
+		Status string `json:"status"`
+		ActorUUID string `json:"actor_uuid"`
+		CharacterName string `json:"character_name"`
+	}
+	payload := struct { identity; ActionID string `json:"action_id"` }{b.identity(i, u), actionID}
+	if err := b.post(UndoConnectPath, payload, &result); err != nil {
+		b.edit(s, i, "Отмена привязки не выполнена: "+err.Error(), nil)
+		return
+	}
+	if result.Status == "already_undone" {
+		b.edit(s, i, "Эта привязка уже была отменена ранее.", nil)
+		return
+	}
+	if i.Message != nil {
+		components := []discordgo.MessageComponent{}
+		_, editErr := s.ChannelMessageEditComplex(&discordgo.MessageEdit{ID: i.Message.ID, Channel: i.ChannelID, Components: &components})
+		if editErr != nil { log.Printf("Discord self-connect audit message update failed: %v", editErr) }
+	}
+	b.edit(s, i, fmt.Sprintf("✅ Привязка **%s** отменена. Actor снова доступен для привязки, персонаж приложения сохранён как черновик без владельца, слот освобождён.", result.CharacterName), nil)
+}
+
+func myCharactersEmbeds(result myCharactersResult, publicBaseURL string) []*discordgo.MessageEmbed {
+	slotLine := fmt.Sprintf("Активные слоты: **%d/%d** · свободно: **%d**", result.ActiveSlots, result.MaxActiveSlots, result.RemainingSlots)
+	if len(result.Characters) == 0 {
+		return []*discordgo.MessageEmbed{{Title: "Мои персонажи", Description: slotLine + "\\n\\nПока нет привязанных персонажей. Используй `/character-connect`, чтобы выбрать Actor из Foundry.", Color: 0x5865F2}}
+	}
+	embeds := make([]*discordgo.MessageEmbed, 0, len(result.Characters))
+	for index, character := range result.Characters {
+		description := fmt.Sprintf("Уровень **%d** · Опыт **%d XP**\\n%s", character.Level, character.XP, characterStatusLabel(character.Status))
+		if index == 0 { description = slotLine + "\\n\\n" + description }
+		embed := &discordgo.MessageEmbed{Title: character.Name, Description: description, Color: 0x5865F2}
+		if character.Ancestry != "" { embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Родословная", Value: character.Ancestry, Inline: true}) }
+		if character.Class != "" { embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Класс", Value: character.Class, Inline: true}) }
+		if portrait := characterPortraitURL(character.PortraitURL, publicBaseURL); portrait != nil { embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *portrait} }
+		embeds = append(embeds, embed)
+	}
+	if len(embeds) > 10 { embeds = embeds[:10] }
+	return embeds
 }
 
 func (b *bot) handleUnlinkButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
