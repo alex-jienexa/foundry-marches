@@ -52,11 +52,11 @@ func TestCoordinatedSyncRunnerPostgresIntegration(t *testing.T) {
 	}
 
 	const worldID = "00000000-0000-4000-8000-000000000094"
-	_, err = db.ExecContext(ctx, \`
+	_, err = db.ExecContext(ctx, `
 		INSERT INTO foundry_worlds (id, name, relay_url, relay_client_id, key_secret_ref)
 		VALUES ($1, 'sync runner integration test', 'https://relay.example.test', 'test-client', 'env:TEST')
 		ON CONFLICT (id) DO NOTHING
-	\`, worldID)
+	`, worldID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,11 +102,11 @@ func TestCoordinatedSyncRunnerPostgresIntegration(t *testing.T) {
 	}
 
 	var completed int
-	if err := db.QueryRowContext(ctx, \`
+	if err := db.QueryRowContext(ctx, `
 		SELECT count(*)
 		FROM foundry_sync_runs
 		WHERE world_id = $1 AND status = 'succeeded'
-	\`, worldID).Scan(&completed); err != nil {
+	`, worldID).Scan(&completed); err != nil {
 		t.Fatal(err)
 	}
 	if completed != 2 {
