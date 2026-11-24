@@ -5,41 +5,44 @@ import (
 	"testing"
 )
 
-func TestMyCharactersEmbedsShowsSlotsAndCharacterSummary(t *testing.T) {
-	portrait := "portrait.webp"
+func TestMyCharactersEmbedsGroupsRosterIntoOneEmbed(t *testing.T) {
 	result := myCharactersResult{
-		ActiveSlots: 1,
+		ActiveSlots:    2,
 		MaxActiveSlots: 2,
-		RemainingSlots: 1,
-		Characters: []ownedCharacter{{
-			ID: "character-1",
-			ActorUUID: "Actor.one",
-			Name: "Андрей",
-			PortraitURL: &portrait,
-			Level: 5,
-			XP: 1200,
-			Ancestry: "Человек",
-			Class: "Воин",
-			Status: "active",
-		}},
+		RemainingSlots: 0,
+		Characters: []ownedCharacter{
+			{
+				ID: "character-1", ActorUUID: "Actor.one", Name: "Андрей",
+				Level: 5, XP: 1200, Ancestry: "Человек", Class: "Воин", Status: "active",
+			},
+			{
+				ID: "character-2", ActorUUID: "Actor.two", Name: "Кукла-Персонаж",
+				Level: 1, XP: 0, Ancestry: "Гном", Status: "active",
+			},
+		},
 	}
 
-	embeds := myCharactersEmbeds(result, "https://foundry.example.test")
+	embeds := myCharactersEmbeds(result, "")
 	if len(embeds) != 1 {
-		t.Fatalf("got %d embeds, want 1", len(embeds))
+		t.Fatalf("got %d embeds, want exactly one grouped embed", len(embeds))
 	}
 	embed := embeds[0]
-	if !strings.Contains(embed.Description, "1/2") || !strings.Contains(embed.Description, "свободно: **1**") {
+	if !strings.Contains(embed.Description, "2/2") || !strings.Contains(embed.Description, "свободно: **0**") {
 		t.Fatalf("slot usage missing from description: %q", embed.Description)
 	}
-	if !strings.Contains(embed.Description, "Уровень **5**") || !strings.Contains(embed.Description, "1200 XP") {
-		t.Fatalf("level/XP missing from description: %q", embed.Description)
+	if len(embed.Fields) != 2 {
+		t.Fatalf("got %d character fields, want 2", len(embed.Fields))
 	}
-	if embed.Thumbnail == nil || embed.Thumbnail.URL != "https://foundry.example.test/portrait.webp" {
-		t.Fatalf("portrait URL not resolved: %+v", embed.Thumbnail)
+	first := embed.Fields[0]
+	if first.Name != "Андрей" || !strings.Contains(first.Value, "Уровень **5**") ||
+		!strings.Contains(first.Value, "1200 XP") || !strings.Contains(first.Value, "Человек") ||
+		!strings.Contains(first.Value, "Воин") {
+		t.Fatalf("first character summary mismatch: %+v", first)
 	}
-	if len(embed.Fields) != 2 || embed.Fields[0].Value != "Человек" || embed.Fields[1].Value != "Воин" {
-		t.Fatalf("ancestry/class fields mismatch: %+v", embed.Fields)
+	second := embed.Fields[1]
+	if second.Name != "Кукла-Персонаж" || !strings.Contains(second.Value, "Гном") ||
+		!strings.Contains(second.Value, "Уровень **1**") {
+		t.Fatalf("second character summary mismatch: %+v", second)
 	}
 }
 
@@ -48,7 +51,8 @@ func TestMyCharactersEmbedsShowsEmptyRosterAndSlots(t *testing.T) {
 	if len(embeds) != 1 {
 		t.Fatalf("got %d embeds, want 1", len(embeds))
 	}
-	if !strings.Contains(embeds[0].Description, "свободно: **2**") || !strings.Contains(embeds[0].Description, "/character-connect") {
-		t.Fatalf("empty roster guidance missing: %q", embeds[0].Description)
+	if len(embeds[0].Fields) != 0 || !strings.Contains(embeds[0].Description, "свободно: **2**") ||
+		!strings.Contains(embeds[0].Description, "/character-connect") {
+		t.Fatalf("empty roster guidance missing: %+v", embeds[0])
 	}
 }
