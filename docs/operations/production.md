@@ -42,7 +42,7 @@ The API owns automatic synchronization. The Discord bot no longer starts a compe
 
 - The API runs one initial sync after startup, then repeats it every `FOUNDRY_SYNC_INTERVAL_SECONDS` (default 300 seconds; allowed range 30–86400).
 - Set `FOUNDRY_SYNC_ENABLED=false` to disable only the scheduled sync. The authorized manual `/foundry-sync` command and sync HTTP endpoint remain available.
-- A PostgreSQL transaction-scoped advisory lock serializes scheduled and manual syncs across API replicas. The lock is automatically released when the sync wrapper rolls back its lock-only transaction, including on cancellation or connection loss.
+- A PostgreSQL session-level advisory lock serializes scheduled and manual syncs across API replicas. The runner holds a dedicated database connection for the full sync and explicitly releases the lock before returning the connection to the pool. If the process or connection dies, PostgreSQL releases the session lock automatically.
 - Individual Actor fetch failures are recorded in the sync report; one failed Actor does not abort the entire world refresh.
 - The Relay Actor-search and Actor-document requests used by sync retry transient network/read failures, HTTP 429 and HTTP 5xx responses up to three attempts with a bounded delay. Non-retryable client errors are returned immediately.
 - API and bot handle SIGINT/SIGTERM and attempt graceful shutdown.
