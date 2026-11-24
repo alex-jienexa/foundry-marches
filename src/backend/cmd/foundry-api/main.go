@@ -75,7 +75,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	syncRunner := &coordinatedSyncRunner{db: db, inner: syncService}
+	syncRunner := &coordinatedSyncRunner{db: db, worldID: worldID, inner: syncService}
 	syncHandler, err := httpapi.NewHandler(syncRunner)
 	if err != nil {
 		return err
