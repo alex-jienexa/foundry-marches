@@ -621,7 +621,7 @@ func (b *bot) startMyCharacterLookup(s *discordgo.Session, i *discordgo.Interact
 
 func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.MessageComponentData()
-	if strings.HasPrefix(data.CustomID, "fm-link:") || strings.HasPrefix(data.CustomID, "fm-unlink-confirm:") {
+	if strings.HasPrefix(data.CustomID, "fm-link:") || strings.HasPrefix(data.CustomID, "fm-unlink-confirm:") || strings.HasPrefix(data.CustomID, "fm-connect-undo:") {
 		b.handleButton(s, i)
 		return
 	}
@@ -735,7 +735,7 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 				return
 			}
 			b.sendConnectAudit(s, u, chosen.Name, result)
-			b.edit(s, i, fmt.Sprintf("✅ **Персонаж привязан!**\\n\\n**%s** теперь связан с твоим аккаунтом и сразу занимает один из двух активных слотов.\\n\\nПосмотреть всех своих персонажей и свободные слоты: `/my-characters`. Карточка персонажа: `/my-character`.", result.Character.Name), nil)
+			b.edit(s, i, fmt.Sprintf("✅ **Персонаж привязан!**\n\n**%s** теперь связан с твоим аккаунтом и сразу занимает один из двух активных слотов.\n\nПосмотреть всех своих персонажей и свободные слоты: `/my-characters`. Карточка персонажа: `/my-character`.", result.Character.Name), nil)
 			return
 		}
 		if flow.mode == "view" || flow.mode == "inventory" || flow.mode == "spells" {
@@ -1067,10 +1067,6 @@ func (b *bot) handleButton(s *discordgo.Session, i *discordgo.InteractionCreate)
 		b.handleConnectUndoButton(s, i)
 		return
 	}
-	if strings.HasPrefix(data.CustomID, "fm-connect-undo:") {
-		b.handleConnectUndoButton(s, i)
-		return
-	}
 	if strings.HasPrefix(data.CustomID, "fm-unlink-confirm:") {
 		b.handleUnlinkButton(s, i)
 		return
@@ -1178,12 +1174,12 @@ func (b *bot) handleConnectUndoButton(s *discordgo.Session, i *discordgo.Interac
 func myCharactersEmbeds(result myCharactersResult, publicBaseURL string) []*discordgo.MessageEmbed {
 	slotLine := fmt.Sprintf("Активные слоты: **%d/%d** · свободно: **%d**", result.ActiveSlots, result.MaxActiveSlots, result.RemainingSlots)
 	if len(result.Characters) == 0 {
-		return []*discordgo.MessageEmbed{{Title: "Мои персонажи", Description: slotLine + "\\n\\nПока нет привязанных персонажей. Используй `/character-connect`, чтобы выбрать Actor из Foundry.", Color: 0x5865F2}}
+		return []*discordgo.MessageEmbed{{Title: "Мои персонажи", Description: slotLine + "\n\nПока нет привязанных персонажей. Используй `/character-connect`, чтобы выбрать Actor из Foundry.", Color: 0x5865F2}}
 	}
 	embeds := make([]*discordgo.MessageEmbed, 0, len(result.Characters))
 	for index, character := range result.Characters {
-		description := fmt.Sprintf("Уровень **%d** · Опыт **%d XP**\\n%s", character.Level, character.XP, characterStatusLabel(character.Status))
-		if index == 0 { description = slotLine + "\\n\\n" + description }
+		description := fmt.Sprintf("Уровень **%d** · Опыт **%d XP**\n%s", character.Level, character.XP, characterStatusLabel(character.Status))
+		if index == 0 { description = slotLine + "\n\n" + description }
 		embed := &discordgo.MessageEmbed{Title: character.Name, Description: description, Color: 0x5865F2}
 		if character.Ancestry != "" { embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Родословная", Value: character.Ancestry, Inline: true}) }
 		if character.Class != "" { embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Класс", Value: character.Class, Inline: true}) }
