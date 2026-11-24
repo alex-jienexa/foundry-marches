@@ -143,7 +143,7 @@ func run() error {
 	mux.Handle("/api/internal/discord/", discordapi.ServiceTokenMiddleware(discordBotToken, discordHandler))
 	mux.HandleFunc("/livez", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok\\n"))
+		_, _ = w.Write([]byte("ok\n"))
 	})
 	readyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -155,6 +155,8 @@ func run() error {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
 	})
+	mux.Handle("/readyz", readyHandler)
+	mux.Handle("/healthz", readyHandler)
 
 	address := os.Getenv("HTTP_ADDR")
 	if address == "" {
