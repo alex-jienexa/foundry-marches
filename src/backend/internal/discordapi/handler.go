@@ -674,7 +674,7 @@ INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id
 VALUES ($1, 'user', 'foundry.actor.self_linked', 'foundry_actor', $2,
         jsonb_build_object('character_id', NULL),
         jsonb_build_object('world_id', $3::text, 'actor_uuid', $2::text,
-                           'character_id', $4::text, 'owner_user_id', $1::text, 'link_action_id', $5::text))
+                           'character_id', $4::text, 'owner_user_id', ($1::uuid)::text, 'link_action_id', $5::text))
 `, userID, req.ActorUUID, h.worldID, characterID, actionID)
 	if err != nil { log.Printf("Discord self-connect audit insert failed: %v", err); writeError(w, 500, "could not write character link audit"); return }
 	if err = tx.Commit(); err != nil { writeError(w, 500, "could not commit character connection"); return }
