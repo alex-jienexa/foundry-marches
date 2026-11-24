@@ -667,7 +667,7 @@ FOR UPDATE
 	if err != nil || decoded == nil || decoded.Character.Identity.Type != "character" || decoded.Character.Identity.UUID != req.ActorUUID {
 		log.Printf("Discord self-connect Actor decode failed for %s: %v", req.ActorUUID, err)
 		writeError(w, 422, "Foundry Actor snapshot is not a valid character")
-			return
+		return
 	}
 	var characterID string
 	if err = tx.QueryRowContext(r.Context(), "SELECT gen_random_uuid()::text").Scan(&characterID); err != nil {
@@ -701,7 +701,7 @@ INSERT INTO characters (
 		}
 		log.Printf("Discord self-connect character creation failed: %v", err)
 		writeError(w, 500, "could not create application character")
-			return
+		return
 	}
 
 	// The state machine requires a new character to enter pending_approval first.
@@ -710,7 +710,7 @@ INSERT INTO characters (
 	if _, err = tx.ExecContext(r.Context(), "UPDATE characters SET status = 'active', updated_at = now() WHERE id = $1", characterID); err != nil {
 		log.Printf("Discord self-connect character activation failed: %v", err)
 		writeError(w, 500, "could not activate application character")
-			return
+		return
 	}
 
 	result, err := tx.ExecContext(r.Context(), `
@@ -812,7 +812,7 @@ FROM character_link_actions WHERE id = $1 FOR UPDATE
 			return
 		}
 		writeJSON(w, 200, map[string]string{"status": "already_undone", "actor_uuid": actorUUID})
-			return
+		return
 	}
 	if worldID != h.worldID {
 		writeError(w, 409, "link action belongs to another Foundry world")
@@ -825,11 +825,11 @@ FROM character_link_actions WHERE id = $1 FOR UPDATE
 	err = tx.QueryRowContext(r.Context(), "SELECT owner_user_id::text, name, status FROM characters WHERE id = $1 FOR UPDATE", characterID).Scan(&currentOwnerID, &characterName, &currentStatus)
 	if err != nil || !currentOwnerID.Valid || currentOwnerID.String != ownerID {
 		writeError(w, 409, "the character owner has changed since this action; automatic undo is unsafe")
-			return
+		return
 	}
 	if currentStatus != "active" {
 		writeError(w, 409, "the character status has changed since this action; automatic undo is unsafe")
-			return
+		return
 	}
 	var currentCharacterID sql.NullString
 	err = tx.QueryRowContext(r.Context(), `
@@ -837,7 +837,7 @@ SELECT character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid
 `, worldID, actorUUID).Scan(&currentCharacterID)
 	if err != nil || !currentCharacterID.Valid || currentCharacterID.String != characterID {
 		writeError(w, 409, "the Actor link has changed since this action; automatic undo is unsafe")
-			return
+		return
 	}
 	var configuredUserID, configuredReason string
 	if err = tx.QueryRowContext(r.Context(), `
@@ -850,11 +850,11 @@ SELECT set_config('app.user_id', $1, true),
 	if _, err = tx.ExecContext(r.Context(), "UPDATE characters SET owner_user_id = NULL, status = 'draft', updated_at = now() WHERE id = $1", characterID); err != nil {
 		log.Printf("Discord character link undo owner release failed: %v", err)
 		writeError(w, 409, "the character cannot be released safely (it may have an active signup or expedition)")
-			return
+		return
 	}
 	if _, err = tx.ExecContext(r.Context(), "UPDATE foundry_actors SET character_id = NULL, owner_confirmed_at = NULL, updated_at = now() WHERE world_id = $1 AND actor_uuid = $2 AND character_id = $3", worldID, actorUUID, characterID); err != nil {
 		writeError(w, 500, "could not detach Foundry Actor")
-			return
+		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `
 INSERT INTO character_status_history (character_id, from_status, to_status, changed_by, reason)
@@ -865,7 +865,7 @@ VALUES ($1, $2, 'draft', $3, 'GM reversed self-service Foundry connection')
 	}
 	if _, err = tx.ExecContext(r.Context(), "UPDATE character_link_actions SET state = 'undone', undone_at = now(), undone_by_user_id = $2 WHERE id = $1 AND state = 'linked'", req.ActionID, masterID); err != nil {
 		writeError(w, 500, "could not update link action state")
-			return
+		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `
 INSERT INTO audit_log (actor_user_id, actor_kind, action, entity_type, entity_id, old_value, new_value)
