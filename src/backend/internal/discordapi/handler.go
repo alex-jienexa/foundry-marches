@@ -549,6 +549,7 @@ ORDER BY c.name, fa.actor_uuid LIMIT 25
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil { writeError(w, 500, "could not read your linked characters"); return }
+	if err := rows.Close(); err != nil { writeError(w, 500, "could not close your character list"); return }
 
 	var activeSlots, maxSlots int
 	err = h.db.QueryRowContext(r.Context(), `
