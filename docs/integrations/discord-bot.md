@@ -112,47 +112,25 @@ Use `/character name:<имя>` to open a character card. The card provides separ
 Ability scores are read from Actor values when present. When Actor ability values are absent, the decoder reconstructs them only from complete ancestry/background/class selections and level-based boosts; the card labels the missing values as calculated rather than persisted Actor data. Prepared spellcasters show spells placed in `spellcastingEntry.system.slots.slot0..slot11.prepared` separately from spells that remain in their preparation list.
 
 
-## 7. Test draft creation and linking with Андрей
+## 7. Test player self-connection
 
-Character creation and linking support both players and GMs:
+1. Synchronize the Foundry world after any PF2e system update. The self-connect command reads the latest Actor snapshots stored in PostgreSQL.
+2. Have a registered player run `/character-connect`.
+3. The player selects an unlinked Actor. The backend creates an active application character, assigns it to that Discord account and links the Actor in one transaction.
+4. Confirm the player receives the success message and the master audit channel configured by `DISCORD_ADMIN_CHANNEL_ID` receives a notification with **Отменить привязку**.
+5. Run `/my-characters` as that player. Confirm the roster shows the portrait, name, level, XP, ancestry, class and slot usage.
+6. With two counted characters already owned by the same player, try to connect a third. PostgreSQL must reject the operation with the two-slot limit message; no partial character or Actor link should remain.
+7. In the master audit channel, click **Отменить привязку** as a user with `foundry.manage`. Confirm the Actor becomes available again, the application character becomes an unowned draft, the slot is freed, and the audit/action history records the undo.
+8. Try the same button as a player without `foundry.manage`. The backend must reject the action.
+9. Repeat the undo button after a successful undo. The backend should report that the action was already undone without changing data again.
 
-- `/character-create name:<имя>` lets a player create an application draft owned by their own registered account.
-- A GM uses `/character-create name:<имя> owner:@игрок`. The selected player must already have run `/register`; the backend resolves the mention to that player's internal account and stores explicit ownership.
-- `/character-draft` remains available to GMs who want to create a draft from a selected unlinked Foundry Actor. The draft is initially unowned.
-- `/character-link owner:@игрок` lets a GM select an unlinked Foundry Actor and an application character, then preview and confirm the link. The owner mention is mandatory for every link; if the character already has a different owner, the backend rejects the operation rather than silently transferring it.
-- On link confirmation, the backend atomically links the Actor, assigns the selected owner if the character was unowned, records the ownership transfer/audit context, and marks ownership confirmed for that link. A conflicting existing owner is never silently replaced.
-- A player-created draft is already assigned to that player; when a GM links its Foundry Actor, the existing owner is preserved and confirmed.
-- The confirmation is bound to the initiating Discord user and guild.
+The player self-claim intentionally does not verify Foundry login identity. It is a claim against an unlinked Actor, visible to the master in the audit channel and reversible there. Do not treat the claim as proof of Foundry-side ownership.
 
-After linking, the existing Foundry sync path refreshes Foundry-owned character fields. Foundry sync itself does not create application characters in the background; `/character-connect` creates one only after a player explicitly selects an Actor.
+### Existing GM maintenance commands
 
-1. Ensure the Foundry world is synchronized after any PF2e system update. If needed, run the existing sync endpoint using the existing `FOUNDRY_SYNC_API_TOKEN`:
-   `POST http://127.0.0.1:8080/api/integrations/foundry/sync`.
-2. In Discord, run `/foundry-actors` and confirm Андрей's Actor is present.
-3. Run `/character-draft`. Select Андрей in the dropdown. The bot creates a `draft`; it has no owner until the link operation.
-4. Run `/characters`. Confirm the new Андрей draft appears.
-5. Run `/character-link owner:@игрок`. Mention the Discord account that will own Андрей, then select Андрей's Foundry Actor and the application character. The mentioned player must have completed `/register`.
-6. Review the ephemeral confirmation message. Verify the displayed owner mention, then click **Подтвердить привязку**.
-7. Run `/foundry-actors` again. Андрей's Actor should no longer be in the unlinked list.
-8. Run the Foundry sync again. Verify that Foundry-owned fields are populated from the Actor snapshot.
-9. Verify the relation with a read-only SQL query:
+The GM-only `/character-draft`, `/character-create`, `/character-link` and `/character-unlink` commands remain available for administrative maintenance and legacy application characters. The regular player flow should use `/character-connect`; manual GM linking still requires explicit owner selection and never silently transfers an existing owner.
 
-```sql
-SELECT fa.actor_uuid, fa.character_id, c.name, c.status,
-       c.owner_user_id, fa.owner_confirmed_at, fa.linked_at
-FROM foundry_actors fa
-JOIN characters c ON c.id = fa.character_id
-WHERE c.name ILIKE '%Андрей%';
-```
-
-The draft creation operation writes one `characters` row and one audit event. The link operation atomically associates the Foundry Actor, assigns the explicitly mentioned owner if the character is still unowned, records the transfer when needed, marks `owner_confirmed_at`, and adds its audit event. Neither operation writes to Foundry.
-
-### If Андрей is missing
-
-- Missing from `/foundry-actors`: run Foundry sync and check that the Actor exists in the configured world and has type `character`, not `npc`.
-- Missing from `/characters`: create the draft explicitly with `/character-draft`; Foundry sync intentionally does not create application characters.
-- The Actor or application character is already linked: the backend rejects the conflicting link with HTTP 409.
-- Permission denied: register first and ensure the user has the application `gm`, `admin` or `owner` permission that includes `foundry.manage`.
+After a successful connection, Foundry sync refreshes the linked character and inventory projection. Sync does not create application characters on its own and does not write to Foundry.
 
 ## 8. Character lookup and integration monitoring
 
