@@ -26,7 +26,8 @@ func (r *FoundryRepository) LinkActor(ctx context.Context, worldID, actorUUID, c
 
 // LinkActorWithOwner links a Foundry Actor and explicitly assigns an owner when
 // supplied. An existing owner is never silently replaced. Once linked, an
-// assigned owner is marked confirmed for this link.
+// assigned owner is marked confirmed for this link. The timestamp records the
+// application ownership claim/assignment; it is not proof of Foundry login identity.
 func (r *FoundryRepository) LinkActorWithOwner(ctx context.Context, worldID, actorUUID, characterID, linkedByUserID, ownerUserID string) error {
 	if r == nil || r.db == nil {
 		return errors.New("Foundry repository is not initialized")
