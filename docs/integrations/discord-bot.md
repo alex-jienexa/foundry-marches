@@ -158,8 +158,8 @@ The spells button groups spell Items inside one Discord message by tradition, ra
 
 Access is enforced by the backend, not only by Discord command visibility:
 - GM/admin/owner users with foundry.manage can search all synchronized character Actors.
-- A registered player with characters.create can search and open only their own draft, pending_approval or active character, whose linked foundry_actors.owner_confirmed_at is set after the latest ownership transfer (or after the original link if there was no transfer).
-- Unlinked, unconfirmed, unavailable, dead, retired, NPC, archived and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
+- A registered player with characters.create can search and open only their own draft, pending_approval, active or unavailable character, whose linked foundry_actors.owner_confirmed_at is set after the latest ownership transfer (or after the original link if there was no transfer).
+- Unlinked, unconfirmed, dead, retired, NPC, archived and other players' characters are not returned to players. Unavailable characters remain visible to their owner and continue to consume a slot. Direct requests with another Actor UUID are also rejected.
 
 Character ownership is assigned when a player claims an unlinked Actor through /character-connect, or explicitly by a GM through /character-link. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A self-claim is not proof of Foundry account identity and can be reversed by a GM from the audit chat.
 
@@ -176,7 +176,7 @@ To configure the channel, enable Developer Mode in Discord, copy the target text
 
 Then test:
 1. Run /character name:Андрей as a GM/admin; a unique match should open the compact card immediately. Use the buttons to inspect abilities, equipment and spells without creating extra messages.
-2. Run /my-character as a player with a linked, owner-confirmed character in draft, pending_approval or active; only that player's character should be returned. A single result should open automatically.
+2. Run /my-character as a player with a linked, owner-confirmed character in draft, pending_approval, active or unavailable; only that player's character should be returned. A single result should open automatically.
 3. Run /character-inventory name:<имя> and /character-spells name:<имя>; verify that all item/spell groups appear as fields in one Discord message each.
 4. Search for another player's character as the same player; it must not appear. A direct request using another Actor UUID must also return 404.
 5. If no ownership has been assigned and confirmed yet, an ordinary player should receive no character results. Do not change production ownership fields solely to make this test pass.
