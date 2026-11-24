@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -12,10 +13,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -39,7 +42,6 @@ const (
 	ConnectActorPath       = "/api/internal/discord/characters/connect"
 	UndoConnectPath        = "/api/internal/discord/characters/connect/undo"
 	FoundrySyncPath        = "/api/internal/discord/foundry-sync"
-	StartupFoundrySyncPath = "/api/internal/discord/foundry-sync/startup"
 	IntegrationStatusPath  = "/api/internal/discord/integration-status"
 	HelpStatusPath         = "/api/internal/discord/help-status"
 )
@@ -290,17 +292,19 @@ func main() {
 		log.Fatal(err)
 	}
 	defer s.Close()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	if err := registerCommands(s, appID, guildID); err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("FoundryMarches bot connected; guild=%s", guildID)
-	go b.syncOnStartup()
 	if adminChannelID != "" {
-		go b.monitorIntegrations(s)
+		go b.monitorIntegrations(ctx, s)
 	} else {
 		log.Printf("DISCORD_ADMIN_CHANNEL_ID is not set; Discord health alerts are disabled")
 	}
-	select {}
+	<-ctx.Done()
+	log.Printf("Discord bot shutdown requested")
 }
 
 func registerCommands(s *discordgo.Session, appID, guildID string) error {
@@ -2306,15 +2310,6 @@ func intValue(value *int) string {
 	return strconv.Itoa(*value)
 }
 
-func (b *bot) syncOnStartup() {
-	var report syncReport
-	if err := b.post(StartupFoundrySyncPath, struct{}{}, &report); err != nil {
-		b.reportAdminError("Foundry startup sync", err)
-		return
-	}
-	log.Printf("Foundry startup sync finished: discovered=%d characters=%d snapshots=%d failed=%d", report.Discovered, report.CharactersSynced, report.SnapshotsOnly, report.Failed)
-}
-
 func (b *bot) fetchIntegrationStatus() (integrationStatus, error) {
 	var status integrationStatus
 	err := b.post(IntegrationStatusPath, struct{}{}, &status)
@@ -2360,12 +2355,17 @@ func (b *bot) showIntegrationStatus(s *discordgo.Session, i *discordgo.Interacti
 	b.editEmbed(s, i, integrationStatusEmbed(status))
 }
 
-func (b *bot) monitorIntegrations(s *discordgo.Session) {
+func (b *bot) monitorIntegrations(ctx context.Context, s *discordgo.Session) {
 	b.checkIntegrationStatus(s)
 	ticker := time.NewTicker(b.healthInterval)
 	defer ticker.Stop()
-	for range ticker.C {
-		b.checkIntegrationStatus(s)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			b.checkIntegrationStatus(s)
+		}
 	}
 }
 
