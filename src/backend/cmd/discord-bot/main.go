@@ -25,25 +25,25 @@ import (
 )
 
 const (
-	RegisterPath           = "/api/internal/discord/register"
-	ActorsPath             = "/api/internal/discord/actors"
-	CharactersPath         = "/api/internal/discord/characters"
-	PreviewPath            = "/api/internal/discord/link/preview"
-	LinkPath               = "/api/internal/discord/link"
+	RegisterPath          = "/api/internal/discord/register"
+	ActorsPath            = "/api/internal/discord/actors"
+	CharactersPath        = "/api/internal/discord/characters"
+	PreviewPath           = "/api/internal/discord/link/preview"
+	LinkPath              = "/api/internal/discord/link"
 	UnlinkPath             = "/api/internal/discord/unlink"
-	GrantRolePath          = "/api/internal/discord/roles/grant"
+	GrantRolePath         = "/api/internal/discord/roles/grant"
 	MapRolePath            = "/api/internal/discord/roles/map"
-	DraftCharacterPath     = "/api/internal/discord/characters/draft"
-	CharacterCreatePath    = "/api/internal/discord/characters/create"
-	CharacterSearchPath    = "/api/internal/discord/characters/search"
-	CharacterDetailPath    = "/api/internal/discord/characters/detail"
-	MyCharactersPath       = "/api/internal/discord/characters/mine"
-	ConnectActorsPath      = "/api/internal/discord/characters/connect/actors"
-	ConnectActorPath       = "/api/internal/discord/characters/connect"
+	DraftCharacterPath    = "/api/internal/discord/characters/draft"
+	CharacterCreatePath   = "/api/internal/discord/characters/create"
+	CharacterSearchPath   = "/api/internal/discord/characters/search"
+	CharacterDetailPath   = "/api/internal/discord/characters/detail"
+	MyCharactersPath      = "/api/internal/discord/characters/mine"
+	ConnectActorsPath     = "/api/internal/discord/characters/connect/actors"
+	ConnectActorPath      = "/api/internal/discord/characters/connect"
 	UndoConnectPath        = "/api/internal/discord/characters/connect/undo"
-	FoundrySyncPath        = "/api/internal/discord/foundry-sync"
-	IntegrationStatusPath  = "/api/internal/discord/integration-status"
-	HelpStatusPath         = "/api/internal/discord/help-status"
+	FoundrySyncPath       = "/api/internal/discord/foundry-sync"
+	IntegrationStatusPath = "/api/internal/discord/integration-status"
+	HelpStatusPath        = "/api/internal/discord/help-status"
 )
 
 type bot struct {
@@ -118,10 +118,10 @@ type ownedCharacter struct {
 }
 
 type myCharactersResult struct {
-	Characters      []ownedCharacter `json:"characters"`
-	ActiveSlots     int               `json:"active_slots"`
-	MaxActiveSlots  int               `json:"max_active_slots"`
-	RemainingSlots  int               `json:"remaining_slots"`
+	Characters     []ownedCharacter `json:"characters"`
+	ActiveSlots    int               `json:"active_slots"`
+	MaxActiveSlots int               `json:"max_active_slots"`
+	RemainingSlots int               `json:"remaining_slots"`
 }
 
 type connectResult struct {
@@ -540,7 +540,9 @@ func (b *bot) startSelection(s *discordgo.Session, i *discordgo.InteractionCreat
 		Actors []actor `json:"actors"`
 	}
 	actorsPath := ActorsPath
-	if mode == "connect" { actorsPath = ConnectActorsPath }
+	if mode == "connect" {
+		actorsPath = ConnectActorsPath
+	}
 	if err := b.post(actorsPath, id, &actorResult); err != nil {
 		b.edit(s, i, "Не удалось получить список Foundry Actor: "+err.Error(), nil)
 		return
@@ -747,7 +749,9 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 		if flow.mode == "connect" {
 			delete(b.flows, key)
 			b.mu.Unlock()
-			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil { return }
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate}); err != nil {
+				return
+			}
 			var result connectResult
 			payload := struct { identity; ActorUUID string `json:"actor_uuid"` }{b.identity(i, u), chosen.ActorUUID}
 			if err := b.post(ConnectActorPath, payload, &result); err != nil {
@@ -756,7 +760,9 @@ func (b *bot) handleComponent(s *discordgo.Session, i *discordgo.InteractionCrea
 			}
 			auditSent := b.sendConnectAudit(s, u, chosen.Name, result)
 			message := fmt.Sprintf("✅ **Персонаж привязан!**\n\n**%s** теперь связан с твоим аккаунтом и сразу занимает один из двух активных слотов.\n\nПосмотреть всех своих персонажей и свободные слоты: `/my-characters`. Карточка персонажа: `/my-character`.", result.Character.Name)
-			if !auditSent { message += "\n\n⚠️ Не удалось отправить уведомление в мастер-чат. Сообщи мастеру об этой привязке." }
+			if !auditSent {
+				message += "\n\n⚠️ Не удалось отправить уведомление в мастер-чат. Сообщи мастеру об этой привязке."
+			}
 			b.edit(s, i, message, nil)
 			return
 		}
@@ -1190,7 +1196,9 @@ func (b *bot) handleConnectUndoButton(s *discordgo.Session, i *discordgo.Interac
 	if i.Message != nil {
 		components := []discordgo.MessageComponent{}
 		_, editErr := s.ChannelMessageEditComplex(&discordgo.MessageEdit{ID: i.Message.ID, Channel: i.ChannelID, Components: &components})
-		if editErr != nil { log.Printf("Discord self-connect audit message update failed: %v", editErr) }
+		if editErr != nil {
+			log.Printf("Discord self-connect audit message update failed: %v", editErr)
+		}
 	}
 	b.edit(s, i, fmt.Sprintf("✅ Привязка **%s** отменена. Actor снова доступен для привязки, персонаж приложения сохранён как черновик без владельца, слот освобождён.", result.CharacterName), nil)
 }
