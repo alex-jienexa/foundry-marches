@@ -91,7 +91,7 @@ The API must be healthy. The bot log should report that it connected and registe
 2. The backend creates/updates the Discord account, grants `player`, and grants `owner` because the Discord ID is in `DISCORD_ADMIN_USER_IDS`.
 3. After the database registration succeeds, the bot grants the Discord role configured by `DISCORD_CAMPAIGN_ROLE_ID` (default `1574386309584388106`). This role is for access to campaign channels; it is separate from application RBAC roles. If Discord role assignment fails, the account remains registered; fix the bot permission/role hierarchy and run `/register` again to retry the idempotent role grant.
 4. Run `/foundry-actors` and `/characters`. The trusted owner should be able to use both because the owner role has `foundry.manage`.
-5. Have another server member run `/register`. They receive the application `player` role and the Discord campaign-access role; they cannot list or link Foundry Actors.
+5. Have another server member run `/register`. They receive the application `player` role and the Discord campaign-access role; they cannot use the GM-only `/foundry-actors` directory or manual `/character-link`, but they can claim an unlinked Actor through `/character-connect`.
 5. As owner, run `/role-grant discord_user_id:<ID> role_key:gm` to grant the application GM role to a registered member. Alternatively, use `/role-map discord_role_id:<ID> role_key:gm` to map a Discord role to the application GM role. The mapping is evaluated using the member roles included in each Gateway interaction.
 6. Only `player` and `gm` may be granted/mapped with these commands. The privileged `owner` role is only bootstrapped from `DISCORD_ADMIN_USER_IDS`.
 
@@ -124,7 +124,7 @@ Character creation and linking support both players and GMs:
 - A player-created draft is already assigned to that player; when a GM links its Foundry Actor, the existing owner is preserved and confirmed.
 - The confirmation is bound to the initiating Discord user and guild.
 
-After linking, the existing Foundry sync path fills Foundry-owned character fields. Foundry sync itself still does not create application characters.
+After linking, the existing Foundry sync path refreshes Foundry-owned character fields. Foundry sync itself does not create application characters in the background; `/character-connect` creates one only after a player explicitly selects an Actor.
 
 1. Ensure the Foundry world is synchronized after any PF2e system update. If needed, run the existing sync endpoint using the existing `FOUNDRY_SYNC_API_TOKEN`:
    `POST http://127.0.0.1:8080/api/integrations/foundry/sync`.
@@ -183,7 +183,7 @@ Access is enforced by the backend, not only by Discord command visibility:
 - A registered player with characters.create can search and open only their own draft, pending_approval or active character, whose linked foundry_actors.owner_confirmed_at is set after the latest ownership transfer (or after the original link if there was no transfer).
 - Unlinked, unconfirmed, unavailable, dead, retired, NPC, archived and other players' characters are not returned to players. Direct requests with another Actor UUID are also rejected.
 
-Character ownership is assigned explicitly during /character-create or /character-link. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A linked character becomes visible to its assigned player only after the explicit owner assignment is committed and owner_confirmed_at is recorded for that link.
+Character ownership is assigned when a player claims an unlinked Actor through /character-connect, or explicitly by a GM through /character-link. The backend does not infer ownership from Foundry Actor names, Discord nicknames or other indirect signals. A self-claim is not proof of Foundry account identity and can be reversed by a GM from the audit chat.
 
 The /integration-status command performs an on-demand check of PostgreSQL, the Relay HTTP service and the Foundry connection. When DISCORD_ADMIN_CHANNEL_ID is configured, the bot also runs the same check periodically (60 seconds by default) and posts a message only when one or more component states change. Relay reachability is tested separately from a real authenticated Foundry Actor search through Relay.
 
@@ -214,11 +214,13 @@ Then test:
 | `/characters` | Show a readable list of application characters | `foundry.manage` |
 | `/character-create` | Create a draft for yourself, or as GM for a mentioned player | `characters.create` for self; `foundry.manage` for another player |
 | `/character-draft` | Create a draft from a selected Foundry Actor | `foundry.manage` |
-| `/character-link owner:@player` | Select Actor and application character, assign/confirm owner, preview and confirm link | `foundry.manage` |
+| `/character-connect` | Player selects an unlinked Foundry Actor; create and link an active character | `characters.create` or `foundry.manage` |
+| `/my-characters` | Show the caller's roster and active-slot usage | `characters.create` or `foundry.manage` |
+| `/character-link owner:@player` | GM-only manual Actor/application-character link and owner assignment | `foundry.manage` |
 | `/character-unlink name:<имя> [owner:@player]` | Select an Actor, then confirm the unlink. Optionally explicitly reassign the application character owner. Without owner, the current owner is preserved. Transfer history is retained. | `foundry.manage` |
 | `/foundry-sync` | Refresh all Actor snapshots immediately | `foundry.manage` |
 | `/character` | Search and display character data; GM sees all, players see only their own linked and owner-confirmed drafts, pending approvals and active characters | `characters.create` for own characters; `foundry.manage` for global access |
-| `/my-character` | Show the caller's own linked and owner-confirmed character(s) | `characters.create` or `foundry.manage` |
+| `/my-character` | Open a character card from the caller's linked characters | `characters.create` or `foundry.manage` |
 | `/character-inventory name:<имя>` | Show all physical Actor Items, grouped by type, with equipment/container state | Same visibility as `/character` |
 | `/character-spells name:<имя>` | Show all spell Items grouped by tradition, rank and spellcasting entry | Same visibility as `/character` |
 | `/integration-status` | Check PostgreSQL, Relay and Foundry connectivity | Registered server member |
