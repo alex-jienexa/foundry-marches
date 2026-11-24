@@ -114,3 +114,22 @@ jobs:
       - name: Run Go vet
         working-directory: src/backend
         run: go vet ./...
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate development Compose configuration
+        run: |
+          docker compose --env-file .env.example -p foundry-marches-ci-dev \
+            -f compose.yaml config --quiet
+      - name: Validate production Compose configuration
+        env:
+          DISCORD_ADMIN_USER_IDS: '123456789012345678'
+        run: |
+          docker compose --env-file .env.prod.example -p foundry-marches-ci-prod \
+            -f compose.yaml -f compose.production.yaml config --quiet
+      - name: Build development service images
+        run: |
+          docker compose --env-file .env.example -p foundry-marches-ci-dev \
+            -f compose.yaml build
