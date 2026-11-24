@@ -33,6 +33,7 @@ const (
 	CharacterSearchPath = "/api/internal/discord/characters/search"
 	CharacterDetailPath = "/api/internal/discord/characters/detail"
 	MyCharactersPath    = "/api/internal/discord/characters/mine"
+	HelpStatusPath      = "/api/internal/discord/help-status"
 	FoundrySyncPath     = "/api/internal/discord/foundry-sync"
 )
 
@@ -101,6 +102,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.searchFoundryCharacters(w, r)
 	case MyCharactersPath:
 		h.listMyCharacters(w, r)
+	case HelpStatusPath:
+		h.helpStatus(w, r)
 	case CharacterDetailPath:
 		h.foundryCharacterDetails(w, r)
 	case FoundrySyncPath:
@@ -430,6 +433,57 @@ LIMIT 200
 
 // listMyCharacters returns only the caller's linked, explicitly owner-confirmed
 // Foundry Actors. It deliberately shares the same visibility boundary as player search.
+func (h *Handler) helpStatus(w http.ResponseWriter, r *http.Request) {
+	var req identityRequest
+	if !decodeRequest(w, r, &req) {
+		return
+	}
+	if err := h.validateGuild(req.GuildID, req.DiscordUserID); err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	var registered, linked bool
+	err := h.db.QueryRowContext(r.Context(), `
+SELECT
+    EXISTS (
+        SELECT 1
+        FROM discord_accounts da
+        JOIN users u ON u.id = da.user_id
+        WHERE da.discord_id = $1
+          AND da.in_guild = true
+          AND u.status = 'active'
+    ),
+    EXISTS (
+        SELECT 1
+        FROM discord_accounts da
+        JOIN users u ON u.id = da.user_id
+        JOIN characters c ON c.owner_user_id = u.id
+        JOIN foundry_actors fa ON fa.character_id = c.id
+        WHERE da.discord_id = $1
+          AND da.in_guild = true
+          AND u.status = 'active'
+          AND c.status IN ('draft', 'pending_approval', 'active')
+          AND fa.world_id = $2
+          AND fa.snapshot->>'type' = 'character'
+          AND fa.owner_confirmed_at IS NOT NULL
+          AND fa.owner_confirmed_at > COALESCE(
+              (SELECT MAX(ct.created_at) FROM character_transfers ct WHERE ct.character_id = c.id),
+              fa.linked_at
+          )
+    )
+`, req.DiscordUserID, h.worldID).Scan(&registered, &linked)
+	if err != nil {
+		log.Printf("Discord help status lookup failed: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not determine account status")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{
+		"registered": registered,
+		"linked":     linked,
+	})
+}
+
 func (h *Handler) listMyCharacters(w http.ResponseWriter, r *http.Request) {
 	var req identityRequest
 	if !decodeRequest(w, r, &req) {
