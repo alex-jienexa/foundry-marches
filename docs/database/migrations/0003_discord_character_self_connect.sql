@@ -27,7 +27,8 @@ CREATE INDEX IF NOT EXISTS character_link_actions_owner_idx
 -- Set the campaign-wide active character limit to the requested two slots.
 INSERT INTO campaign_settings (key, value)
 VALUES ('max_characters_per_player', '2'::jsonb)
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+WHERE campaign_settings.value IS DISTINCT FROM EXCLUDED.value;
 
 GRANT SELECT ON campaign_settings TO foundry_api;
 GRANT SELECT, INSERT, UPDATE ON character_link_actions TO foundry_api;
