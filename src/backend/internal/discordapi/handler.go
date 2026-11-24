@@ -552,7 +552,7 @@ ORDER BY c.name, fa.actor_uuid LIMIT 25
 		var portrait sql.NullString
 		if err := rows.Scan(&item.ActorUUID, &item.ID, &item.Name, &portrait, &item.Level, &item.XP, &item.Ancestry, &item.Class, &item.Status); err != nil {
 			writeError(w, 500, "could not read your linked characters")
-				return
+			return
 		}
 		if portrait.Valid {
 			item.PortraitURL = &portrait.String
@@ -697,7 +697,7 @@ INSERT INTO characters (
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == "23514" && strings.Contains(pgErr.Message, "character slot limit") {
 			writeError(w, 409, "the active character limit has been reached (2 of 2 slots occupied)")
-				return
+			return
 		}
 		log.Printf("Discord self-connect character creation failed: %v", err)
 		writeError(w, 500, "could not create application character")
@@ -735,10 +735,10 @@ VALUES
   ($1, NULL, 'pending_approval', $2, 'Player connected a Foundry character'),
   ($1, 'pending_approval', 'active', $2, 'Self-service connection is immediately approved')
 `, characterID, userID); err != nil {
-	log.Printf("Discord self-connect status history insert failed: %v", err)
-	writeError(w, 500, "could not write character status history")
-	return
-}
+		log.Printf("Discord self-connect status history insert failed: %v", err)
+		writeError(w, 500, "could not write character status history")
+		return
+	}
 
 	var actionID string
 	err = tx.QueryRowContext(r.Context(), `
@@ -844,9 +844,9 @@ SELECT character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid
 SELECT set_config('app.user_id', $1, true),
        set_config('app.reason', 'GM reversed a self-service Foundry character connection', true)
 `, masterID).Scan(&configuredUserID, &configuredReason); err != nil {
-	writeError(w, 500, "could not set undo audit context")
-	return
-}
+		writeError(w, 500, "could not set undo audit context")
+		return
+	}
 	if _, err = tx.ExecContext(r.Context(), "UPDATE characters SET owner_user_id = NULL, status = 'draft', updated_at = now() WHERE id = $1", characterID); err != nil {
 		log.Printf("Discord character link undo owner release failed: %v", err)
 		writeError(w, 409, "the character cannot be released safely (it may have an active signup or expedition)")
@@ -860,9 +860,9 @@ SELECT set_config('app.user_id', $1, true),
 INSERT INTO character_status_history (character_id, from_status, to_status, changed_by, reason)
 VALUES ($1, $2, 'draft', $3, 'GM reversed self-service Foundry connection')
 `, characterID, currentStatus, masterID); err != nil {
-	writeError(w, 500, "could not write undo status history")
-	return
-}
+		writeError(w, 500, "could not write undo status history")
+		return
+	}
 	if _, err = tx.ExecContext(r.Context(), "UPDATE character_link_actions SET state = 'undone', undone_at = now(), undone_by_user_id = $2 WHERE id = $1 AND state = 'linked'", req.ActionID, masterID); err != nil {
 		writeError(w, 500, "could not update link action state")
 			return
