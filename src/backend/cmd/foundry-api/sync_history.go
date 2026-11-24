@@ -9,15 +9,15 @@ import (
 )
 
 type syncRunSummary struct {
-	ID              string     `json:"id"`
-	Status          string     `json:"status"`
-	StartedAt       time.Time  `json:"started_at"`
-	FinishedAt      *time.Time `json:"finished_at,omitempty"`
-	Discovered      int        `json:"discovered"`
+	ID               string     `json:"id"`
+	Status           string     `json:"status"`
+	StartedAt        time.Time  `json:"started_at"`
+	FinishedAt       *time.Time `json:"finished_at,omitempty"`
+	Discovered       int        `json:"discovered"`
 	CharactersSynced int       `json:"characters_synced"`
-	SnapshotsOnly   int        `json:"snapshots_only"`
-	Failed          int        `json:"failed"`
-	ErrorMessage    string     `json:"error_message,omitempty"`
+	SnapshotsOnly    int        `json:"snapshots_only"`
+	Failed           int        `json:"failed"`
+	ErrorMessage     string     `json:"error_message,omitempty"`
 }
 
 func syncHistoryHandler(db *sql.DB, worldID string) http.HandlerFunc {
