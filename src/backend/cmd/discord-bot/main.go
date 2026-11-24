@@ -1179,23 +1179,56 @@ func (b *bot) handleConnectUndoButton(s *discordgo.Session, i *discordgo.Interac
 	b.edit(s, i, fmt.Sprintf("✅ Привязка **%s** отменена. Actor снова доступен для привязки, персонаж приложения сохранён как черновик без владельца, слот освобождён.", result.CharacterName), nil)
 }
 
-func myCharactersEmbeds(result myCharactersResult, publicBaseURL string) []*discordgo.MessageEmbed {
+func myCharactersEmbeds(result myCharactersResult, _ string) []*discordgo.MessageEmbed {
 	slotLine := fmt.Sprintf("Активные слоты: **%d/%d** · свободно: **%d**", result.ActiveSlots, result.MaxActiveSlots, result.RemainingSlots)
+	embed := &discordgo.MessageEmbed{
+		Title:       "Мои персонажи",
+		Description: slotLine,
+		Color:       0x5865F2,
+	}
 	if len(result.Characters) == 0 {
-		return []*discordgo.MessageEmbed{{Title: "Мои персонажи", Description: slotLine + "\n\nПока нет привязанных персонажей. Используй `/character-connect`, чтобы выбрать Actor из Foundry.", Color: 0x5865F2}}
+		embed.Description += "\n\nПока нет привязанных персонажей. Используй `/character-connect`, чтобы выбрать Actor из Foundry."
+		return []*discordgo.MessageEmbed{embed}
 	}
-	embeds := make([]*discordgo.MessageEmbed, 0, len(result.Characters))
-	for index, character := range result.Characters {
-		description := fmt.Sprintf("Уровень **%d** · Опыт **%d XP**\n%s", character.Level, character.XP, characterStatusLabel(character.Status))
-		if index == 0 { description = slotLine + "\n\n" + description }
-		embed := &discordgo.MessageEmbed{Title: character.Name, Description: description, Color: 0x5865F2}
-		if character.Ancestry != "" { embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Родословная", Value: character.Ancestry, Inline: true}) }
-		if character.Class != "" { embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Класс", Value: character.Class, Inline: true}) }
-		if portrait := characterPortraitURL(character.PortraitURL, publicBaseURL); portrait != nil { embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: *portrait} }
-		embeds = append(embeds, embed)
+
+	const maxCharacters = 25 // Discord allows at most 25 fields in one embed.
+	for _, character := range result.Characters {
+		lines := []string{
+			fmt.Sprintf("Уровень **%d** · Опыт **%d XP**", character.Level, character.XP),
+			characterStatusLabel(character.Status),
+		}
+		if character.Ancestry != "" {
+			lines = append(lines, "**Родословная:** "+character.Ancestry)
+		}
+		if character.Class != "" {
+			lines = append(lines, "**Класс:** "+character.Class)
+		}
+		name := strings.TrimSpace(character.Name)
+		if name == "" {
+			name = "Персонаж без имени"
+		}
+		if len([]rune(name)) > 256 {
+			name = string([]rune(name)[:256])
+		}
+		value := strings.Join(lines, "\n")
+		if len([]rune(value)) > 1024 {
+			value = string([]rune(value)[:1021]) + "…"
+		}
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   name,
+			Value:  value,
+			Inline: false,
+		})
+		if len(embed.Fields) == maxCharacters {
+			break
+		}
 	}
-	if len(embeds) > 10 { embeds = embeds[:10] }
-	return embeds
+	if len(result.Characters) > maxCharacters {
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("Показано %d из %d персонажей", maxCharacters, len(result.Characters)),
+		}
+	}
+	return []*discordgo.MessageEmbed{embed}
 }
 
 func (b *bot) handleUnlinkButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
