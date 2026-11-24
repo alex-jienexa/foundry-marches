@@ -53,17 +53,18 @@ openssl rand -hex 32
 
 Copy its output into `DISCORD_BOT_API_TOKEN`. Do not use the Discord bot token or Foundry sync token for this value.
 
-## 4. Apply the database migration
+## 4. Apply the database migrations
 
-This is an existing database migration, not a fresh-volume bootstrap. Run it once against the existing `foundry_marches` database:
+These are incremental migrations for the existing database, not a fresh-volume bootstrap. Apply them in order:
 
 ```sh
-docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 \
-  -U foundry_admin -d foundry_marches \
-  < docs/database/migrations/0002_discord_bot_auth.sql
+for migration in docs/database/migrations/0002_discord_bot_auth.sql docs/database/migrations/0003_discord_character_self_connect.sql; do
+  docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 \
+    -U foundry_admin -d foundry_marches < "$migration"
+done
 ```
 
-The migration is safe to re-run. It seeds permissions for the existing `player`, `gm`, `admin` and `owner` roles and grants the API database role the minimum additional access needed for registration, role assignment, role mapping, draft character creation, ownership-scoped character reads and audit inserts. It does not delete or recreate data and does not touch the PostgreSQL volume.
+Both migrations are safe to re-run. Migration 0002 seeds Discord permissions and grants the API database role the access needed for the bot. Migration 0003 adds persistent reversible self-connect actions, explicitly seeds the two-character limit if it is not already configured, and grants the API the required action/slot access. Neither migration deletes campaign data or touches the PostgreSQL volume.
 
 ## 5. Build and start
 
@@ -93,6 +94,16 @@ The API must be healthy. The bot log should report that it connected and registe
 5. Have another server member run `/register`. They receive the application `player` role and the Discord campaign-access role; they cannot list or link Foundry Actors.
 5. As owner, run `/role-grant discord_user_id:<ID> role_key:gm` to grant the application GM role to a registered member. Alternatively, use `/role-map discord_role_id:<ID> role_key:gm` to map a Discord role to the application GM role. The mapping is evaluated using the member roles included in each Gateway interaction.
 6. Only `player` and `gm` may be granted/mapped with these commands. The privileged `owner` role is only bootstrapped from `DISCORD_ADMIN_USER_IDS`.
+
+## Player character connection and roster
+
+- A registered player uses `/character-connect`, selects an unlinked character Actor from the latest Foundry sync, and immediately creates/links an active application character owned by their account.
+- Each active, pending-approval or unavailable character consumes one of the two active-character slots. PostgreSQL enforces the limit transactionally; simultaneous requests cannot claim a third slot.
+- The configured `DISCORD_ADMIN_CHANNEL_ID` is also the master audit chat. Each self-connection posts the player, Actor and character with a persistent **Отменить привязку** button. Only a user with the backend `foundry.manage` permission can use it.
+- Undo detaches the Actor, releases the owner and changes the application record to an unowned draft. It does not delete the character or audit history. If the character has an active signup/expedition or its ownership/link has since changed, the backend refuses an unsafe automatic undo.
+- `/my-characters` shows the player's linked characters with portrait, name, level, XP, ancestry, class, status and occupied/free active slots. `/my-character` continues to open the selected character card.
+
+This self-service flow intentionally does not verify the Foundry account identity. The player claims an unlinked Actor; the master can review the claim and reverse it from the audit chat. Do not treat the claim as proof of Foundry-side ownership.
 
 ## Character card navigation
 
