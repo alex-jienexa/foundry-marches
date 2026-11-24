@@ -33,3 +33,6 @@ ON CONFLICT (key) DO NOTHING;
 GRANT SELECT ON campaign_settings TO foundry_api;
 GRANT SELECT, INSERT, UPDATE ON character_link_actions TO foundry_api;
 GRANT UPDATE (owner_user_id, status, updated_at) ON characters TO foundry_api;
+
+COMMENT ON COLUMN foundry_actors.owner_confirmed_at IS
+  'Timestamp when the current application owner claimed or was explicitly assigned this Foundry Actor. This does not verify Foundry account identity; player self-claims can be reversed by a GM.';
