@@ -14,7 +14,7 @@ type syncRunSummary struct {
 	StartedAt        time.Time  `json:"started_at"`
 	FinishedAt       *time.Time `json:"finished_at,omitempty"`
 	Discovered       int        `json:"discovered"`
-	CharactersSynced int       `json:"characters_synced"`
+	CharactersSynced int        `json:"characters_synced"`
 	SnapshotsOnly    int        `json:"snapshots_only"`
 	Failed           int        `json:"failed"`
 	ErrorMessage     string     `json:"error_message,omitempty"`
