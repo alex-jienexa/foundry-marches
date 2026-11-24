@@ -50,28 +50,61 @@ func (c *Client) ListActors(ctx context.Context, worldID string) ([]ActorReferen
 	query.Set("limit", fmt.Sprint(maxActorSearchResults))
 	endpoint.RawQuery = query.Encode()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("create Foundry Actor search request: %w", err)
-	}
-	request.Header.Set("x-api-key", c.apiKey)
-	request.Header.Set("Accept", "application/json")
+	var body []byte
+	const maxAttempts = 3
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("create Foundry Actor search request: %w", err)
+		}
+		request.Header.Set("x-api-key", c.apiKey)
+		request.Header.Set("Accept", "application/json")
 
-	response, err := c.httpClient.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("search Foundry Actors: %w", err)
-	}
-	defer response.Body.Close()
+		response, err := c.httpClient.Do(request)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			if attempt == maxAttempts-1 {
+				return nil, fmt.Errorf("search Foundry Actors: %w", err)
+			}
+			if err := waitForRetry(ctx, attempt, ""); err != nil {
+				return nil, err
+			}
+			continue
+		}
 
-	body, err := io.ReadAll(io.LimitReader(response.Body, c.maxResponseBytes+1))
-	if err != nil {
-		return nil, fmt.Errorf("read Foundry Actor search response: %w", err)
-	}
-	if int64(len(body)) > c.maxResponseBytes {
-		return nil, ErrResponseTooLarge
-	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: HTTP %d", ErrUnexpectedStatus, response.StatusCode)
+		body, err = io.ReadAll(io.LimitReader(response.Body, c.maxResponseBytes+1))
+		retryableStatus := response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= http.StatusInternalServerError
+		retryAfter := response.Header.Get("Retry-After")
+		statusCode := response.StatusCode
+		_ = response.Body.Close()
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			if attempt == maxAttempts-1 {
+				return nil, fmt.Errorf("read Foundry Actor search response: %w", err)
+			}
+			if err := waitForRetry(ctx, attempt, ""); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if int64(len(body)) > c.maxResponseBytes {
+			return nil, ErrResponseTooLarge
+		}
+		if retryableStatus && attempt < maxAttempts-1 {
+			if err := waitForRetry(ctx, attempt, retryAfter); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if statusCode < http.StatusOK || statusCode >= http.StatusMultipleChoices {
+			return nil, fmt.Errorf("%w: HTTP %d", ErrUnexpectedStatus, statusCode)
+		}
+		break
 	}
 
 	actors, err := decodeActorSearchResponse(body)
