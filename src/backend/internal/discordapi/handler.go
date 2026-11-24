@@ -640,7 +640,7 @@ INSERT INTO characters (
 
 	result, err := tx.ExecContext(r.Context(), `
 UPDATE foundry_actors
-SET character_id = $3, linked_at = clock_timestamp(),
+SET character_id = $3, linked_at = now(),
     owner_confirmed_at = clock_timestamp(), updated_at = now()
 WHERE world_id = $1 AND actor_uuid = $2 AND character_id IS NULL
 `, h.worldID, req.ActorUUID, characterID)
@@ -704,8 +704,8 @@ SELECT character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid
 		writeError(w, 409, "the Actor link has changed since this action; automatic undo is unsafe"); return
 	}
 	var currentOwnerID sql.NullString
-	var characterName string
-	err = tx.QueryRowContext(r.Context(), "SELECT owner_user_id::text, name FROM characters WHERE id = $1 FOR UPDATE", characterID).Scan(&currentOwnerID, &characterName)
+	var characterName, currentStatus string
+	err = tx.QueryRowContext(r.Context(), "SELECT owner_user_id::text, name, status FROM characters WHERE id = $1 FOR UPDATE", characterID).Scan(&currentOwnerID, &characterName, &currentStatus)
 	if err != nil || !currentOwnerID.Valid || currentOwnerID.String != ownerID {
 		writeError(w, 409, "the character owner has changed since this action; automatic undo is unsafe"); return
 	}
@@ -723,8 +723,8 @@ SELECT set_config('app.user_id', $1, true),
 	}
 	if _, err = tx.ExecContext(r.Context(), `
 INSERT INTO character_status_history (character_id, from_status, to_status, changed_by, reason)
-VALUES ($1, 'active', 'draft', $2, 'GM reversed self-service Foundry connection')
-`, characterID, masterID); err != nil { writeError(w, 500, "could not write undo status history"); return }
+VALUES ($1, $2, 'draft', $3, 'GM reversed self-service Foundry connection')
+`, characterID, currentStatus, masterID); err != nil { writeError(w, 500, "could not write undo status history"); return }
 	if _, err = tx.ExecContext(r.Context(), "UPDATE character_link_actions SET state = 'undone', undone_at = now(), undone_by_user_id = $2 WHERE id = $1 AND state = 'linked'", req.ActionID, masterID); err != nil {
 		writeError(w, 500, "could not update link action state"); return
 	}
