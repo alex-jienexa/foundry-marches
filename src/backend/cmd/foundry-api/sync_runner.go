@@ -70,7 +70,7 @@ func (r *coordinatedSyncRunner) SyncAll(ctx context.Context) (foundrysync.SyncRe
 }
 
 func (r *coordinatedSyncRunner) startRun(ctx context.Context, conn *sql.Conn) (string, error) {
-	_, err := conn.ExecContext(ctx, \`
+	_, err := conn.ExecContext(ctx, `
 		UPDATE foundry_sync_runs
 		SET status = 'interrupted',
 		    finished_at = now(),
@@ -78,17 +78,17 @@ func (r *coordinatedSyncRunner) startRun(ctx context.Context, conn *sql.Conn) (s
 		WHERE world_id = $1
 		  AND status = 'running'
 		  AND started_at < now() - $2::interval
-	\`, r.worldID, foundrySyncStaleAfter.String())
+	`, r.worldID, foundrySyncStaleAfter.String())
 	if err != nil {
 		return "", fmt.Errorf("mark stale Foundry sync runs as interrupted: %w", err)
 	}
 
 	var runID string
-	err = conn.QueryRowContext(ctx, \`
+	err = conn.QueryRowContext(ctx, `
 		INSERT INTO foundry_sync_runs (world_id, status)
 		VALUES ($1, 'running')
 		RETURNING id::text
-	\`, r.worldID).Scan(&runID)
+	`, r.worldID).Scan(&runID)
 	if err != nil {
 		return "", fmt.Errorf("create Foundry sync run history record: %w", err)
 	}
@@ -117,7 +117,7 @@ func (r *coordinatedSyncRunner) finishRun(
 
 	ctx, cancel := context.WithTimeout(context.Background(), foundrySyncPersistTimeout)
 	defer cancel()
-	result, err := conn.ExecContext(ctx, \`
+	result, err := conn.ExecContext(ctx, `
 		UPDATE foundry_sync_runs
 		SET status = $2,
 		    finished_at = now(),
@@ -128,7 +128,7 @@ func (r *coordinatedSyncRunner) finishRun(
 		    error_message = $7,
 		    report_json = $8::jsonb
 		WHERE id = $1
-	\`, runID, status, report.Discovered, report.CharactersSynced, report.SnapshotsOnly, report.Failed, errorMessage, string(reportJSON))
+	`, runID, status, report.Discovered, report.CharactersSynced, report.SnapshotsOnly, report.Failed, errorMessage, string(reportJSON))
 	if err != nil {
 		return err
 	}
