@@ -31,12 +31,12 @@ func helpEmbed(status helpStatus) *discordgo.MessageEmbed {
 		embed.Description = "Твой аккаунт зарегистрирован, и у тебя есть привязанный персонаж Foundry."
 		embed.Fields = []*discordgo.MessageEmbedField{
 			{Name: "Мои персонажи", Value: "`/my-characters` — список персонажей, портреты, уровень, опыт, родословная, класс и свободные слоты.", Inline: false},
-			{Name: "Полезные команды", Value: "`/my-character` — открыть карточку персонажа
-`/character-connect` — привязать ещё одного персонажа (не более двух активных)
-`/character name:<имя>` — найти персонажа по имени
-`/character-inventory name:<имя>` — посмотреть инвентарь
-`/character-spells name:<имя>` — посмотреть заклинания
-`/help` — открыть эту справку", Inline: false},
+			{Name: "Полезные команды", Value: "`/my-character` — открыть карточку персонажа\n" +
+				"`/character-connect` — привязать ещё одного персонажа (не более двух активных)\n" +
+				"`/character name:<имя>` — найти персонажа по имени\n" +
+				"`/character-inventory name:<имя>` — посмотреть инвентарь\n" +
+				"`/character-spells name:<имя>` — посмотреть заклинания\n" +
+				"`/help` — открыть эту справку", Inline: false},
 			{Name: "Изменения листа", Value: "Данные персонажей обновляются из Foundry. Если изменил характеристики, экипировку или заклинания, дождись синхронизации.", Inline: false},
 		}
 	}
