@@ -703,6 +703,9 @@ FROM character_link_actions WHERE id = $1 FOR UPDATE
 	if err != nil || !currentOwnerID.Valid || currentOwnerID.String != ownerID {
 		writeError(w, 409, "the character owner has changed since this action; automatic undo is unsafe"); return
 	}
+	if currentStatus != "active" {
+		writeError(w, 409, "the character status has changed since this action; automatic undo is unsafe"); return
+	}
 	var currentCharacterID sql.NullString
 	err = tx.QueryRowContext(r.Context(), `
 SELECT character_id::text FROM foundry_actors WHERE world_id = $1 AND actor_uuid = $2 FOR UPDATE
