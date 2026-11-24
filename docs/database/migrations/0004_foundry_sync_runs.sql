@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS foundry_sync_runs_world_started_idx
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'foundry_api') THEN
-        GRANT SELECT, INSERT, UPDATE ON foundry_sync_runs TO foundry_api;
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE ON foundry_sync_runs TO foundry_api';
     END IF;
 END
 $$;
