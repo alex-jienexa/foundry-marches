@@ -4,28 +4,27 @@ This document describes the operational model for the API, Discord bot, Foundry 
 
 ## Environment isolation: development and production
 
-Run two independent Compose projects from the same repository revision and Dockerfiles:
+Development runs on the developer's workstation; production runs on the server. They are separate API processes with separate databases, Discord applications and Relay API keys. Both may connect to the same Relay URL and Foundry World concurrently, subject to the Relay instance's client/key scopes and rate limits.
 
 | Setting | Development | Production |
 |---|---|---|
-| Compose project | `foundry-marches-dev` | `foundry-marches-prod` |
+| Runtime | Developer workstation | Production server |
 | Environment file | `.env.dev` | `.env.prod` |
 | Discord application/bot | Dedicated test application | Dedicated production application |
 | Discord guild | Test server | Campaign server |
-| PostgreSQL | Own container and volume | Own container and volume |
+| PostgreSQL | Local development database | Dedicated production container and volume |
 | API host port | 8080 by default | 8081 by default |
-| Compose files | `compose.yaml` | `compose.yaml` + `compose.production.yaml` |
+| Images | Built locally from source | Pulled from GHCR by immutable commit tag |
 
-Do not point the development bot at the production API token, production guild, or production database. Use a separate Discord application and test guild. The two Compose project names create separate service names and PostgreSQL volumes. Never rename a project while expecting it to reuse the old database volume.
+Do not point the development bot at the production API token, production guild, or production database. The two API instances use independent PostgreSQL databases, so their session advisory locks and sync histories are independent. Do not reuse Relay API keys between environments: create separate scoped keys in the Relay administration panel and restrict each to the intended client/world where the Relay version supports it.
 
 The production project starts with its own database volume; it does not copy data from the development project. If the existing local database contains campaign data that must become production data, do not assume that creating `.env.prod` migrates it. Take a verified backup and plan an explicit import into the new production volume, with a restore rehearsal first. This runbook intentionally does not automate a destructive database replacement or use `pg_restore --clean`.
 
-The development template is `.env.example`; the production template is `.env.prod.example`. Copy them to ignored local files. The existing Compose project historically used the name `foundry-marches` when no project name was set. If your current local database must remain attached to the existing volume, keep that project name in its local environment; the template's `foundry-marches-dev` name intentionally creates a separate, empty development database.
+The development template is `.env.example`; the production template is `.env.prod.example`. Copy the development template to an ignored local file. Keep the existing local development Compose project name if its current database volume must remain attached; changing a project name creates a different named volume.
 
 ```sh
 cp .env.example .env.dev
-cp .env.prod.example .env.prod
-chmod 600 .env.dev .env.prod
+chmod 600 .env.dev
 ```
 
 Generate independent secrets for every environment. For example:
@@ -34,7 +33,7 @@ Generate independent secrets for every environment. For example:
 openssl rand -hex 32
 ```
 
-Use separate values for `POSTGRES_PASSWORD`, `POSTGRES_APP_PASSWORD`, `FOUNDRY_SYNC_API_TOKEN`, and `DISCORD_BOT_API_TOKEN`. The two service tokens must differ. Never commit the resulting `.env.dev` or `.env.prod` files. On an already initialized PostgreSQL volume, changing `POSTGRES_APP_PASSWORD` in the environment file does not automatically change the existing `foundry_api` database role password; rotate the database role and application environment together using a controlled maintenance procedure.
+Use separate values for `POSTGRES_PASSWORD`, `POSTGRES_APP_PASSWORD`, `FOUNDRY_SYNC_API_TOKEN`, and `DISCORD_BOT_API_TOKEN`. The two service tokens must differ. Never commit environment files or send secrets in chat. On an already initialized PostgreSQL volume, changing `POSTGRES_APP_PASSWORD` in the environment file does not automatically change the existing `foundry_api` database role password; rotate the database role and application environment together using a controlled maintenance procedure.
 
 ## Background Foundry synchronization
 
@@ -77,7 +76,7 @@ These controls reduce the impact of a compromised application container; they do
 
 ## Pre-deployment validation
 
-GitHub Actions validates documentation and generated database projections, Go formatting/tests/vet, baseline SQL and concurrency checks, migrations and PostgreSQL integration tests on PostgreSQL 15, 16 and 18. It also validates both development and production Compose configurations and builds the service images. A successful CI run is required before treating a revision as deployable.
+GitHub Actions validates documentation and generated database projections, Go formatting/tests/vet, baseline SQL and concurrency checks, migrations and PostgreSQL integration tests on PostgreSQL 15, 16 and 18. It validates development and production Compose configurations, builds development images, verifies that the production Compose overlay resolves to GHCR images without build contexts, and publishes linux/amd64 API and bot images from `main` or version tags. A successful CI run and successful image-publishing workflow are required before deployment.
 
 Before merging or deploying, run the backend checks from the repository root:
 
@@ -105,17 +104,17 @@ Do not treat a successful image build as proof of runtime connectivity. Verify r
 
 ### 1. Prepare the server
 
-Install Docker Engine with the Compose v2 plugin, Git, and a host backup destination with sufficient free space. Keep the repository in a dedicated directory. Configure a firewall so PostgreSQL is not exposed publicly. The API is bound to loopback by default and should be exposed through a TLS reverse proxy if external HTTP access is required.
+Install Docker Engine with the Compose v2 plugin and prepare a host backup destination with sufficient free space. The server does not need Git, Go, Node.js or application source code. Download the `foundry-marches-deployment-bundle` artifact from the successful `Publish production images` workflow, transfer it to the server and unpack it under `/opt/foundry-marches`. The bundle contains only Compose files, database bootstrap/migration SQL, the backup script and this runbook. If the GHCR packages are private (the default), authenticate once using a GitHub token with read-only `read:packages` permission: run `docker login ghcr.io -u YOUR_GITHUB_LOGIN` and enter the token at the password prompt. Do not put the token in a command argument or commit it. Configure the host so PostgreSQL is not exposed publicly. The API is bound to loopback by default; do not add a public reverse-proxy route unless external HTTP access is explicitly required.
 
 ### 2. Configure production
 
-Copy `.env.prod.example` to `.env.prod`, replace every placeholder, and set the real production Foundry world UUID, Relay credentials, production Discord application token/application ID/guild ID, private admin channel, campaign role and trusted admin IDs.
+Copy `.env.prod.example` to `.env.prod`, replace every placeholder, and set the real production Foundry world UUID, production-scoped Relay credentials, production Discord application token/application ID/guild ID, private admin channel, campaign role and trusted admin IDs. Set `FOUNDRY_MARCHES_VERSION` to the immutable `sha-xxxxxxx` image tag from that workflow run's commit. Keep `.env.prod` readable only by root (for example, `chmod 600 .env.prod`).
 
 The production Discord bot must be invited to the production guild with only the permissions it needs: View Channels, Send Messages, Embed Links, Use Application Commands, and Manage Roles only if it assigns the campaign role. Place its role above the campaign role it must grant. Restrict the admin audit channel to trusted masters and the bot.
 
 ### 3. Validate Compose configuration
 
-From the repository root:
+From `/opt/foundry-marches`:
 
 ```sh
 docker compose --env-file .env.prod -p foundry-marches-prod \
@@ -147,13 +146,16 @@ docker compose --env-file .env.prod -p foundry-marches-prod \
   < docs/database/migrations/0004_foundry_sync_runs.sql
 ```
 
-Both migrations are designed to be safe to re-run. Do not reinitialize the database, remove its volume, or run `docker compose down -v`.
+These migrations are designed to be safe to re-run. Do not reinitialize the database, remove its volume, or run `docker compose down -v`. The deployment bundle keeps the required SQL files on the host; it does not contain Go source or build tooling.
 
 ### 5. Start production services
 
 ```sh
 docker compose --env-file .env.prod -p foundry-marches-prod \
-  -f compose.yaml -f compose.production.yaml up -d --build
+  -f compose.yaml -f compose.production.yaml pull
+
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml up -d
 
 docker compose --env-file .env.prod -p foundry-marches-prod \
   -f compose.yaml -f compose.production.yaml ps
@@ -168,23 +170,11 @@ docker compose --env-file .env.prod -p foundry-marches-prod \
 
 The API must become healthy. The bot should report a successful Discord connection and command registration. The API performs the first world sync immediately after startup; check the API log for its report. Then run `/integration-status` and `/foundry-sync` in Discord as a GM to verify the production path.
 
-### 6. Start development independently
-
-Use a separate test Discord application and test guild. Configure `.env.dev` with `COMPOSE_PROJECT_NAME=foundry-marches-dev`, `APP_ENV=development`, a distinct set of tokens and the test guild ID:
-
-```sh
-docker compose --env-file .env.dev -p foundry-marches-dev \
-  -f compose.yaml up -d --build
-
-docker compose --env-file .env.dev -p foundry-marches-dev \
-  -f compose.yaml ps
-```
-
-Development does not load the production Compose hardening overlay. It still has its own PostgreSQL volume and network. Keep development data disposable, but never delete production volumes as part of development cleanup.
+Development runs on the developer's workstation using the local source tree and `.env.dev`; it is not deployed to the production server. Keep its Discord application, Relay key, database and service tokens separate from production. The development workflow remains a local `docker compose ... build` workflow and does not use the production overlay.
 
 ## Backups
 
-The repository includes `scripts/backup-postgres.sh`. It creates a PostgreSQL custom-format dump, verifies that the archive can be listed, writes a SHA-256 checksum, and applies a configurable local retention period.
+The deployment bundle includes `scripts/backup-postgres.sh`. It creates a PostgreSQL custom-format dump, verifies that the archive can be listed, writes a SHA-256 checksum, and applies a configurable local retention period.
 
 Run manually:
 
