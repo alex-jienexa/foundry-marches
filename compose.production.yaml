@@ -28,7 +28,7 @@ services:
 
   api:
     image: ghcr.io/alex-jienexa/foundry-marches-api:${FOUNDRY_MARCHES_VERSION:?Set FOUNDRY_MARCHES_VERSION in .env.prod}
-    build: null
+    build: !reset null
     pull_policy: always
     environment:
       DISCORD_ADMIN_USER_IDS: ${DISCORD_ADMIN_USER_IDS:?Set DISCORD_ADMIN_USER_IDS in .env.prod}
