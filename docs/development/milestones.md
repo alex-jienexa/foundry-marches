@@ -1,15 +1,17 @@
 # Контрольные точки 0–11
 
-Это индекс к [полному плану](roadmap.md), не урезанный scope. Все 12 этапов сохранены. Даты/сроки не назначены; «1–2 дня» — оценка исходного спайка, не обязательство. Этапы 0–2 частично выполнены, но ни один из них не закрыт целиком. Этапы 3–11 не начаты. Проверка baseline БД не закрывает этап 1.
+Это индекс к [полному плану](roadmap.md), не урезанный scope. Все 12 этапов сохранены. Даты/сроки не назначены; «1–2 дня» — оценка исходного спайка, не обязательство. Этапы 0–2 остаются частично выполненными: текущая реализация и работающий Production не заменяют полного acceptance каждого этапа. Этапы 3–11 остаются в backlog.
 
-## Сводка на 2026-11-18
+## Сводка на 2026-11-25
 
-- **Этап 0 — частично выполнен:** self-hosted Relay 3.4.1 развёрнут и спарен; read-only Foundry REST smoke test и последующая синхронизация мира подтверждены. Получены 11 Actor snapshots. WebDAV, Campaign Codex, SSE/headless session и usage/quota остаются незавершёнными.
-- **Этап 1 — частично выполнен:** Go API bootstrap, PostgreSQL/Compose, health check и базовые CI jobs существуют. Discord OAuth, сессии, RBAC, аудит, миграции и backup/restore не завершены.
-- **Этап 2 — частично выполнен:** Relay adapter, PF2e decoder/calculator, Actor snapshot persistence и sync реализованы. 11 Actor пока `snapshot_only`, `character_id` не назначен. Явная привязка, approval и остальные acceptance criteria не выполнены.
-- **Этапы 3–11 — не начаты.**
+- **Операционная веха Production deployment достигнута:** отдельные API, Discord bot и PostgreSQL; независимый Production volume; API только на loopback; GHCR images опубликованы по SHA; bot подключён; PostgreSQL, Relay и Foundry доступны; обнаружено 18 Actor; фоновая синхронизация включена; `/livez` и `/readyz` вернули HTTP 200. Подробности и границы проверки: [веха первого Production deployment](milestone-production-deployment.md).
+- **Инженерный процесс:** Conventional Commits 1.0.0 закреплён как обязательная политика; автоматическая генерация release notes и CD ещё не реализованы.
+- **Этап 0 — частично выполнен:** Relay и read-only world sync подтверждены. WebDAV ETag/If-Match, Campaign Codex, SSE/headless session и usage/quota остаются незавершёнными.
+- **Этап 1 — частично выполнен:** API, PostgreSQL, Compose, health checks, CI, Discord bot identity/RBAC и Production deployment существуют. Полный backup/restore drill, аудит по полному acceptance и другие требования этапа требуют проверки/доработки.
+- **Этап 2 — частично выполнен:** Relay adapter, PF2e decoder/calculator, Actor snapshots, persistence, world sync, Discord registration/RBAC и явная привязка Actor реализованы. Полный approval/ownership flow, NPC lifecycle, job/retry model и полный acceptance ещё не закрыты.
+- **Этапы 3–11 — не начаты как полные продуктовые этапы.** Следующие небольшие продуктовые задачи (NPC webhook-представление и поиск Foundry items) могут быть выделены отдельно, не объявляя соответствующие этапы закрытыми.
 
-Статусы отражают текущую ветку разработки; подробные фактические проверки и ограничения см. в [verification](../verification.md).
+Статусы отражают подтверждённые результаты владельца на указанную дату. Production smoke checks не являются полным тестированием отказоустойчивости, backup/restore или всех acceptance criteria.
 
 ## 0. Спайк (1–2 дня)
 
