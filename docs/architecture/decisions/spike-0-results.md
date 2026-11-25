@@ -24,7 +24,7 @@ WebDAV, ETag/If-Match, Obsidian и Campaign Codex / Foundry journals перен�
 | Relay client permissions by implementation | **PASS** | Go client содержит GET/read операции; write methods отсутствуют |
 | Actor listing ceiling | **DOCUMENTED** | Лимит 500; достижение лимита приводит к ошибке, чтобы не допустить молчаливую неполную синхронизацию |
 | SSE/hooks | **NOT VERIFIED** | Нужен end-to-end тест доставки события |
-| Headless session | **NOT VERIFIED** | Наличие настройки ALLOW_HEADLESS не доказывает рабочий lifecycle; проверить необходимость для фоновой модели |
+| Headless session | **PARTIAL** | На 2026-11-25 Chromium headless с тем же постоянным профилем автоматически открыл Foundry 14.367 / PF2e и подключился к миру `westmarches`; Production Relay подтвердил `Chrome on Linux` с прежним `clientId`. Автоматический Join Game и запуск подтверждены. Перезапуск контейнера в headless и полный lifecycle/recovery ещё не проверены; Xvfb/VNC/Fluxbox пока оставлены |
 | Usage/quota | **PARTIAL** | Конфигурация global monthly limit известна из deployment notes, но per-key limits/counters и runtime behavior требуют проверки |
 | Active API key scopes | **NOT VERIFIED** | Нужно проверить фактический ключ приложения и оставить только необходимые read scopes |
 
@@ -34,7 +34,7 @@ WebDAV, ETag/If-Match, Obsidian и Campaign Codex / Foundry journals перен�
 
 1. Проверить scopes фактически активного Production API key. Обычный ключ приложения должен содержать только необходимые read scopes. Любые write scopes (entity:write, chat:write, roll:execute, file:write, structure:write и аналогичные) должны быть удалены из обычного ключа. Перед отзывом старого ключа безопасно заменить его и подтвердить работу Production.
 2. Проверить SSE end-to-end: подписаться на событие, вручную изменить disposable Actor через Foundry UI, получить событие и проверить восстановление подписки. Не использовать Relay write endpoints.
-3. Проверить headless session lifecycle только если headless необходим для текущей модели фоновой синхронизации. Иначе документировать, что используется постоянное подключение GM client и headless не является эксплуатационным требованием.
+3. Завершить проверку headless session lifecycle для выбранной unattended-модели постоянного GM client: повторить restart контейнера уже в headless и подтвердить автоматическое восстановление WebSocket-соединения. После успешной проверки удалить неиспользуемые Xvfb/VNC/Fluxbox и публикацию VNC-порта; до этого оставить графические компоненты как rollback path. Первоначальный headless start/Join Game/Relay connect уже подтверждён.
 4. Проверить фактические global/per-minute limits, индивидуальные лимиты ключей и usage counters без нагрузочного тестирования Production.
 5. Зафиксировать точные версии, безопасные команды и фактические результаты. Секреты, API keys, cookies и содержимое env-файлов в отчёт не включать.
 
