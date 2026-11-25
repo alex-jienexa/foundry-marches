@@ -1,6 +1,6 @@
 # Production operations
 
-This document describes the operational model for the API, Discord bot, Foundry Relay and PostgreSQL. The application remains read-only with respect to Foundry Actor documents: background sync reads Actor snapshots and stores them in PostgreSQL; it never writes to Foundry.
+This document describes the operational model for the API, Discord bot, Foundry Relay and PostgreSQL. Background synchronization reads Foundry Actor snapshots into PostgreSQL. The approved architecture also permits narrowly scoped Foundry write operations initiated by an authenticated Master; those operations must pass backend authorization, campaign-level access checks, validation, audit logging and post-write verification. Players and browser clients never receive Relay credentials or direct write access. Do not treat Relay write scopes as authorization to expose arbitrary document mutations.
 
 ## Environment isolation: development and production
 
@@ -50,7 +50,7 @@ The in-memory mutex inside the sync service is still useful within one process; 
 
 ### Integration job queue boundary
 
-The database schema contains a generic `integration_jobs` queue for future Foundry operations. This deployment does **not** start a worker for that queue. The current integration contract is read-only, while some queued job kinds (for example granting an Item) would write to Foundry. Do not enable a generic worker until the project explicitly approves a write-capable Foundry integration, idempotency rules, failure compensation and operator review. The scheduled Actor snapshot refresh is the active background worker at this stage.
+The database schema contains a generic `integration_jobs` queue for future Foundry operations. This deployment does **not** start a worker for that queue. Master-authorized Foundry writes are part of the approved target architecture, but the individual mutation handlers, campaign-level authorization, idempotency rules, failure handling, audit trail and post-write verification must be implemented and tested before enabling any write-capable worker or exposing mutation controls in Discord/web UI. Never pass arbitrary client-supplied Relay paths or payloads through to Foundry. The scheduled Actor snapshot refresh is the active background worker at this stage.
 
 ## Health and monitoring
 
@@ -111,7 +111,9 @@ Install Docker Engine with the Compose v2 plugin and prepare a host backup desti
 sudo mkdir -p /opt/foundry-marches
 sudo tar -xzf foundry-marches-deployment-bundle.tar.gz -C /opt/foundry-marches
 cd /opt/foundry-marches
-``` If the GHCR packages are private (the default), authenticate once using a GitHub token with read-only `read:packages` permission: run `docker login ghcr.io -u YOUR_GITHUB_LOGIN` and enter the token at the password prompt. Do not put the token in a command argument or commit it. Configure the host so PostgreSQL is not exposed publicly. The API is bound to loopback by default; do not add a public reverse-proxy route unless external HTTP access is explicitly required.
+```
+
+If the GHCR packages are private (the default), authenticate once using a GitHub token with read-only `read:packages` permission: run `docker login ghcr.io -u YOUR_GITHUB_LOGIN` and enter the token at the password prompt. Do not put the token in a command argument or commit it. Configure the host so PostgreSQL is not exposed publicly. The API is bound to loopback by default; do not add a public reverse-proxy route unless external HTTP access is explicitly required.
 
 ### 2. Configure production
 
@@ -234,6 +236,6 @@ Never use `docker compose down -v`, `docker volume rm`, or database drop/recreat
 
 - Automatic sync is periodic and full-world, not incremental. Tune the interval to the world size and Relay capacity; do not set it below 30 seconds.
 - Each scheduled or manual sync is recorded in `foundry_sync_runs` with status, timestamps, counts, error text and the structured report. The latest 20 runs are available through `GET /api/internal/discord/sync-history`, protected by `DISCORD_BOT_API_TOKEN`. Metrics are not yet exported to Prometheus.
-- There is no generic integration queue worker by design while Foundry writes are prohibited.
+- There is no generic integration queue worker yet. Master-authorized writes are approved as a future capability, but must not be enabled until the mutation and authorization safeguards above are implemented.
 - Backups are initiated by the host scheduler, not by an in-process goroutine.
 - Production deployment still requires a real TLS reverse proxy, off-host backup storage, host monitoring and a rehearsed restore procedure. Compose alone does not provide those external services.
