@@ -27,7 +27,7 @@
 | API: что определено, а что нет | [api/README.md](api/README.md) |
 | Оригиналы, хэши и карта переноса | [reference/README.md](reference/README.md) |
 | Анализ PAD и внесённые изменения | [repository-analysis.md](repository-analysis.md) |
-| Реальные результаты проверок | [verification.md](verification.md) |
+| Реальные результаты проверок | [verification.md](verification.md), [Production smoke checks 2026-11-25](verification/production-2026-11-25.md) |
 
 ## Диаграммы (проектное решение, не запущенная система)
 
