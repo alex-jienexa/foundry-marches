@@ -69,7 +69,8 @@ The production overlay applies additional restrictions to the API and Discord bo
 - Both application images run as the unprivileged `app` user defined by their Dockerfiles.
 - The API and bot root filesystems are read-only; writable temporary files are limited to bounded `/tmp` tmpfs mounts.
 - Linux capabilities are dropped, privilege escalation is disabled, and process-count limits are applied through Compose deploy resource limits.
-- CPU and memory limits are set for all three services; container logs use Docker's rotating local logging driver.
+- CPU limits are 0.50 for PostgreSQL, 0.75 for the API and 0.25 for the bot. Memory limits are 512 MiB, 384 MiB and 192 MiB respectively (1,088 MiB total), leaving host memory for Ubuntu, Docker and filesystem cache on the 1.9 GiB production host. PostgreSQL is tuned for this footprint with 128 MiB shared buffers, 4 MiB work memory and 30 maximum connections. Monitor actual usage and OOM events after launch; increase limits only after measuring available host memory.
+- Container logs use Docker's rotating local logging driver.
 - PostgreSQL data remains in its persistent named volume. The database is not exposed on a host port.
 
 These controls reduce the impact of a compromised application container; they do not replace host patching, firewall policy, secret rotation or external monitoring.
@@ -104,7 +105,13 @@ Do not treat a successful image build as proof of runtime connectivity. Verify r
 
 ### 1. Prepare the server
 
-Install Docker Engine with the Compose v2 plugin and prepare a host backup destination with sufficient free space. The server does not need Git, Go, Node.js or application source code. Download the `foundry-marches-deployment-bundle` artifact from the successful `Publish production images` workflow, transfer it to the server and unpack it under `/opt/foundry-marches`. The bundle contains only Compose files, database bootstrap/migration SQL, the backup script and this runbook. If the GHCR packages are private (the default), authenticate once using a GitHub token with read-only `read:packages` permission: run `docker login ghcr.io -u YOUR_GITHUB_LOGIN` and enter the token at the password prompt. Do not put the token in a command argument or commit it. Configure the host so PostgreSQL is not exposed publicly. The API is bound to loopback by default; do not add a public reverse-proxy route unless external HTTP access is explicitly required.
+Install Docker Engine with the Compose v2 plugin and prepare a host backup destination with sufficient free space. The server does not need Git, Go, Node.js or application source code. Download the `foundry-marches-deployment-bundle` artifact from the successful `Publish production images` workflow, extract the tarball from the downloaded artifact archive, transfer it to the server and unpack it under `/opt/foundry-marches`. The bundle contains only Compose files, database bootstrap/migration SQL, the backup script and this runbook. For example:
+
+```sh
+sudo mkdir -p /opt/foundry-marches
+sudo tar -xzf foundry-marches-deployment-bundle.tar.gz -C /opt/foundry-marches
+cd /opt/foundry-marches
+``` If the GHCR packages are private (the default), authenticate once using a GitHub token with read-only `read:packages` permission: run `docker login ghcr.io -u YOUR_GITHUB_LOGIN` and enter the token at the password prompt. Do not put the token in a command argument or commit it. Configure the host so PostgreSQL is not exposed publicly. The API is bound to loopback by default; do not add a public reverse-proxy route unless external HTTP access is explicitly required.
 
 ### 2. Configure production
 
