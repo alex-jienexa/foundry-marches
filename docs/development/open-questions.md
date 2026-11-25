@@ -57,3 +57,11 @@ World sync выполнен: 11 Actor snapshots сохранены; все за�
 - Тестирование отказа Relay, retry и восстановления синхронизации.
 
 Отсутствующее исходное ТЗ v1.0 и два дополнения остаются пробелом исходных материалов; не реконструировать их требования по догадкам.
+
+### Discord identity и привязка Foundry Actor — решение от 2026-11-18
+
+Пользователь подтвердил Discord как основной интерфейс, один разрешённый сервер, регистрацию всех его участников и гибридную RBAC-модель. Для bot-only сценария браузерные Discord OAuth2 и web sessions не нужны.
+
+Реализован внутренний API boundary: отдельный `DISCORD_BOT_API_TOKEN` (не совпадает с `FOUNDRY_SYNC_API_TOKEN`) защищает bot-to-backend запросы; бот берёт Discord user ID, guild ID и member role IDs из аутентифицированного Gateway interaction; backend независимо проверяет guild allow-list, зарегистрированную учётную запись и permission. Роли приложения и их permissions хранятся в PostgreSQL; Discord role mapping вычисляется на каждом запросе. Регистрация доступна участникам настроенного сервера, по умолчанию назначает `player`; доверенные Discord IDs из `DISCORD_ADMIN_USER_IDS` получают `owner`.
+
+Endpoint привязки теперь реализован под внутренним bot API и требует `foundry.manage`. Он использует текущий `FoundryRepository.LinkActor`, сохраняет аудит, не создаёт персонажей, не назначает владельца и не меняет Foundry Actor. Остаются отдельными задачами browser OAuth/session (если появится web UX), подтверждение владения игроком, создание/одобрение персонажа и полный approval lifecycle.

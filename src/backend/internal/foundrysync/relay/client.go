@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,6 +82,32 @@ func NewClient(config Config) (*Client, error) {
 	}, nil
 }
 
+// PingRelay checks that the configured Relay HTTP service responds.
+// A 404 at the base path still proves that the HTTP service is reachable; 5xx
+// responses and authentication failures are reported as unhealthy.
+func (c *Client) PingRelay(ctx context.Context) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL.String(), nil)
+	if err != nil {
+		return fmt.Errorf("create Foundry Relay health request: %w", err)
+	}
+	request.Header.Set("x-api-key", c.apiKey)
+	request.Header.Set("Accept", "application/json")
+
+	response, err := c.httpClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("reach Foundry Relay: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("Foundry Relay rejected the configured API key: HTTP %d", response.StatusCode)
+	}
+	if response.StatusCode >= http.StatusInternalServerError {
+		return fmt.Errorf("Foundry Relay returned HTTP %d", response.StatusCode)
+	}
+	return nil
+}
+
 // GetActorSnapshot retrieves and validates a complete Actor document.
 // The returned bytes are the Actor JSON itself, not the Relay response envelope.
 func (c *Client) GetActorSnapshot(ctx context.Context, worldID, actorUUID string) ([]byte, error) {
@@ -129,30 +156,80 @@ func (c *Client) getDocument(ctx context.Context, uuid string) ([]byte, error) {
 	query.Set("clientId", c.clientID)
 	endpoint.RawQuery = query.Encode()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("create Foundry Relay request: %w", err)
-	}
-	request.Header.Set("x-api-key", c.apiKey)
-	request.Header.Set("Accept", "application/json")
+	const maxAttempts = 3
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("create Foundry Relay request: %w", err)
+		}
+		request.Header.Set("x-api-key", c.apiKey)
+		request.Header.Set("Accept", "application/json")
 
-	response, err := c.httpClient.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("request Foundry Relay document %q: %w", uuid, err)
-	}
-	defer response.Body.Close()
+		response, err := c.httpClient.Do(request)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			if attempt == maxAttempts-1 {
+				return nil, fmt.Errorf("request Foundry Relay document %q: %w", uuid, err)
+			}
+			if err := waitForRetry(ctx, attempt, ""); err != nil {
+				return nil, err
+			}
+			continue
+		}
 
-	body, err := io.ReadAll(io.LimitReader(response.Body, c.maxResponseBytes+1))
-	if err != nil {
-		return nil, fmt.Errorf("read Foundry Relay response: %w", err)
+		body, readErr := io.ReadAll(io.LimitReader(response.Body, c.maxResponseBytes+1))
+		retryableStatus := response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= http.StatusInternalServerError
+		retryAfter := response.Header.Get("Retry-After")
+		_ = response.Body.Close()
+
+		if readErr != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			if attempt == maxAttempts-1 {
+				return nil, fmt.Errorf("read Foundry Relay response: %w", readErr)
+			}
+			if err := waitForRetry(ctx, attempt, ""); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if int64(len(body)) > c.maxResponseBytes {
+			return nil, ErrResponseTooLarge
+		}
+		if retryableStatus && attempt < maxAttempts-1 {
+			if err := waitForRetry(ctx, attempt, retryAfter); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+			return nil, fmt.Errorf("%w: HTTP %d", ErrUnexpectedStatus, response.StatusCode)
+		}
+		return body, nil
 	}
-	if int64(len(body)) > c.maxResponseBytes {
-		return nil, ErrResponseTooLarge
+	return nil, fmt.Errorf("request Foundry Relay document %q: retry limit reached", uuid)
+}
+
+func waitForRetry(ctx context.Context, attempt int, retryAfter string) error {
+	delay := time.Duration(250*(1<<attempt)) * time.Millisecond
+	if seconds, err := strconv.Atoi(strings.TrimSpace(retryAfter)); err == nil && seconds >= 0 && seconds <= 5 {
+		delay = time.Duration(seconds) * time.Second
+	} else if retryAt, err := http.ParseTime(retryAfter); err == nil {
+		if until := time.Until(retryAt); until >= 0 && until <= 5*time.Second {
+			delay = until
+		}
 	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: HTTP %d", ErrUnexpectedStatus, response.StatusCode)
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
-	return body, nil
 }
 
 var _ calculator.CompendiumItemResolver = (*Client)(nil)

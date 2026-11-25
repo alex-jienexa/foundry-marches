@@ -1,0 +1,241 @@
+# Production operations
+
+This document describes the operational model for the API, Discord bot, Foundry Relay and PostgreSQL. Background synchronization reads Foundry Actor snapshots into PostgreSQL. The approved architecture also permits narrowly scoped Foundry write operations initiated by an authenticated Master; those operations must pass backend authorization, campaign-level access checks, validation, audit logging and post-write verification. Players and browser clients never receive Relay credentials or direct write access. Do not treat Relay write scopes as authorization to expose arbitrary document mutations.
+
+## Environment isolation: development and production
+
+Development runs on the developer's workstation; production runs on the server. They are separate API processes with separate databases, Discord applications and Relay API keys. Both may connect to the same Relay URL and Foundry World concurrently, subject to the Relay instance's client/key scopes and rate limits.
+
+| Setting | Development | Production |
+|---|---|---|
+| Runtime | Developer workstation | Production server |
+| Environment file | `.env.dev` | `.env.prod` |
+| Discord application/bot | Dedicated test application | Dedicated production application |
+| Discord guild | Test server | Campaign server |
+| PostgreSQL | Local development database | Dedicated production container and volume |
+| API host port | 8080 by default | 8081 by default |
+| Images | Built locally from source | Pulled from GHCR by immutable commit tag |
+
+Do not point the development bot at the production API token, production guild, or production database. The two API instances use independent PostgreSQL databases, so their session advisory locks and sync histories are independent. Do not reuse Relay API keys between environments: create separate scoped keys in the Relay administration panel and restrict each to the intended client/world where the Relay version supports it.
+
+The production project starts with its own database volume; it does not copy data from the development project. If the existing local database contains campaign data that must become production data, do not assume that creating `.env.prod` migrates it. Take a verified backup and plan an explicit import into the new production volume, with a restore rehearsal first. This runbook intentionally does not automate a destructive database replacement or use `pg_restore --clean`.
+
+The development template is `.env.example`; the production template is `.env.prod.example`. Copy the development template to an ignored local file. Keep the existing local development Compose project name if its current database volume must remain attached; changing a project name creates a different named volume.
+
+```sh
+cp .env.example .env.dev
+chmod 600 .env.dev
+```
+
+Generate independent secrets for every environment. For example:
+
+```sh
+openssl rand -hex 32
+```
+
+Use separate values for `POSTGRES_PASSWORD`, `POSTGRES_APP_PASSWORD`, `FOUNDRY_SYNC_API_TOKEN`, and `DISCORD_BOT_API_TOKEN`. The two service tokens must differ. Never commit environment files or send secrets in chat. On an already initialized PostgreSQL volume, changing `POSTGRES_APP_PASSWORD` in the environment file does not automatically change the existing `foundry_api` database role password; rotate the database role and application environment together using a controlled maintenance procedure.
+
+## Background Foundry synchronization
+
+The API owns automatic synchronization. The Discord bot no longer starts a competing sync during its own startup.
+
+- The API runs one initial sync after startup, then repeats it every `FOUNDRY_SYNC_INTERVAL_SECONDS` (default 300 seconds; allowed range 30–86400).
+- Set `FOUNDRY_SYNC_ENABLED=false` to disable only the scheduled sync. The authorized manual `/foundry-sync` command and sync HTTP endpoint remain available.
+- A PostgreSQL session-level advisory lock serializes scheduled and manual syncs across API replicas. The runner holds a dedicated database connection for the full sync and explicitly releases the lock before returning the connection to the pool. If the process or connection dies, PostgreSQL releases the session lock automatically.
+- Individual Actor fetch failures are recorded in the sync report; one failed Actor does not abort the entire world refresh.
+- The Relay Actor-search and Actor-document requests used by sync retry transient network/read failures, HTTP 429 and HTTP 5xx responses up to three attempts with a bounded delay. Non-retryable client errors are returned immediately.
+- API and bot handle SIGINT/SIGTERM and attempt graceful shutdown.
+
+The in-memory mutex inside the sync service is still useful within one process; the PostgreSQL advisory lock provides cross-process coordination. If PostgreSQL is unavailable, sync cannot acquire its lock and will fail safely rather than running without coordination.
+
+### Integration job queue boundary
+
+The database schema contains a generic `integration_jobs` queue for future Foundry operations. This deployment does **not** start a worker for that queue. Master-authorized Foundry writes are part of the approved target architecture, but the individual mutation handlers, campaign-level authorization, idempotency rules, failure handling, audit trail and post-write verification must be implemented and tested before enabling any write-capable worker or exposing mutation controls in Discord/web UI. Never pass arbitrary client-supplied Relay paths or payloads through to Foundry. The scheduled Actor snapshot refresh is the active background worker at this stage.
+
+## Health and monitoring
+
+- `GET /livez`: API process liveness; it does not depend on PostgreSQL or Foundry.
+- `GET /readyz`: API readiness; verifies PostgreSQL connectivity.
+- `GET /healthz`: compatibility alias for readiness, used by older deployment checks.
+- `/integration-status` in Discord checks PostgreSQL, Relay HTTP reachability and an authenticated Foundry Actor listing.
+- When `DISCORD_ADMIN_CHANNEL_ID` is configured, the bot periodically checks integrations and posts state changes and rate-limited command errors to the private admin channel.
+
+Foundry/Relay outages do not make the API unready: existing synchronized character data remains available while the source is temporarily offline. Monitor Relay and Foundry using `/integration-status` and the private admin channel.
+
+## Container hardening
+
+The production overlay applies additional restrictions to the API and Discord bot:
+
+- Both application images run as the unprivileged `app` user defined by their Dockerfiles.
+- The API and bot root filesystems are read-only; writable temporary files are limited to bounded `/tmp` tmpfs mounts.
+- Linux capabilities are dropped, privilege escalation is disabled, and process-count limits are applied through Compose deploy resource limits.
+- CPU limits are 0.50 for PostgreSQL, 0.75 for the API and 0.25 for the bot. Memory limits are 512 MiB, 384 MiB and 192 MiB respectively (1,088 MiB total), leaving host memory for Ubuntu, Docker and filesystem cache on the 1.9 GiB production host. PostgreSQL is tuned for this footprint with 128 MiB shared buffers, 4 MiB work memory and 30 maximum connections. Monitor actual usage and OOM events after launch; increase limits only after measuring available host memory.
+- Container logs use Docker's rotating local logging driver.
+- PostgreSQL data remains in its persistent named volume. The database is not exposed on a host port.
+
+These controls reduce the impact of a compromised application container; they do not replace host patching, firewall policy, secret rotation or external monitoring.
+
+## Pre-deployment validation
+
+GitHub Actions validates documentation and generated database projections, Go formatting/tests/vet, baseline SQL and concurrency checks, migrations and PostgreSQL integration tests on PostgreSQL 15, 16 and 18. It validates development and production Compose configurations, builds development images, verifies that the production Compose overlay resolves to GHCR images without build contexts, and publishes linux/amd64 API and bot images from `main` or version tags. A successful CI run and successful image-publishing workflow are required before deployment.
+
+Before merging or deploying, run the backend checks from the repository root:
+
+```sh
+cd src/backend
+test -z "$(gofmt -l .)"
+go test ./...
+go vet ./...
+go build ./cmd/foundry-api ./cmd/discord-bot
+cd ../..
+```
+
+Validate the development Compose configuration and build both images before testing the bot in the development guild:
+
+```sh
+docker compose --env-file .env.dev -p foundry-marches-dev \
+  -f compose.yaml config --quiet
+docker compose --env-file .env.dev -p foundry-marches-dev \
+  -f compose.yaml build
+```
+
+Do not treat a successful image build as proof of runtime connectivity. Verify registration, character lookup, manual sync, automatic sync logs and the private audit channel in the development guild.
+
+## First deployment
+
+### 1. Prepare the server
+
+Install Docker Engine with the Compose v2 plugin and prepare a host backup destination with sufficient free space. The server does not need Git, Go, Node.js or application source code. Download the `foundry-marches-deployment-bundle` artifact from the successful `Publish production images` workflow, extract the tarball from the downloaded artifact archive, transfer it to the server and unpack it under `/opt/foundry-marches`. The bundle contains only Compose files, database bootstrap/migration SQL, the backup script and this runbook. For example:
+
+```sh
+sudo mkdir -p /opt/foundry-marches
+sudo tar -xzf foundry-marches-deployment-bundle.tar.gz -C /opt/foundry-marches
+cd /opt/foundry-marches
+```
+
+If the GHCR packages are private (the default), authenticate once using a GitHub token with read-only `read:packages` permission: run `docker login ghcr.io -u YOUR_GITHUB_LOGIN` and enter the token at the password prompt. Do not put the token in a command argument or commit it. Configure the host so PostgreSQL is not exposed publicly. The API is bound to loopback by default; do not add a public reverse-proxy route unless external HTTP access is explicitly required.
+
+### 2. Configure production
+
+Copy `.env.prod.example` to `.env.prod`, replace every placeholder, and set the real production Foundry world UUID, production-scoped Relay credentials, production Discord application token/application ID/guild ID, private admin channel, campaign role and trusted admin IDs. Set `FOUNDRY_MARCHES_VERSION` to the immutable `sha-xxxxxxx` image tag from that workflow run's commit. Keep `.env.prod` readable only by root (for example, `chmod 600 .env.prod`).
+
+The production Discord bot must be invited to the production guild with only the permissions it needs: View Channels, Send Messages, Embed Links, Use Application Commands, and Manage Roles only if it assigns the campaign role. Place its role above the campaign role it must grant. Restrict the admin audit channel to trusted masters and the bot.
+
+### 3. Validate Compose configuration
+
+From `/opt/foundry-marches`:
+
+```sh
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml config --quiet
+```
+
+Do not paste rendered Compose configuration into public logs: it may contain interpolated secrets.
+
+### 4. Existing database versus fresh installation
+
+For a fresh PostgreSQL volume, Compose mounts the baseline schema, bootstrap script, and migrations 0002/0003/0004 into `/docker-entrypoint-initdb.d`. PostgreSQL executes these only during first initialization.
+
+For an existing database, take a backup first, then apply the incremental migrations in order if they have not already been applied:
+
+```sh
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml exec -T postgres \
+  psql -X -v ON_ERROR_STOP=1 -U foundry_admin -d foundry_marches \
+  < docs/database/migrations/0002_discord_bot_auth.sql
+
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml exec -T postgres \
+  psql -X -v ON_ERROR_STOP=1 -U foundry_admin -d foundry_marches \
+  < docs/database/migrations/0003_discord_character_self_connect.sql
+
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml exec -T postgres \
+  psql -X -v ON_ERROR_STOP=1 -U foundry_admin -d foundry_marches \
+  < docs/database/migrations/0004_foundry_sync_runs.sql
+```
+
+These migrations are designed to be safe to re-run. Do not reinitialize the database, remove its volume, or run `docker compose down -v`. The deployment bundle keeps the required SQL files on the host; it does not contain Go source or build tooling.
+
+### 5. Start production services
+
+```sh
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml pull
+
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml up -d
+
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml ps
+```
+
+Inspect logs:
+
+```sh
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml logs --tail=100 api discord-bot postgres
+```
+
+The API must become healthy. The bot should report a successful Discord connection and command registration. The API performs the first world sync immediately after startup; check the API log for its report. Then run `/integration-status` and `/foundry-sync` in Discord as a GM to verify the production path.
+
+Development runs on the developer's workstation using the local source tree and `.env.dev`; it is not deployed to the production server. Keep its Discord application, Relay key, database and service tokens separate from production. The development workflow remains a local `docker compose ... build` workflow and does not use the production overlay.
+
+## Backups
+
+The deployment bundle includes `scripts/backup-postgres.sh`. It creates a PostgreSQL custom-format dump, verifies that the archive can be listed, writes a SHA-256 checksum, and applies a configurable local retention period.
+
+Run manually:
+
+```sh
+ENV_FILE=.env.prod RETENTION_DAYS=30 bash scripts/backup-postgres.sh
+```
+
+The default backup directory is `backups/`, which is ignored by Git. Protect it with host filesystem permissions and copy backups off the server to independent storage. A backup stored only on the same server is not disaster recovery.
+
+Schedule the script with the host's cron or systemd timer, for example daily at 03:15:
+
+```cron
+15 3 * * * cd /opt/foundry-marches && ENV_FILE=.env.prod RETENTION_DAYS=30 bash scripts/backup-postgres.sh >> /var/log/foundry-marches-backup.log 2>&1
+```
+
+Ensure the backup destination has enough free space and monitor failures. Retention only deletes matching old dump files inside the configured backup directory; it does not touch Docker volumes.
+
+### Restore rehearsal
+
+Do not test restore against the live production database. Create a separate temporary database on the production PostgreSQL instance or, preferably, an isolated recovery instance:
+
+```sh
+docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml exec postgres \
+  createdb -U foundry_admin foundry_marches_restore_check
+
+cat backups/foundry_marches_YYYYMMDDTHHMMSSZ.dump | \
+  docker compose --env-file .env.prod -p foundry-marches-prod \
+  -f compose.yaml -f compose.production.yaml exec -T postgres \
+  pg_restore -U foundry_admin -d foundry_marches_restore_check --no-owner
+```
+
+Validate the restored schema and representative records before considering the backup process proven. Remove only the explicitly named temporary restore-check database after the rehearsal is complete; never substitute the production database name in cleanup commands.
+
+## Updating production
+
+1. Verify the change in the development Compose project and test guild.
+2. Merge the reviewed change into `main` through the normal PR process.
+3. Wait for the successful `Publish production images` workflow. Download its deployment-bundle artifact and transfer it to the server; unpack it over the existing deployment files without touching `.env.prod` or the `backups/` directory.
+4. Update `FOUNDRY_MARCHES_VERSION` in `.env.prod` to the immutable `sha-xxxxxxx` tag corresponding to that workflow run's commit.
+5. Create and verify a fresh PostgreSQL backup.
+6. Review new migrations; apply them in order before starting code that depends on them.
+7. Validate Compose configuration, pull the pinned images, then run `up -d`.
+8. Check container health, logs, `/integration-status`, character roster, and one manual sync.
+9. Keep the previous image tag and verified backup available until the new deployment is accepted.
+
+Never use `docker compose down -v`, `docker volume rm`, or database drop/recreate commands as an update or troubleshooting step.
+
+## Operational limits and future work
+
+- Automatic sync is periodic and full-world, not incremental. Tune the interval to the world size and Relay capacity; do not set it below 30 seconds.
+- Each scheduled or manual sync is recorded in `foundry_sync_runs` with status, timestamps, counts, error text and the structured report. The latest 20 runs are available through `GET /api/internal/discord/sync-history`, protected by `DISCORD_BOT_API_TOKEN`. Metrics are not yet exported to Prometheus.
+- There is no generic integration queue worker yet. Master-authorized writes are approved as a future capability, but must not be enabled until the mutation and authorization safeguards above are implemented.
+- Backups are initiated by the host scheduler, not by an in-process goroutine.
+- Production deployment still requires a real TLS reverse proxy, off-host backup storage, host monitoring and a rehearsed restore procedure. Compose alone does not provide those external services.

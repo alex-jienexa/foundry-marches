@@ -41,9 +41,9 @@ type FoundryDocumentStatsDto struct {
 	Compendium    *string `json:"compendiumSource"`
 }
 
-// CharacterDto is a read-only application projection. It contains only values
-// represented in the persisted Actor document; prepared/calculated PF2e values
-// are deliberately not inferred here.
+// CharacterDto is a read-only application projection. It contains values represented
+// in the persisted Actor document plus narrowly derived ability scores and maximum HP
+// whose complete inputs can be reconstructed without executing PF2e Rule Elements.
 type CharacterDto struct {
 	SchemaVersion int                         `json:"schemaVersion"`
 	Identity      CharacterIdentityDto        `json:"identity"`
@@ -91,6 +91,7 @@ type CharacterBuildDto struct {
 	Background         *CharacterItemReferenceDto  `json:"background"`
 	Class              *CharacterItemReferenceDto  `json:"class"`
 	KeyAbility         *string                     `json:"keyAbility"`
+	AncestryFeatures   []ClassFeatureReferenceDto  `json:"ancestryFeatures,omitempty"`
 	ClassProficiencies *ClassProficiencyProfileDto `json:"classProficiencies,omitempty"`
 }
 
@@ -102,10 +103,16 @@ type CharacterItemReferenceDto struct {
 	Image *string `json:"image"`
 }
 
-// HP values are copied only when present in Actor.system.attributes.hp.
-// PF2e's prepared maximum HP is not present in this Actor snapshot.
+// Current and temporary HP are copied from Actor.system.attributes.hp. If max is absent,
+// the decoder derives it only when class, ancestry, level and Constitution are known.
 type CharacterAttributesDto struct {
-	HP *HitPointsDto `json:"hp"`
+	HP    *HitPointsDto      `json:"hp"`
+	Dying *DyingConditionDto `json:"dying,omitempty"`
+}
+
+type DyingConditionDto struct {
+	Current *int `json:"current"`
+	Max     *int `json:"max"`
 }
 
 type HitPointsDto struct {
@@ -171,19 +178,31 @@ const (
 // Type-specific source fields remain available in the Actor RawSnapshot and
 // are not copied wholesale into every normalized Item.
 type CharacterItemDto struct {
-	ID               string                `json:"id"`
-	Name             string                `json:"name"`
-	Type             string                `json:"type"`
-	Slug             *string               `json:"slug"`
-	Image            *string               `json:"image"`
-	Category         CharacterItemCategory `json:"category"`
-	Quantity         *int                  `json:"quantity"`
-	Level            *int                  `json:"level"`
-	Equipped         *CharacterEquippedDto `json:"equipped"`
-	CompendiumSource *string               `json:"compendiumSource"`
-	RuleElements     []RuleElementDto      `json:"ruleElements,omitempty"`
-	Armor            *ArmorItemDataDto     `json:"armor,omitempty"`
-	Runes            *ItemRuneDataDto      `json:"runes,omitempty"`
+	ID                  string                `json:"id"`
+	Skill               *string               `json:"skill,omitempty"`
+	Cantrip             bool                  `json:"cantrip,omitempty"`
+	PreparedRanks       []int                 `json:"preparedRanks,omitempty"`
+	SpellcastingType    *string               `json:"spellcastingType,omitempty"`
+	Name                string                `json:"name"`
+	Type                string                `json:"type"`
+	Slug                *string               `json:"slug"`
+	Image               *string               `json:"image"`
+	Category            CharacterItemCategory `json:"category"`
+	SystemCategory      *string               `json:"systemCategory,omitempty"`
+	ActionType          *string               `json:"actionType,omitempty"`
+	Quantity            *int                  `json:"quantity"`
+	Level               *int                  `json:"level"`
+	Equipped            *CharacterEquippedDto `json:"equipped"`
+	ContainerID         *string               `json:"containerId,omitempty"`
+	Usage               *string               `json:"usage,omitempty"`
+	SpellcastingEntryID *string               `json:"spellcastingEntryId,omitempty"`
+	Tradition           *string               `json:"tradition,omitempty"`
+	SpellList           *string               `json:"spellList,omitempty"`
+	Prepared            *bool                 `json:"prepared,omitempty"`
+	CompendiumSource    *string               `json:"compendiumSource"`
+	RuleElements        []RuleElementDto      `json:"ruleElements,omitempty"`
+	Armor               *ArmorItemDataDto     `json:"armor,omitempty"`
+	Runes               *ItemRuneDataDto      `json:"runes,omitempty"`
 }
 
 type CharacterEquippedDto struct {
@@ -206,18 +225,22 @@ type DecodedActor struct {
 	RawSnapshot json.RawMessage
 }
 
-// CharacterStatisticsInputDto contains normalized, explicitly persisted inputs
-// that may be used by the optional derived-stat calculator. Missing source data
-// remains nil; the decoder never reconstructs ability scores or proficiency.
+// CharacterStatisticsInputDto contains normalized Actor inputs and explicitly marked
+// ability scores reconstructed from complete PF2e boost selections. Missing source
+// data remains nil; proficiency is never inferred from incomplete progression data.
 type CharacterStatisticsInputDto struct {
-	Abilities     map[string]AbilityScoreDto `json:"abilities"`
-	Proficiencies CharacterProficienciesDto  `json:"proficiencies"`
+	Abilities              map[string]AbilityScoreDto `json:"abilities"`
+	ReconstructedAbilities map[string]AbilityScoreDto `json:"reconstructedAbilities,omitempty"`
+	AbilitiesDerived       bool                       `json:"abilitiesDerived,omitempty"`
+	Proficiencies          CharacterProficienciesDto  `json:"proficiencies"`
 }
 
-// AbilityScoreDto distinguishes the stored score from a stored modifier.
+// AbilityScoreDto distinguishes the score and modifier; Derived marks values
+// reconstructed from build selections rather than stored on the Actor.
 type AbilityScoreDto struct {
 	Score    *int `json:"score"`
 	Modifier *int `json:"modifier"`
+	Derived  bool `json:"derived,omitempty"`
 }
 
 type CharacterProficienciesDto struct {

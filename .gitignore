@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+!.env.prod.example
+!.env.dev.example
 *.pem
 *.key
 *.p12
@@ -33,3 +35,8 @@ coverage/
 node_modules/
 __pycache__/
 *.pyc
+
+# Local database backups and deployment environment files
+backups/
+.env.dev
+.env.prod

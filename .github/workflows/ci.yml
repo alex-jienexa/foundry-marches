@@ -1,7 +1,7 @@
 name: Project checks
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**', 'fix/**']
   pull_request:
     branches: [main]
 permissions:
@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        postgres: ['15', '16']
+        postgres: ['15', '16', '18']
     services:
       postgres:
         image: postgres:${{ matrix.postgres }}
@@ -50,7 +50,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d foundry_marches_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
@@ -70,6 +70,10 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/database/schema_tests.sql
       - name: Run 9 concurrency checks
         run: bash tests/database/schema_race_tests.sh
+      - name: Install Foundry sync run-history migration
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE ROLE foundry_api NOLOGIN"
+          psql -X -v ON_ERROR_STOP=1 -f docs/database/migrations/0004_foundry_sync_runs.sql
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
@@ -80,6 +84,11 @@ jobs:
         env:
           FOUNDRY_TEST_DATABASE_URL: postgres://postgres:ci-ephemeral-only@localhost:5432/foundry_marches_test?sslmode=disable
         run: go test ./internal/characters -run PostgresIntegration -v
+      - name: Run Foundry sync coordination PostgreSQL integration tests
+        working-directory: src/backend
+        env:
+          FOUNDRY_SYNC_TEST_DATABASE_URL: postgres://postgres:ci-ephemeral-only@localhost:5432/foundry_marches_test?sslmode=disable
+        run: go test ./cmd/foundry-api -run PostgresIntegration -v
 
   backend:
     runs-on: ubuntu-latest
@@ -92,10 +101,45 @@ jobs:
           cache-dependency-path: src/backend/go.mod
       - name: Verify Go formatting
         working-directory: src/backend
-        run: test -z "$(gofmt -l .)"
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            printf 'Go files requiring gofmt:\n%s\n' "$unformatted"
+            gofmt -d $unformatted
+            exit 1
+          fi
       - name: Run Go tests
         working-directory: src/backend
         run: go test ./...
       - name: Run Go vet
         working-directory: src/backend
         run: go vet ./...
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate development Compose configuration
+        run: |
+          docker compose --env-file .env.example -p foundry-marches-ci-dev \
+            -f compose.yaml config --quiet
+      - name: Validate production Compose configuration
+        env:
+          DISCORD_ADMIN_USER_IDS: '123456789012345678'
+          FOUNDRY_MARCHES_VERSION: sha-ci-check
+        run: |
+          docker compose --env-file .env.prod.example -p foundry-marches-ci-prod \
+            -f compose.yaml -f compose.production.yaml config --quiet
+      - name: Validate release Compose image configuration
+        env:
+          DISCORD_ADMIN_USER_IDS: '123456789012345678'
+          FOUNDRY_MARCHES_VERSION: sha-ci-check
+        run: |
+          docker compose --env-file .env.prod.example -p foundry-marches-ci-release \
+            -f compose.yaml -f compose.production.yaml config --format json > /tmp/release-compose.json
+          jq -e '.services.api.image == "ghcr.io/alex-jienexa/foundry-marches-api:sha-ci-check" and .services.api.build == null' /tmp/release-compose.json
+          jq -e '.services["discord-bot"].image == "ghcr.io/alex-jienexa/foundry-marches-bot:sha-ci-check" and .services["discord-bot"].build == null' /tmp/release-compose.json
+      - name: Build development service images
+        run: |
+          docker compose --env-file .env.example -p foundry-marches-ci-dev \
+            -f compose.yaml build

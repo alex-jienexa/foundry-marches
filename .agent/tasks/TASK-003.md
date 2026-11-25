@@ -57,3 +57,5 @@ Go-каркас, PostgreSQL 15+, миграции, Discord OAuth, роли и р
 
 
 - 2026-11-18 — Частично реализована основа: Go backend module и bootstrap REST API, PostgreSQL 18 Compose service, API container, health check, bootstrap DB role/grants и начальная запись Foundry world. Существующий CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs. Это не закрывает TASK-003: Discord OAuth, user sessions, RBAC, audit, полноценные migrations и backup/restore ещё не завершены.
+
+- 2026-11-18 — По решению владельца Discord принят как primary UX на одном guild; bot-only auth без browser OAuth/session. Добавлены отдельный Discord Gateway process, внутренний API с отдельным service token, регистрация guild members, базовый player и конфигурируемый owner bootstrap, гибридная RBAC-проверка, grant/map команд, migration 0002 и инструкция запуска. TASK-003 остаётся in_progress: backups/restore, полноценный audit coverage, RBAC administration/revocation, hardening и runtime verification ещё не подтверждены.

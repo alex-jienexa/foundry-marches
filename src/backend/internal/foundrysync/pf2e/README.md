@@ -12,19 +12,27 @@ projects verified stored fields into the versioned application Character DTO.
   duplicated in every normalized Item.
 - Item category is an application/UI hint, not a closed PF2e type registry.
 - Normalized Items expose common fields; type-specific data remains in the raw snapshot.
-- Missing and null values remain absent; no default quantity, equipment state,
-  ability score, skill rank, or derived statistic is fabricated.
-- The persisted Actor document does not contain prepared AC, maximum HP, or
-  prepared Perception in the supplied fixture. This adapter does not calculate them.
-- The decoder projects skills from Actor.system.skills and preserves class/item
-  Rule Elements separately. The calculator may apply a narrow, explicitly
-  supported static proficiency-upgrade subset (including a resolved ChoiceSet);
-  it does not rewrite Character.Skills.
+- Normalized Items preserve `system.category` and `system.actionType.value` when present, so presentation layers can distinguish feat categories and action kinds without inspecting localized names.
+- Missing and null values remain absent. Ability scores are reconstructed only when the
+  ancestry, background, class boost/key ability and every level-based boost set through the
+  current level have complete selections; reconstructed values are explicitly marked
+  as derived and never represented as Actor-persisted values.
+- Skill ranks begin with `Actor.system.skills`, then merge explicitly selected
+  `trainedSkills.value`/`trainedSkills.lore` from Actor Items and unconditional,
+  statically identifiable skill-rank `ActiveEffectLike` upgrades. The decoder does
+  not infer the names represented by `trainedSkills.additional`.
+- The supplied fixture does not persist prepared AC or Perception values. The decoder
+  derives maximum HP only when class HP, ancestry HP, level and Constitution are known;
+  it does not calculate AC or replace missing Perception proficiency.
+- The decoder projects Actor.system.skills and augments it with selected skill training
+  from class/background/other Actor Items plus unconditional skill-rank upgrades whose
+  paths resolve to a concrete skill. Other Rule Elements remain declarative source data;
+  no arbitrary PF2e rule expressions or predicates are executed.
 - Lore entries are separated only when their Actor.system.skills key uses the
   `lore-` prefix; the original key is retained.
 - Compendium references inside class/background Items are not expanded into
   Actor Items.
-- The decoder performs no writes to Foundry and does not execute PF2e rules.
+- The decoder performs no writes to Foundry and does not execute arbitrary PF2e rules; it only extracts the narrow, unconditional skill-rank upgrades described above.
   The sibling calculator package performs only documented, limited rank and
   derived-stat calculations; it is not a replacement for Foundry preparation.
 
@@ -43,12 +51,28 @@ The tests decode the committed Relay fixtures under the repository-level
 
 ## Statistics and derived-stat DTO contracts
 
-`CharacterDto.Statistics` contains only explicit Actor-level calculation inputs:
-- ability score and modifier, when `system.abilities` contains them;
-- current perception, saving-throw and defense proficiency ranks, when the Actor contains them under `system.proficiencies`;
-- current skill ranks remain in `CharacterDto.Skills`.
+`CharacterDto.Statistics` contains explicit Actor ability values when present. If those
+values are absent, the decoder can reconstruct ability scores from complete selected
+boosts/flaws on ancestry and background Items, the class boost or key ability, and the
+four selected boosts at each level milestone (1, 5, 9, 13, 17) reached by the character.
+Ancestry flaws are applied before background, class and level-based boosts so the
+18-point boost threshold is evaluated in progression order.
+Each reconstructed `AbilityScoreDto` is marked `derived: true`, and the containing
+statistics object sets `abilitiesDerived: true`. Incomplete selections leave missing
+scores unknown. Derived values are presentation/calculation inputs, not writes to the
+Foundry Actor.
 
-Missing values stay absent. The decoder does not reconstruct ability scores from boosts or execute PF2e rules. The calculator may use class progression and supported Rule Elements to derive effective proficiency ranks while preserving the baseline and source breakdown.
+Current perception, saving-throw and defense proficiency ranks are read from Actor
+fields when present. Current skill ranks remain in `CharacterDto.Skills`; selected
+class/background skill training and supported unconditional skill-rank upgrades are
+merged into that projection. The `trainedSkills.additional` count is retained in the
+class progression profile but is never used to invent which skills were selected.
+
+Prepared spellcasting entries are read from `system.slots.slot0` through
+`system.slots.slot11`. The spell IDs in each slot's `prepared` array determine
+whether a spell is prepared and at which cast rank; spells associated with a prepared
+entry but absent from all prepared slots remain in the preparation list. Slot 0 is
+cantrips.
 
 `CharacterBuildDto.ClassProficiencies` is deliberately separate. It records the class item's progression baseline (`perception`, `savingThrows`, `defenses`, `attacks`, `spellcasting`, `trainedSkills`) and is not by itself the character's final effective rank. The calculator starts from this baseline and applies supported upgrades. The `additional` class skill count is never used to invent selected skills.
 

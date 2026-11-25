@@ -196,3 +196,81 @@ func TestClientDoesNotFollowRedirectsWithAPIKey(t *testing.T) {
 		t.Fatalf("redirect target received %d requests; want none", targetRequests)
 	}
 }
+
+func TestPingRelayAcceptsReachableServiceAndRejectsServerFailure(t *testing.T) {
+	t.Run("reachable even when base route is not registered", func(t *testing.T) {
+		server := httptest.NewServer(http.NotFoundHandler())
+		defer server.Close()
+		client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := client.PingRelay(context.Background()); err != nil {
+			t.Fatalf("PingRelay() error = %v", err)
+		}
+	})
+
+	t.Run("server failure", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+		client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := client.PingRelay(context.Background()); err == nil {
+			t.Fatal("PingRelay() error = nil, want server failure")
+		}
+	})
+}
+
+func TestGetDocumentRetriesTransientServerFailure(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		if requests == 1 {
+			w.Header().Set("Retry-After", "0")
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		fmt.Fprint(w, `{"ok":true}`)
+	}))
+	defer server.Close()
+
+	client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := client.getDocument(context.Background(), "Actor.retry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != `{"ok":true}` {
+		t.Fatalf("response = %s, want successful second response", got)
+	}
+	if requests != 2 {
+		t.Fatalf("requests = %d, want 2", requests)
+	}
+}
+
+func TestGetDocumentDoesNotRetryClientErrors(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		http.Error(w, "not found", http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	client, err := NewClient(Config{WorldID: "world", BaseURL: server.URL, ClientID: "client", APIKey: "secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.getDocument(context.Background(), "Actor.missing")
+	if !errors.Is(err, ErrUnexpectedStatus) {
+		t.Fatalf("got %v, want ErrUnexpectedStatus", err)
+	}
+	if requests != 1 {
+		t.Fatalf("requests = %d, want 1", requests)
+	}
+}

@@ -1,0 +1,5432 @@
+{
+  "prototypeToken": {
+    "actorLink": true,
+    "flags": {
+      "pf2e": {
+        "linkToActorSize": true,
+        "autoscale": true
+      },
+      "pf2e-visioner": {
+        "coverOverride": "auto",
+        "encounterMasterTokenId": "",
+        "visionMasterTokenId": ""
+      }
+    },
+    "height": 1,
+    "width": 1,
+    "sight": {
+      "enabled": true,
+      "range": 0,
+      "angle": 360,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "name": "Малахия Вейн/Шёлковый паук",
+    "displayName": 20,
+    "depth": 1,
+    "texture": {
+      "src": "assets/westmarches/pc/token_1(2).png",
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "tint": "#ffffff",
+      "alphaThreshold": 0.75
+    },
+    "lockRotation": true,
+    "rotation": 0,
+    "alpha": 1,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "light": {
+      "negative": false,
+      "priority": 0,
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "dim": 0,
+      "attenuation": 0.5,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "type": null,
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    "detectionModes": {},
+    "occludable": {
+      "radius": 0
+    },
+    "ring": {
+      "enabled": false,
+      "colors": {
+        "ring": null,
+        "background": null
+      },
+      "effects": 0,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "turnMarker": {
+      "mode": 1,
+      "animation": null,
+      "src": null,
+      "disposition": false
+    },
+    "movementAction": null,
+    "randomImg": false,
+    "appendNumber": false,
+    "prependAdjective": false
+  },
+  "name": "Малахия Вейн/Шёлковый паук",
+  "type": "character",
+  "ownership": {
+    "default": 2
+  },
+  "effects": [],
+  "system": {
+    "attributes": {
+      "hp": {
+        "value": 2,
+        "temp": 0
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "details": {
+      "languages": {
+        "value": [
+          "dwarven",
+          "draconic",
+          "diabolic",
+          "elven",
+          "orcish"
+        ],
+        "details": ""
+      },
+      "level": {
+        "value": 2
+      },
+      "biography": {
+        "appearance": "",
+        "backstory": "",
+        "birthPlace": "",
+        "attitude": "",
+        "beliefs": "",
+        "anathema": [],
+        "edicts": [],
+        "likes": "",
+        "dislikes": "",
+        "catchphrases": "",
+        "campaignNotes": "",
+        "allies": "",
+        "enemies": "",
+        "organizations": "",
+        "visibility": {
+          "appearance": true,
+          "backstory": false,
+          "personality": false,
+          "campaign": false
+        }
+      },
+      "keyability": {
+        "value": "str"
+      },
+      "xp": {
+        "value": 400,
+        "min": 0,
+        "max": 1000
+      },
+      "age": {
+        "value": ""
+      },
+      "height": {
+        "value": ""
+      },
+      "weight": {
+        "value": ""
+      },
+      "gender": {
+        "value": ""
+      },
+      "ethnicity": {
+        "value": ""
+      },
+      "nationality": {
+        "value": ""
+      },
+      "alliance": "party"
+    },
+    "resources": {
+      "heroPoints": {
+        "value": 0,
+        "max": 3
+      }
+    },
+    "_migration": {
+      "version": 0.961,
+      "previous": null
+    },
+    "abilities": null,
+    "skills": {
+      "medicine": {
+        "rank": 0
+      },
+      "nature": {
+        "rank": 0
+      },
+      "survival": {
+        "rank": 0
+      },
+      "acrobatics": {
+        "rank": 1
+      },
+      "crafting": {
+        "rank": 2
+      },
+      "arcana": {
+        "rank": 1
+      },
+      "thievery": {
+        "rank": 1
+      },
+      "performance": {
+        "rank": 1
+      },
+      "intimidation": {
+        "rank": 1
+      },
+      "deception": {
+        "rank": 1
+      },
+      "occultism": {
+        "rank": 0
+      },
+      "stealth": {
+        "rank": 1
+      },
+      "diplomacy": {
+        "rank": 1
+      }
+    },
+    "pfs": {
+      "playerNumber": null,
+      "characterNumber": null,
+      "levelBump": false,
+      "currentFaction": "EA",
+      "school": null,
+      "reputation": {
+        "EA": null,
+        "GA": null,
+        "HH": null,
+        "VS": null,
+        "RO": null,
+        "VW": null
+      }
+    },
+    "exploration": [],
+    "build": {
+      "attributes": {
+        "boosts": {
+          "1": [
+            "cha",
+            "int",
+            "dex",
+            "wis"
+          ],
+          "5": [
+            "cha"
+          ]
+        }
+      }
+    }
+  },
+  "img": "assets/westmarches/pc/nm26zlUZr0rpxk6pxyttyDXHAOl5w6N1GDsJrYdm-DLEDYVvQ87qeZGfSyf4t3q7naMxjojuqhEo04witn6RmwyL.jpg",
+  "items": [
+    {
+      "_id": "YiOgZhY6MsUbvzxB",
+      "img": "systems/pf2e/icons/ancestries/human.webp",
+      "name": "Человек / Human",
+      "system": {
+        "additionalLanguages": {
+          "count": 1,
+          "custom": "",
+          "value": []
+        },
+        "boosts": {
+          "0": {
+            "value": [
+              "cha",
+              "con",
+              "dex",
+              "int",
+              "str",
+              "wis"
+            ],
+            "selected": "cha"
+          },
+          "1": {
+            "value": [
+              "str",
+              "dex",
+              "con",
+              "int",
+              "wis",
+              "cha"
+            ],
+            "selected": "wis"
+          },
+          "2": {
+            "value": [],
+            "selected": null
+          }
+        },
+        "description": {
+          "value": "<p><em>Будучи непредсказуемым и разнообразным, как любой из народов Голариона, люди обладают исключительным стремлением и способностью переносить невзгоды и распространяться. Хотя многие цивилизации процветали до того, как человечество приобрело известность, люди построили одни из величайших и самых ужасных обществ на протяжении всей истории, и сегодня они являются самыми густонаселенными народами в царствах Внутреннего моря.</em></p><p>@UUID[Compendium.pf2e.journals.JournalEntry.45SK8rdbbxvEHfMn.JournalEntryPage.7pU8yM7yPMw92SY3]</p>",
+          "gm": ""
+        },
+        "flaws": {
+          "0": {
+            "value": [],
+            "selected": null
+          }
+        },
+        "hands": 2,
+        "hp": 8,
+        "items": {},
+        "languages": {
+          "custom": "",
+          "value": [
+            "common"
+          ]
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "reach": 5,
+        "rules": [],
+        "size": "med",
+        "speed": 25,
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "human",
+            "humanoid"
+          ],
+          "otherTags": []
+        },
+        "vision": "normal",
+        "slug": "human",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "alternateAncestryBoosts": null,
+        "voluntary": {
+          "legacy": false,
+          "boost": null,
+          "flaws": []
+        }
+      },
+      "type": "ancestry",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.ancestries.Item.IiG7DgeLWYrSNXuX",
+        "createdTime": 1794650242893,
+        "modifiedTime": 1795284331624,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Human",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "lewLxt57QN1UlAa1",
+      "folder": "khXMNyAoAoZ70PpT",
+      "img": "systems/pf2e/icons/ancestries/changeling.webp",
+      "name": "Подменыш / Changeling",
+      "system": {
+        "ancestry": null,
+        "description": {
+          "value": "<p>Вашей матерью была карга. Ваша гетерохромия — наиболее очевидный признак этого происхождения, но вы, вероятно, также имеете более тонкое телосложение, более бледную кожу и более темные волосы, чем у большинства представителей родословной вашего другого родителя. Вы получаете признак @Trait[Changeling]{подменыш}. Вы также получаете @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.q2chuQ4Am5puc9Cc#sumerechnoe-zrenie]{Сумеречное зрение} или @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.q2chuQ4Am5puc9Cc#nochnoe-zrenie-i-silьnoe-nochnoe-zrenie]{Ночное зрение}, если ваша родословная уже имеет сумеречное зрение. Всякий раз, когда вы получаете способность родословной, вы можете выбирать из способностей подменыша и способностей родословной своего другого родителя.</p><p>@UUID[Compendium.pf2e.journals.JournalEntry.45SK8rdbbxvEHfMn.JournalEntryPage.u6IGUd8Gtarj6h7K#podmenysh]{Подменыш}</p>",
+          "gm": ""
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "Sense",
+            "selector": "low-light-vision"
+          },
+          {
+            "key": "Sense",
+            "predicate": [
+              "self:low-light-vision:from-ancestry"
+            ],
+            "selector": "darkvision"
+          }
+        ],
+        "traits": {
+          "rarity": "uncommon",
+          "value": [
+            "changeling"
+          ],
+          "otherTags": []
+        },
+        "slug": "changeling",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        }
+      },
+      "type": "heritage",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.heritages.Item.EKY9v7SF1hVsUdbH",
+        "createdTime": 1794650296057,
+        "modifiedTime": 1794650296057,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Changeling",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "gUA2IqZasUDuU5A0",
+      "img": "systems/pf2e/icons/classes/investigator.webp",
+      "name": "Сыщик / Investigator",
+      "system": {
+        "ancestryFeatLevels": {
+          "value": [
+            1,
+            5,
+            9,
+            13,
+            17
+          ]
+        },
+        "attacks": {
+          "advanced": 0,
+          "martial": 1,
+          "other": {
+            "name": "",
+            "rank": 0
+          },
+          "simple": 1,
+          "unarmed": 1
+        },
+        "classFeatLevels": {
+          "value": [
+            1,
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20
+          ]
+        },
+        "defenses": {
+          "heavy": 0,
+          "light": 1,
+          "medium": 0,
+          "unarmored": 1
+        },
+        "description": {
+          "value": "<p><em>Вы стремитесь раскрыть истину, упорно следуя зацепкам, чтобы раскрыть заговоры коварных злодеев, открыть древние секреты или разгадать другие тайны. Ваш аналитический ум быстро формулирует решения сложных проблем, а ваши обостренные чувства распознают даже самые неясные улики. Используя знания в качестве оружия, вы изучаете существ и опасности с которыми сталкиваетесь, чтобы использовать их слабости.</em></p><p>@UUID[Compendium.pf2e.journals.JournalEntry.kzxu2dI7tFxv6Ix6.JournalEntryPage.omDi7otL3UWLVgct]</p>",
+          "gm": ""
+        },
+        "generalFeatLevels": {
+          "value": [
+            3,
+            7,
+            11,
+            15,
+            19
+          ]
+        },
+        "hp": 8,
+        "items": {
+          "0abc3": {
+            "img": "systems/pf2e/icons/features/classes/deductive-improvisation.webp",
+            "level": 11,
+            "name": "Дедуктивная импровизация",
+            "uuid": "Compendium.pf2e.classfeatures.Item.malYpr0CYL4fDGhr"
+          },
+          "71q10": {
+            "img": "systems/pf2e/icons/features/classes/incredible-sense.webp",
+            "level": 13,
+            "name": "Легенда восприятия",
+            "uuid": "Compendium.pf2e.classfeatures.Item.nLwPMPLRne1HnL00"
+          },
+          "Kk3kL": {
+            "img": "icons/magic/life/cross-explosion-burst-green.webp",
+            "level": 9,
+            "name": "Эксперт стойкости",
+            "uuid": "Compendium.pf2e.classfeatures.Item.F57Na5VxfBp56kke"
+          },
+          "OBbGY": {
+            "img": "systems/pf2e/icons/features/feats/wolf-stance.webp",
+            "level": 11,
+            "name": "Несгибаемая воля",
+            "uuid": "Compendium.pf2e.classfeatures.Item.uuHRYE8Oljk1ORxJ"
+          },
+          "fofuw": {
+            "img": "icons/sundries/flags/banner-symbol-sun-gold-red.webp",
+            "level": 1,
+            "name": "Заниматься расследованием",
+            "uuid": "Compendium.pf2e.classfeatures.Item.6FasgIXUJ1X8ekRn"
+          },
+          "gvvwp": {
+            "img": "systems/pf2e/icons/features/classes/weapon-mastery.webp",
+            "level": 13,
+            "name": "Мастерство оружия",
+            "uuid": "Compendium.pf2e.classfeatures.Item.i6563IU7x4L9oRgC"
+          },
+          "j15np": {
+            "img": "systems/pf2e/icons/features/classes/weapon-expertise.webp",
+            "level": 5,
+            "name": "Опыт с оружием",
+            "uuid": "Compendium.pf2e.classfeatures.Item.9XLUh9iMepZesdmc"
+          },
+          "lqbki": {
+            "img": "icons/commodities/biological/organ-brain-pink-purple.webp",
+            "level": 3,
+            "name": "Острое воспоминание",
+            "uuid": "Compendium.pf2e.classfeatures.Item.DZWQspPi4IkfXV2E"
+          },
+          "ly271": {
+            "img": "icons/magic/perception/eye-tendrils-web-purple.webp",
+            "level": 7,
+            "name": "Мастер восприятия",
+            "uuid": "Compendium.pf2e.classfeatures.Item.0npO4rPscGm0dX13"
+          },
+          "mb94u": {
+            "img": "icons/equipment/chest/breastplate-rivited-red.webp",
+            "level": 19,
+            "name": "Мастерство лёгких доспехов (Уровень 19)",
+            "uuid": "Compendium.pf2e.classfeatures.Item.SHpjmM4A3Sw4GgDz"
+          },
+          "o89io": {
+            "img": "icons/magic/symbols/question-stone-yellow.webp",
+            "level": 1,
+            "name": "Методика",
+            "uuid": "Compendium.pf2e.classfeatures.Item.uhHg9BXBiHpL5ndS"
+          },
+          "oktpj": {
+            "img": "icons/commodities/treasure/medal-ribbon-gold-blue.webp",
+            "level": 9,
+            "name": "Опыт сыщика",
+            "uuid": "Compendium.pf2e.classfeatures.Item.PFvB79O2VFdiAeSj"
+          },
+          "pveXF": {
+            "img": "systems/pf2e/icons/features/classes/evasion.webp",
+            "level": 15,
+            "name": "Смекалка и рефлексы",
+            "uuid": "Compendium.pf2e.classfeatures.Item.uTBiXs4zWkmRG7qF"
+          },
+          "qwerc": {
+            "img": "systems/pf2e/icons/features/classes/master-detective.webp",
+            "level": 19,
+            "name": "Мастер-детектив",
+            "uuid": "Compendium.pf2e.classfeatures.Item.flEx8eY0NinF9XZU"
+          },
+          "rz4r2": {
+            "img": "icons/skills/melee/hand-grip-sword-orange.webp",
+            "level": 15,
+            "name": "Выдающаяся специализация в оружии (Уровень 15)",
+            "uuid": "Compendium.pf2e.classfeatures.Item.Z7HX6TeFsaup7Dx9"
+          },
+          "skjy3": {
+            "img": "systems/pf2e/icons/features/classes/devise-a-stratagem.webp",
+            "level": 1,
+            "name": "Придумать стратагему",
+            "uuid": "Compendium.pf2e.classfeatures.Item.lgo65ldX7WkXC8Ir"
+          },
+          "u3nsr": {
+            "img": "systems/pf2e/icons/features/classes/strategic-strike.webp",
+            "level": 1,
+            "name": "Стратегический удар",
+            "uuid": "Compendium.pf2e.classfeatures.Item.2Fe4YZCvAr9Yf6w7"
+          },
+          "vv9fi": {
+            "img": "icons/tools/hand/hammer-and-nail.webp",
+            "level": 3,
+            "name": "Уроки умения",
+            "uuid": "Compendium.pf2e.classfeatures.Item.dmK1wya8GBi9MmCB"
+          },
+          "vxchn": {
+            "img": "icons/equipment/back/mantle-collared-green.webp",
+            "level": 13,
+            "name": "Опыт с лёгкими доспехами",
+            "uuid": "Compendium.pf2e.classfeatures.Item.pZYkb12t5DSwtts7"
+          },
+          "xvwjc": {
+            "img": "systems/pf2e/icons/features/classes/weapon-specialization.webp",
+            "level": 7,
+            "name": "Специализация в оружии",
+            "uuid": "Compendium.pf2e.classfeatures.Item.9EqIasqfI8YIM3Pt"
+          },
+          "xxAGJ": {
+            "img": "systems/pf2e/icons/features/feats/rampaging-form-frozen-wind.webp",
+            "level": 17,
+            "name": "Поистине несгибаемая воля",
+            "uuid": "Compendium.pf2e.classfeatures.Item.XFcCeBYqeXgfiA84"
+          }
+        },
+        "keyAbility": {
+          "value": [
+            "int"
+          ],
+          "selected": null
+        },
+        "perception": 2,
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [],
+        "savingThrows": {
+          "fortitude": 1,
+          "reflex": 2,
+          "will": 2
+        },
+        "skillFeatLevels": {
+          "value": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        },
+        "skillIncreaseLevels": {
+          "value": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        },
+        "spellcasting": 0,
+        "trainedSkills": {
+          "additional": 4,
+          "value": [
+            "society"
+          ]
+        },
+        "traits": {
+          "rarity": "common",
+          "otherTags": []
+        },
+        "slug": "investigator",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        }
+      },
+      "type": "class",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.classes.Item.4wrSCyX6akmyo7Wj",
+        "createdTime": 1794650435513,
+        "modifiedTime": 1794650435535,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Investigator",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "img": "icons/sundries/flags/banner-symbol-sun-gold-red.webp",
+      "name": "Заниматься расследованием / On the Case",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "classfeature",
+        "description": {
+          "value": "<p>Как сыщик, вы думаете о своих приключениях как о делах, которые ждут, когда их раскроют. Вы получаете одну активность и одну реакцию, которые вы используете, чтобы расследовать дела: @UUID[Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX]{Расследовать дело} и @UUID[Compendium.pf2e.actionspf2e.Item.25WDi1cVUrW92sUj]{Подсказать}.</p><p></p><p><strong>Примечание Вестмарша:</strong> Одно из дел расследования всегда считается ларёк \"Рука на Пульсе\", которым он владеет. Поэтому если вопрос относится к <span style=\"text-decoration:underline\"><span style=\"text-decoration:underline\">работе ларька и его конкурентов</span></span>, то он получается такой же бонус к проверкам, как если бы она относилась к вопросу расследования.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "GrantItem",
+            "uuid": "Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX",
+            "flag": "pursueALead"
+          },
+          {
+            "key": "GrantItem",
+            "uuid": "Compendium.pf2e.actionspf2e.Item.25WDi1cVUrW92sUj",
+            "flag": "clueIn"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "on-the-case",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "gUA2IqZasUDuU5A0"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.classfeatures.Item.6FasgIXUJ1X8ekRn",
+        "createdTime": 1794650435514,
+        "modifiedTime": 1795282058154,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "On the Case",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "itemGrants": {
+            "pursueALead": {
+              "id": "g7VEO0b2KqQWehkd",
+              "onDelete": "detach"
+            },
+            "clueIn": {
+              "id": "TQ7pDaL7bRFkXOFG",
+              "onDelete": "detach"
+            }
+          }
+        }
+      },
+      "_id": "RZh02hEmAsnN99kj"
+    },
+    {
+      "img": "icons/magic/symbols/question-stone-yellow.webp",
+      "name": "Методика / Methodology",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "classfeature",
+        "description": {
+          "value": "<p>Ваши исследования сделали вас подкованным во многих областях, но одна из них особенно привлекла ваш пристальный интерес. Выберите методику. Представлены следующие методики:</p><ul><li>@UUID[Compendium.pf2e.classfeatures.Item.ln2Y1a4SxlU9sizX]{Алхимические науки}</li><li>@UUID[Compendium.pf2e.classfeatures.Item.g3mNzNphtVxyR9Xr]{Эмпиризм}</li><li>@UUID[Compendium.pf2e.classfeatures.Item.O3IX7rTxXWWvDVM3]{Судебная медицина}</li><li>@UUID[Compendium.pf2e.classfeatures.Item.UIHUNNYZyQ3p4Vmo]{Допрос}</li></ul>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "adjustName": false,
+            "choices": {
+              "filter": [
+                "item:tag:investigator-methodology"
+              ]
+            },
+            "flag": "methodology",
+            "key": "ChoiceSet",
+            "prompt": "PF2E.SpecificRule.Investigator.Methodology.Prompt",
+            "selection": "Compendium.pf2e.classfeatures.Item.UIHUNNYZyQ3p4Vmo"
+          },
+          {
+            "key": "GrantItem",
+            "uuid": "{item|flags.system.rulesSelections.methodology}",
+            "flag": "interrogationMethodology"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "methodology",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "gUA2IqZasUDuU5A0"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.classfeatures.Item.uhHg9BXBiHpL5ndS",
+        "createdTime": 1794650435517,
+        "modifiedTime": 1794650435537,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 100,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Methodology",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "itemGrants": {
+            "interrogationMethodology": {
+              "id": "jvcYc5PDLbNhga2s",
+              "onDelete": "detach"
+            }
+          }
+        }
+      },
+      "_id": "eqgM5z6cuAR6gsNg"
+    },
+    {
+      "img": "systems/pf2e/icons/features/classes/devise-a-stratagem.webp",
+      "name": "Придумать стратагему / Devise a Stratagem",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "classfeature",
+        "description": {
+          "value": "<p>Для совершения атаки, вы можете разыграть битву в своей голове, используя мозги, а не мускулы. Вы получаете действие @UUID[Compendium.pf2e.actionspf2e.Item.m0f2B7G9eaaTmhFL].</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "GrantItem",
+            "uuid": "Compendium.pf2e.actionspf2e.Item.m0f2B7G9eaaTmhFL",
+            "flag": "deviseAStratagem"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "devise-a-stratagem",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "gUA2IqZasUDuU5A0"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.classfeatures.Item.lgo65ldX7WkXC8Ir",
+        "createdTime": 1794650435518,
+        "modifiedTime": 1794650435537,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 200,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Devise a Stratagem",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "itemGrants": {
+            "deviseAStratagem": {
+              "id": "01cDN5oJ1qYvNi6K",
+              "onDelete": "detach"
+            }
+          }
+        }
+      },
+      "_id": "80XussQoMozb9o70"
+    },
+    {
+      "folder": "QReXtSM0cSm6rQfo",
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Расследовать дело / Pursue a Lead",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "value": "<p><strong>Частота:</strong> Раз в 10 минут</p><hr><p>Вы называете одну деталь, которая, по вашему мнению, является частью более глубокой тайны, и тратите 1 минуту на её изучение. Как правило, эта деталь либо очевидна, либо уже обнаружена вами с помощью попыток @UUID[Compendium.pf2e.actionspf2e.Item.1OagaWtBpVXExToo], @UUID[Compendium.pf2e.actionspf2e.Item.1xRFPTFtWtGJ9ELw], @UUID[Compendium.pf2e.actionspf2e.Item.plBGdZhqq5JBl1D8] или подобного действия. По истечении минуты Мастер либо подтверждает наличие более глубокой тайны, либо сообщает, что больше вы ничего узнать не сможете (либо потому что деталь несущественна, либо потому что вы уже знаете всю информацию). Если действительно существует более глубокая тайна, вы не можете снова <em>\"Расследовать дело\"</em> в течение 10 минут, но можете начать расследование. Для этого сформулируйте главный вопрос, касающийся тайны — например \"Куда делось бесценное произведение искусства, которое должно было здесь висеть?\", либо \"Кто или что убило этого священника?\". При необходимости поработайте вопрос вместе со своим Мастером. Вы также можете дать своему расследованию название, чтобы было удобнее его отслеживать (например, \"Дело обманутого гоблина\" или \"Убийства Живодёра\").</p><p><strong>Бонус расследования:</strong> Когда вы совершаете проверку Восприятия или навыка, чтобы попытаться приблизиться к ответу на главный вопрос активного расследования, вы получаете бонус обстоятельства +1 к этой проверке. Конкретные проверки, к которым применяется это преимущество, зависят от используемых для расследования действий и определяются Мастером, но, как правило, это проверки Восприятия или навыков, которые используют Интеллект, Мудрость или Харизму.</p><p><strong>Активные расследования:</strong> Одновременно вы можете иметь два активных расследования. Если после этого вы <em>\"Расследуете\"</em> другое дело, новое дело должно отличаться от любого из ваших текущих расследований (по вашей информации), и вы отказываетесь от одного из текущих расследований на свой выбор. Если вы отказались от расследования, вы не сможете снова начать <em>\"Расследовать дело\"</em> по нему до своих следующих ежедневных приготовлений.</p><p><strong>Завершение расследования:</strong> Если вы ответили на главный вопрос своего расследования, Мастер сообщает вам, что вы это сделали. Вы не теряете ни бонус, ни другие преимущества до тех пор, пока не решите завершить расследование, повторив <em>\"Расследование дела\"</em> или добровольно @UUID[Compendium.pf2e.actionspf2e.Item.AjLSHZSWQ90exdLo]{Развеяв} его. Если то, что вы обнаружили, указывает на еще более глубокую тайну, вы можете вместе с Мастером изменить вопрос и название расследования в соответствии с новой информацией.</p>",
+          "gm": ""
+        },
+        "frequency": {
+          "max": 1,
+          "per": "PT10M"
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "label": "PF2E.SpecificRule.Investigator.PursueALead.Label",
+            "option": "pursue-a-lead",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "pursue-a-lead"
+            ],
+            "selector": [
+              "perception",
+              "skill-check"
+            ],
+            "slug": "pursue-a-lead",
+            "type": "circumstance",
+            "value": 1
+          }
+        ],
+        "traits": {
+          "value": [
+            "concentrate",
+            "exploration",
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "pursue-a-lead",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        }
+      },
+      "type": "action",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX",
+        "createdTime": 1794650435523,
+        "modifiedTime": 1794650435537,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Pursue a Lead",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "RZh02hEmAsnN99kj",
+            "onDelete": "cascade"
+          }
+        }
+      },
+      "_id": "g7VEO0b2KqQWehkd"
+    },
+    {
+      "folder": "N6WOZ0BHVQLY8fgW",
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Подсказать / Clue In",
+      "system": {
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "value": "<p><strong>Частота:</strong> Раз в 10 минут</p><p><strong>Триггер:</strong> Другое существо совершает проверку, которая может помочь вам приблизиться к ответу на главный вопрос одного из ваших активных расследований</p><hr><p>Вы делитесь информацией со спровоцировавшим существом.</p><p>Оно получает бонус обстоятельства к своей проверке, равный вашему бонусу обстоятельства от @UUID[Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX]{Расследования дела}. В зависимости от ситуации, Мастер может добавить этой реакции любые подходящие признаки, как например @Trait[Auditory]{слуховой} и @Trait[Linguistic]{языковой}, если вы передаете информацию словесно.</p><p>@UUID[Compendium.pf2e.feat-effects.Item.vhSYlQiAQMLuXqoc]</p>",
+          "gm": ""
+        },
+        "frequency": {
+          "max": 1,
+          "per": "PT10M"
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [],
+        "traits": {
+          "value": [
+            "concentrate",
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "clue-in",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        }
+      },
+      "type": "action",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.actionspf2e.Item.25WDi1cVUrW92sUj",
+        "createdTime": 1794650435525,
+        "modifiedTime": 1794650435538,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Clue In",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "RZh02hEmAsnN99kj",
+            "onDelete": "cascade"
+          }
+        }
+      },
+      "_id": "TQ7pDaL7bRFkXOFG"
+    },
+    {
+      "img": "icons/sundries/scrolls/scroll-writing-brown-grey.webp",
+      "name": "Методика допроса / Interrogation Methodology",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "classfeature",
+        "description": {
+          "value": "<p>Люди не могут не доверять вам, будь то из-за вашего врожденного умения вызывать симпатию или твердого настойчивого стремления придерживаться истины. У вас есть способ заставить других говорить, и вы разработали методы допроса, которые помогают вам добраться до истины ваших расследований.</p><p>Вы обучены Дипломатии. Вы получаете способность навыка @UUID[Compendium.pf2e.feats-srd.Item.6ON8DjFXSMITZleX]{Не надо пугаться}. Еще вы можете @UUID[Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX]{Расследовать дело} пока @UUID[Compendium.pf2e.actionspf2e.Item.OX4fy22hQgUHDr0q]{Производите впечатление}, если вы задаете вопрос, касающийся существа, с которым общаетесь, или о предмете вашего разговора. Еще вы получаете действие @UUID[Compendium.pf2e.actionspf2e.Item.xccOiNL2W1EtfUYl]{Наводящий вопрос}.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "ActiveEffectLike",
+            "mode": "upgrade",
+            "path": "system.skills.diplomacy.rank",
+            "value": 1
+          },
+          {
+            "key": "GrantItem",
+            "uuid": "Compendium.pf2e.feats-srd.Item.6ON8DjFXSMITZleX",
+            "flag": "noCauseForAlarm"
+          },
+          {
+            "key": "GrantItem",
+            "uuid": "Compendium.pf2e.actionspf2e.Item.xccOiNL2W1EtfUYl",
+            "flag": "pointedQuestion"
+          }
+        ],
+        "traits": {
+          "otherTags": [
+            "investigator-methodology"
+          ],
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ]
+        },
+        "slug": "interrogation-methodology",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": null
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.classfeatures.Item.UIHUNNYZyQ3p4Vmo",
+        "createdTime": 1794650435527,
+        "modifiedTime": 1794650435538,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Interrogation Methodology",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "eqgM5z6cuAR6gsNg",
+            "onDelete": "cascade"
+          },
+          "itemGrants": {
+            "noCauseForAlarm": {
+              "id": "rOzNwFpqP4dnvVR9",
+              "onDelete": "detach"
+            },
+            "pointedQuestion": {
+              "id": "18G5NHkPwhmLYAam",
+              "onDelete": "detach"
+            }
+          }
+        }
+      },
+      "_id": "jvcYc5PDLbNhga2s"
+    },
+    {
+      "folder": "QhHpEbq98ZJAyDiH",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Нет причин для паники / No Cause for Alarm",
+      "system": {
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 3
+        },
+        "category": "skill",
+        "description": {
+          "value": "<p>Вы пытаетесь унять панику вокруг. Совершите проверку @Check[diplomacy]{Дипломатии}, сравнивая её результат с КС Воли существ в @Template[emanation|distance:10]{10-футовой эманации} вокруг вас, имеющих состояние @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напуган}. Каждое из них становится временно иммунным к этой способности на 1 час.</p><hr><p><strong>Критический успех:</strong> Значение состояния @Condition[Frightened]{напуган} существа уменьшается на 2.</p><p><strong>Успех:</strong> Значение состояния @Condition[Frightened]{напуган} существа уменьшается на 1.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": [
+            {
+              "value": "Обучен Дипломатии"
+            }
+          ]
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "auditory",
+            "concentrate",
+            "emotion",
+            "general",
+            "linguistic",
+            "mental",
+            "skill"
+          ],
+          "otherTags": []
+        },
+        "slug": "no-cause-for-alarm",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": null
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.6ON8DjFXSMITZleX",
+        "createdTime": 1794650435528,
+        "modifiedTime": 1794650435539,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "No Cause for Alarm",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "jvcYc5PDLbNhga2s",
+            "onDelete": "cascade"
+          }
+        }
+      },
+      "_id": "rOzNwFpqP4dnvVR9"
+    },
+    {
+      "folder": "N6WOZ0BHVQLY8fgW",
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Наводящий вопрос / Pointed Question",
+      "system": {
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "value": "<p>Вы задаёте вопрос, который правильным образом очаровывает или задевает кого-то. Задайте вопрос существу, которое не является союзником и которое вы можете видеть. Совершите проверку @Check[diplomacy|against:will]{Дипломатии} против КС Воли существа. После этого, существо становится временно иммунно на 1 час.</p><hr><p><strong>Критический успех:</strong> Цель должна прямо ответить на ваш вопрос. Она не обязана отвечать правдиво, но вы получаете бонус обстоятельства +4 к вашему КС Восприятия, если существо попытается @UUID[Compendium.pf2e.actionspf2e.Item.ewwCglB7XOPLUz72]{Лгать} вам.</p><p>Соврет цель или ответит правдиво, вы узнаете кое-что из ее языка тела и цель становится @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнута врасплох} для следующего \"Удара\", который вы совершите по ней с использованием @UUID[Compendium.pf2e.actionspf2e.Item.m0f2B7G9eaaTmhFL]{Придумывания стратагемы} до конца своего хода.</p><p><strong>Успех:</strong> Как критический успех, но бонус обстоятельства к КС Восприятия равен +2.</p><p>@UUID[Compendium.pf2e.feat-effects.Item.SScln8qRQgVC6Brz]</p><p><strong>Провал:</strong> Цель, как обычно, может отказаться ответить вам.</p><p><strong>Критический провал:</strong> Цель, как обычно, может отказаться ответить вам, и из-за вашего надоедливого внимания ее отношение к вам снижается на одну степень.</p>",
+          "gm": ""
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [],
+        "traits": {
+          "value": [
+            "auditory",
+            "concentrate",
+            "investigator",
+            "linguistic",
+            "mental"
+          ],
+          "otherTags": []
+        },
+        "slug": "pointed-question",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        }
+      },
+      "type": "action",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.actionspf2e.Item.xccOiNL2W1EtfUYl",
+        "createdTime": 1794650435530,
+        "modifiedTime": 1794650435539,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Pointed Question",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "jvcYc5PDLbNhga2s",
+            "onDelete": "cascade"
+          }
+        }
+      },
+      "_id": "18G5NHkPwhmLYAam"
+    },
+    {
+      "folder": "N6WOZ0BHVQLY8fgW",
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Придумать стратагему / Devise a Stratagem",
+      "system": {
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "value": "<p><strong>Частота:</strong> Раз в раунд</p><hr><p>Вы оцениваете слабости противника в бою и используете их, чтобы сформулировать план атаки вашего врага. Выберите существо, которе вы можете видеть. Вы можете <em>\"Придумать стратагему\"</em> свободным действием (@Glyph[Free]), если знаете, что это существо может помочь ответить на главный вопрос одного из ваших активных расследований. Сделайте бросок d20, а затем выберите стратагему атаки или стратагему навыка.</p><p><strong>Стратагема атаки:</strong> Если позднее в этом раунде вы совершаете @UUID[Compendium.pf2e.actionspf2e.Item.VjxZFuUXrCU94MWR] по выбранному существу, то этот \"Удар\" получает признак @Trait[Fortune]{удача}, и в качестве броска атаки для своего \"Удара\" вы должны использовать результат этого броска d20 вместо совершения нового. Вы делаете эту подстановку только для первого \"Удара\" по этому существу в этом раунде, не для любых последующих атак. Когда вы делаете эту подмену, то еще можете добавить свой модификатор Интеллекта к броску атаки вместо модификатора Силы или Ловкости. Если вы \"Ударяете\" оружием ближнего боя, безоружной атакой или метательным оружием, то для получения преимущества этой подмены оно должно обладать признаком @Trait[Agile]{быстрое} или @Trait[Finesse]{точное}.</p><p><strong>Стратагема навыка:</strong> Вы не можете совершать \"Удары\" по цели до начала вашего следующего хода. Вы получаете бонус обстоятельства +1 к своей следующей проверке Восприятия или проверке навыка, основанного на Интеллекте, Мудрости или Харизме, если такая проверка связана с целью и совершается до начала вашего следующего хода. Если для такой проверки вы должны получить бонус от @UUID[Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX]{Расследования дела}, вместо получения указанного бонуса +1 вы увеличиваете бонус от <em>\"Расследования дела\"</em> на 1.</p>",
+          "gm": ""
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round",
+          "value": 1
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "target:mark:devise-a-stratagem",
+            "toggleable": "totm"
+          },
+          {
+            "ability": "int",
+            "key": "FlatModifier",
+            "predicate": [
+              "class:investigator",
+              "target:mark:devise-a-stratagem",
+              {
+                "or": [
+                  "item:trait:agile",
+                  "item:trait:finesse",
+                  {
+                    "nor": [
+                      "item:melee",
+                      "item:thrown"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "selector": "strike-attack-roll",
+            "type": "ability"
+          }
+        ],
+        "selfEffect": {
+          "name": "Effect: Devise a Stratagem",
+          "uuid": "Compendium.pf2e.feat-effects.Item.XQpTyjXFYYNexyOk"
+        },
+        "traits": {
+          "value": [
+            "concentrate",
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "devise-a-stratagem",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        }
+      },
+      "type": "action",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.actionspf2e.Item.m0f2B7G9eaaTmhFL",
+        "createdTime": 1794650435534,
+        "modifiedTime": 1795295802013,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Devise a Stratagem",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "80XussQoMozb9o70",
+            "onDelete": "cascade"
+          }
+        }
+      },
+      "_id": "01cDN5oJ1qYvNi6K"
+    },
+    {
+      "img": "systems/pf2e/icons/features/classes/strategic-strike.webp",
+      "name": "Стратегический удар / Strategic Strike",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "classfeature",
+        "description": {
+          "value": "<p>Когда вы нападаете осторожно и предусмотрительно, то наносите ощутимый удар. Когда с помощью @UUID[Compendium.pf2e.classfeatures.Item.lgo65ldX7WkXC8Ir] вы совершаете @UUID[Compendium.pf2e.actionspf2e.Item.VjxZFuUXrCU94MWR]{Удар}, добавляющий к броску атаки ваш модификатор Интеллекта, то наносите дополнительные 1d6 точного урона.</p><p>С повышением вашего уровня сыщика, увеличивается и смертоносность вашего стратегического удара. Увеличьте количество костей на 1 на 5-м, 9-м, 13-м и 17-м уровнях.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "category": "precision",
+            "diceNumber": "floor((@actor.level+3)/4)",
+            "dieSize": "d6",
+            "key": "DamageDice",
+            "predicate": [
+              "check:substitution:devise-a-stratagem"
+            ],
+            "selector": "strike-damage"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "strategic-strike",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "gUA2IqZasUDuU5A0"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.classfeatures.Item.2Fe4YZCvAr9Yf6w7",
+        "createdTime": 1794650435535,
+        "modifiedTime": 1794650435540,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 300,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Strategic Strike",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "hsrrBmZyTY737hCV"
+    },
+    {
+      "_id": "B0GQkEHhszN32sLg",
+      "img": "systems/pf2e/icons/default-icons/background.svg",
+      "name": "Агент по денежным переводам / Remittance Agent",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Когда нужно перевезти деньги, товары или продукцию на большие расстояния, агенты по денежным переводам лучше и надежнее, чем местные наёмники. Вы знаете все тонкости торговых маршрутов и протоколов, которые к ним прилагаются. Хотя некоторые могут счесть вам обычным авантюристом или наёмником, вы знаете, что можете выполнить работу лучше и безопаснее, чем кто-либо другой.</p><p>Выберите два повышения атрибутов. Одно должно быть использовано для <strong>Интеллекта</strong> или <strong>Телосложения</strong>, а другое — свободное.</p><p>Вы обучены <strong>Обществу</strong>, а также Трудовым знаниям (Labor) или Наёмническим знаниям (Mercenary), а также получаете способность навыка @UUID[Compendium.pf2e.feats-srd.Item.sMm0UfYxEPpq2Yzd].</p>"
+        },
+        "rules": [],
+        "slug": "remittance-agent",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Lost Omens Tian Xia Character Guide",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "boosts": {
+          "0": {
+            "value": [
+              "con",
+              "int"
+            ],
+            "selected": "int"
+          },
+          "1": {
+            "value": [
+              "cha",
+              "con",
+              "dex",
+              "int",
+              "str",
+              "wis"
+            ],
+            "selected": "cha"
+          }
+        },
+        "items": {
+          "iOJYx": {
+            "img": "icons/sundries/books/book-red-exclamation.webp",
+            "level": 1,
+            "name": "Experienced Professional",
+            "uuid": "Compendium.pf2e.feats-srd.Item.sMm0UfYxEPpq2Yzd"
+          }
+        },
+        "trainedSkills": {
+          "value": [
+            "society"
+          ],
+          "lore": []
+        }
+      },
+      "type": "background",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.backgrounds.Item.E1Ii36z4mtC8YxNe",
+        "createdTime": 1794650448388,
+        "modifiedTime": 1795284318739,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Remittance Agent",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "folder": "QhHpEbq98ZJAyDiH",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Опытный профессионал / Experienced Professional",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "skill",
+        "description": {
+          "value": "<p>Вы осторожны в своих профессиональных стремлениях и потому не допускаете катастрофических неудач. Когда вы используете Знания для @UUID[Compendium.pf2e.actionspf2e.Item.QyzlsLrqM0EEwd7j]{Заработка денег} и получаете критический провал при этой проверке, вместо этого результат считается обычным провалом. Если вы являетесь экспертом Знаний, то получаете в два раза больше денег от проваленной попытки \"Заработка денег\", если только её первоначальным результатом не был критический провал.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": [
+            {
+              "value": "Обучен Знаниям"
+            }
+          ]
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "Note",
+            "outcome": [
+              "failure"
+            ],
+            "predicate": [
+              {
+                "or": [
+                  "proficiency:expert",
+                  "proficiency:master",
+                  "proficiency:legendary"
+                ]
+              }
+            ],
+            "selector": "lore-skill-check",
+            "text": "PF2E.SpecificRule.Feat.ExperiencedProfessional.Note",
+            "title": "{item|name}"
+          },
+          {
+            "adjustment": {
+              "criticalFailure": "one-degree-better"
+            },
+            "key": "AdjustDegreeOfSuccess",
+            "predicate": [
+              "action:earn-income"
+            ],
+            "selector": "lore-skill-check",
+            "type": "skill"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "general",
+            "skill"
+          ],
+          "otherTags": []
+        },
+        "slug": "experienced-professional",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "B0GQkEHhszN32sLg"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.sMm0UfYxEPpq2Yzd",
+        "createdTime": 1794650448389,
+        "modifiedTime": 1794650448390,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Experienced Professional",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "OADzguEOZAMSr7D2"
+    },
+    {
+      "_id": "OJ2oYPCcl1malNQs",
+      "folder": "Ji2CbKYOXGa69X7A",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Посвящение маршала / Marshal Dedication",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "class",
+        "description": {
+          "value": "<p>Вы объединили свои социальные навыки и боевую подготовку, чтобы стать талантливым боевым лидером. Выберите Дипломатию или Запугивание. Вы становитесь обучены этому навыку, или экспертом если уже обучены ему.</p><p>Дополнительно, вы окружены аурой маршала в @Template[emanation|distance:15]{15-футовой эманации}. Ваша аура имеет признаки @Trait[Emotion]{эмоция}, @Trait[Mental]{ментальный} и @Trait[Visual]{визуальный} и дает вам и союзникам в радиусе ауры бонус состояния +1 к спасброскам против @Trait[Fear]{страха}.</p><p>@UUID[Compendium.pf2e.feat-effects.Item.Ru4BNABCZ0hUbX7S]</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 2,
+          "taken": 2
+        },
+        "prerequisites": {
+          "value": [
+            {
+              "value": "Обучен воинскому оружию и либо Дипломатии, либо Запугиванию"
+            }
+          ]
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "effects": [
+              {
+                "affects": "allies",
+                "uuid": "Compendium.pf2e.feat-effects.Item.Ru4BNABCZ0hUbX7S"
+              }
+            ],
+            "key": "Aura",
+            "radius": 15,
+            "slug": "marshals-aura",
+            "traits": [
+              "emotion",
+              "mental",
+              "visual"
+            ]
+          },
+          {
+            "adjustName": false,
+            "choices": [
+              {
+                "label": "PF2E.Skill.Diplomacy",
+                "predicate": [
+                  "skill:diplomacy:rank:0"
+                ],
+                "value": "diplomacy-trained"
+              },
+              {
+                "label": "PF2E.Skill.Diplomacy",
+                "predicate": [
+                  "skill:diplomacy:rank:1"
+                ],
+                "value": "diplomacy-expert"
+              },
+              {
+                "label": "PF2E.Skill.Intimidation",
+                "predicate": [
+                  "skill:intimidation:rank:0"
+                ],
+                "value": "imtimidation-trained"
+              },
+              {
+                "label": "PF2E.Skill.Intimidation",
+                "predicate": [
+                  "skill:intimidation:rank:1"
+                ],
+                "value": "intimidation-expert"
+              }
+            ],
+            "key": "ChoiceSet",
+            "predicate": [
+              {
+                "or": [
+                  {
+                    "lte": [
+                      "skill:intimidation:rank",
+                      1
+                    ]
+                  },
+                  {
+                    "lte": [
+                      "skill:diplomacy:rank",
+                      1
+                    ]
+                  }
+                ]
+              }
+            ],
+            "prompt": "PF2E.SpecificRule.Prompt.Skill",
+            "rollOption": "marshal-skill",
+            "flag": "marshalDedication",
+            "selection": "diplomacy-expert"
+          },
+          {
+            "key": "ActiveEffectLike",
+            "mode": "upgrade",
+            "path": "system.skills.diplomacy.rank",
+            "predicate": [
+              "marshal-skill:diplomacy-trained"
+            ],
+            "value": 1
+          },
+          {
+            "key": "ActiveEffectLike",
+            "mode": "upgrade",
+            "path": "system.skills.diplomacy.rank",
+            "predicate": [
+              "marshal-skill:diplomacy-expert"
+            ],
+            "value": 2
+          },
+          {
+            "key": "ActiveEffectLike",
+            "mode": "upgrade",
+            "path": "system.skills.intimidation.rank",
+            "predicate": [
+              "marshal-skill:intimidation-trained"
+            ],
+            "value": 1
+          },
+          {
+            "key": "ActiveEffectLike",
+            "mode": "upgrade",
+            "path": "system.skills.intimidation.rank",
+            "predicate": [
+              "marshal-skill:intimidation-expert"
+            ],
+            "value": 2
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "archetype",
+            "dedication"
+          ],
+          "otherTags": []
+        },
+        "slug": "marshal-dedication",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "archetype-2"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.MYzRfNExDYp25rro",
+        "createdTime": 1794650634099,
+        "modifiedTime": 1794650634100,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Marshal Dedication",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "8zRW4jXxaSxm9Ay8",
+      "folder": "hFVleadZ20Wc5Hkc",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Природные амбиции / Natural Ambition",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "ancestry",
+        "description": {
+          "value": "<p>Вас с детства учили быть амбициозным и стремиться к успеху, благодаря чему вы быстро добились прогресса в выбранной области. Вы получаете способность класса 1-го уровня. Вы должны соответствовать предварительным условиям способности, но если вы выбираете эту способность во время создания персонажа, то можете отложить её выбор на более поздние стадии создания, чтобы определить по каким предварительным условиям вы подходите.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1,
+          "taken": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "adjustName": false,
+            "choices": {
+              "filter": [
+                "item:level:1",
+                "item:category:class",
+                "item:trait:{actor|system.details.class.trait}",
+                {
+                  "or": [
+                    "feature:dragon-instinct",
+                    {
+                      "not": "item:draconic-arrogance"
+                    }
+                  ]
+                },
+                {
+                  "nor": [
+                    "item:animal-companion",
+                    "item:animal-companion-druid",
+                    "item:bardic-lore",
+                    "item:fire-lung",
+                    "item:lingering-composition",
+                    "item:leshy-familiar",
+                    "item:martial-performance",
+                    "item:shore-step",
+                    "item:steadying-stone",
+                    "item:storm-born",
+                    "item:versatile-performance",
+                    "item:untamed-form"
+                  ]
+                }
+              ],
+              "itemType": "feat"
+            },
+            "flag": "naturalAmbition",
+            "key": "ChoiceSet",
+            "prompt": "PF2E.SpecificRule.Prompt.LevelOneClassFeat",
+            "selection": "Compendium.pf2e.feats-srd.Item.pgIrr8xrlCXbRAeo"
+          },
+          {
+            "key": "GrantItem",
+            "uuid": "{item|flags.system.rulesSelections.naturalAmbition}",
+            "flag": "underworldInvestigator"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "human"
+          ],
+          "otherTags": []
+        },
+        "slug": "natural-ambition",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "ancestry-1"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.PodajLVxqYSAqVox",
+        "createdTime": 1794650798013,
+        "modifiedTime": 1794650798014,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Natural Ambition",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "itemGrants": {
+            "underworldInvestigator": {
+              "id": "ZaJdD7aNdn5rhop9",
+              "onDelete": "detach"
+            }
+          }
+        }
+      }
+    },
+    {
+      "folder": "6R0mUPnUZrsI8pL3",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Криминальный сыщик / Underworld Investigator",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "class",
+        "description": {
+          "value": "<p>Ваша работа в сыщиком знакомит вас с криминальным элементом. Вы сами можете быть преступником, или вы могли извне получить представление о том, как они действуют. Вы становитесь обучены Знаниям преступного мира (Underworld) и получаете бонус обстоятельства от @UUID[Compendium.pf2e.actionspf2e.Item.xTK2zsWFyxSJvYbX]{Расследования дела} к проверкам Воровства для расследования темы вашей зацепки (например, к проверкам, чтобы @UUID[Compendium.pf2e.actionspf2e.Item.RDXXE7wMrSPCLv5k]{Украсть} улику у подозреваемого или @UUID[Compendium.pf2e.actionspf2e.Item.2EE4aF4SZpYf0R6H]{Вскрыть замок} для открытия сейфа с изобличающими документами).</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "underworld-investigator",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": null
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.pgIrr8xrlCXbRAeo",
+        "createdTime": 1794650798014,
+        "modifiedTime": 1794650798015,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Underworld Investigator",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "pf2e": {
+          "grantedBy": {
+            "id": "8zRW4jXxaSxm9Ay8",
+            "onDelete": "cascade"
+          }
+        }
+      },
+      "_id": "ZaJdD7aNdn5rhop9"
+    },
+    {
+      "_id": "Ycow5Aa6V8YdBHSa",
+      "folder": "6R0mUPnUZrsI8pL3",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Никаких ложных следов / Eliminate Red Herrings",
+      "system": {
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "class",
+        "description": {
+          "value": "<p>У вас обостренное чутьё, позволяющее избегать надуманных нитей расследования. Когда вы получаете критический провал при проверке навыка, чтобы @UUID[Compendium.pf2e.actionspf2e.Item.1OagaWtBpVXExToo]{Вспомнить информацию}, связанную с вопросом об одном из ваших активных расследований, результат считается обычным провалом.</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1,
+          "taken": 1
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "adjustment": {
+              "criticalFailure": "to-failure"
+            },
+            "key": "AdjustDegreeOfSuccess",
+            "predicate": [
+              "pursue-a-lead",
+              "action:recall-knowledge"
+            ],
+            "selector": "skill-check"
+          }
+        ],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "eliminate-red-herrings",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "class-1"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.wNr02jsG5nRF23YO",
+        "createdTime": 1794650888000,
+        "modifiedTime": 1794650888001,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Eliminate Red Herrings",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "FB7vcRf02Air0zHK",
+      "folder": "f4240DPKWihmjTTT",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Интересующее лицо / Person of Interest",
+      "system": {
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "class",
+        "description": {
+          "value": "<p><strong>Частота:</strong> Раз в 10 минут</p><hr><p>Иногда приходится следовать зацепкам, которые появляются посреди расследования. Выберите существо, которое вы можете видеть и которое, насколько вам известно, не связано ни с одним из ваших текущих расследований. В течение следующей минуты вы можете @UUID[Compendium.pf2e.actionspf2e.Item.m0f2B7G9eaaTmhFL]{Придумывать стратагему} против этого существа в свободным действием (@Glyph[Free]).</p>",
+          "gm": ""
+        },
+        "frequency": {
+          "max": 1,
+          "per": "PT10M"
+        },
+        "level": {
+          "value": 2,
+          "taken": 2
+        },
+        "prerequisites": {
+          "value": []
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "investigator"
+          ],
+          "otherTags": []
+        },
+        "slug": "person-of-interest",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "class-2"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.csPhQeHWbUXL64p9",
+        "createdTime": 1794650992657,
+        "modifiedTime": 1794650992658,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Person of Interest",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "h34Pbpc16rVY4GWg",
+      "folder": "QhHpEbq98ZJAyDiH",
+      "img": "icons/sundries/books/book-red-exclamation.webp",
+      "name": "Остро́та / Bon Mot",
+      "system": {
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "skill",
+        "description": {
+          "value": "<p>Вы отпускаете в адрес врага меткую остроту, чтобы его отвлечь. Выберите противника в радиусе 30 футов и совершите проверку @Check[diplomacy|against:will]{Дипломатии} против КС Воли цели.</p><hr><p><strong>Критический успех:</strong> Цель оказывается отвлечена и на 1 минуту получает штраф состояния −3 к Восприятию и спасброскам Воли на 1 минуту.</p><p>Цель может завершить этот эффект досрочно, парировав вашу <em>\"Остро́ту\"</em>. Это может быть одиночное действие (@Glyph[Action 1]) с признаком @Trait[Concentrate]{концентрация} или же подходящее действие навыка, форму которого примет его ответ на вашу остроту. Мастер решает какие действия навыков для этого подходят, однако оно должно занимать хотя бы 1 действие. Обычно для парирования остроты нужно использовать @Trait[Linguistic]{языковое} действие навыка, основанного на Харизме.</p><p><strong>Успех:</strong> Как критический успех, но штраф составляет −2.</p><p><strong>Критический провал:</strong> Ваша колкость ужасна. Вы получаете тот же штраф, который получил бы враг при вашем успехе. Этот эффект заканчивается через 1 минуту или когда вы успешно используете <em>\"Остро́ту\"</em>.</p><p>@UUID[Compendium.pf2e.feat-effects.Item.GoSls6SKCFmSoDxT]</p>",
+          "gm": ""
+        },
+        "level": {
+          "value": 1,
+          "taken": 2
+        },
+        "prerequisites": {
+          "value": [
+            {
+              "value": "Обучен Дипломатии"
+            }
+          ]
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [],
+        "traits": {
+          "rarity": "common",
+          "value": [
+            "auditory",
+            "concentrate",
+            "emotion",
+            "general",
+            "linguistic",
+            "mental",
+            "skill"
+          ],
+          "otherTags": []
+        },
+        "slug": "bon-mot",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "onlyLevel1": false,
+        "maxTakable": 1,
+        "subfeatures": {
+          "proficiencies": {},
+          "senses": {},
+          "suppressedFeatures": []
+        },
+        "location": "skill-2"
+      },
+      "type": "feat",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feats-srd.Item.0GF2j54roPFIDmXf",
+        "createdTime": 1794651462914,
+        "modifiedTime": 1794651462914,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Bon Mot",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "type": "lore",
+      "name": "Знания преступного мира",
+      "effects": [],
+      "system": {
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "rules": [],
+        "slug": "underworld-lore",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null
+        },
+        "traits": {
+          "otherTags": []
+        },
+        "publication": {
+          "title": "",
+          "authors": "",
+          "license": "OGL",
+          "remaster": false
+        },
+        "mod": {
+          "value": 0
+        },
+        "proficient": {
+          "value": 1
+        }
+      },
+      "_id": "7zpAH2ZO63ZozSky",
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {},
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "createdTime": 1794754641568,
+        "modifiedTime": 1794754661319,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null
+      }
+    },
+    {
+      "type": "lore",
+      "name": "Знания купеческого дела",
+      "effects": [],
+      "system": {
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "rules": [],
+        "slug": null,
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null
+        },
+        "traits": {
+          "otherTags": []
+        },
+        "publication": {
+          "title": "",
+          "authors": "",
+          "license": "OGL",
+          "remaster": false
+        },
+        "mod": {
+          "value": 0
+        },
+        "proficient": {
+          "value": 1
+        }
+      },
+      "_id": "DdYcZxYm2SSx6gNn",
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "gAjMQD6hF1XHumXB": 3
+      },
+      "flags": {},
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "createdTime": 1794754662237,
+        "modifiedTime": 1794754683722,
+        "lastModifiedBy": "gAjMQD6hF1XHumXB",
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null
+      }
+    },
+    {
+      "img": "icons/equipment/chest/breastplate-purple.webp",
+      "name": "Одежда (Красивая) / Clothing (Fine)",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Красивая одежда подходит для знатного или королевского рода, изготавливается из дорогих тканей, драгоценных металлов и расшита замысловатыми узорами.</p>"
+        },
+        "rules": [],
+        "slug": "clothing-fine",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": null,
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "worn"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.jJZbdMHMdh8UL2j8",
+        "createdTime": 1794829100951,
+        "modifiedTime": 1794829100952,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Clothing (Fine)",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "9FvPZYMCz18Tb3jY"
+    },
+    {
+      "_id": "47khzX9itH0VApga",
+      "img": "icons/containers/bags/pack-leather-white-tan.webp",
+      "name": "Рюкзак / Backpack",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Рюкзак вмещает вплоть до 4 Масс предметов. Первые 2 Массы этих предметов в рюкзаке не считаются к вашему ограничению Массы. Если вы переносите или складываете его, а не носите на спине, его Масса легкая, а не незначительная.</p>"
+        },
+        "rules": [],
+        "slug": "backpack",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0,
+          "heldOrStowed": 0.1,
+          "capacity": 4,
+          "ignored": 2
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "sp": 1
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": null,
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "collapsed": false,
+        "stowing": true,
+        "usage": {
+          "value": "wornbackpack"
+        }
+      },
+      "type": "backpack",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.3lgwjrFEsQVKzhh7",
+        "createdTime": 1794829130081,
+        "modifiedTime": 1794829130087,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Backpack",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "TpMns2jpL3K2a2gJ",
+      "img": "icons/sundries/survival/rope-wrapped-brown.webp",
+      "name": "Верёвка / Rope",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>50 футов веревки.</p>"
+        },
+        "rules": [],
+        "slug": "rope",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "sp": 5
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.fyYnQf1NAx9fWFaS",
+        "createdTime": 1794829130081,
+        "modifiedTime": 1794829130087,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Rope",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "M0WBXTGzTBwDv4F6",
+      "img": "systems/pf2e/icons/equipment/adventuring-gear/waterskin.webp",
+      "name": "Бурдюк / Waterskin",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Когда полон, содержит примерно дневную норму воды для существа Среднего или Маленького размера.</p>"
+        },
+        "rules": [],
+        "slug": "waterskin",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 5
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.VnPh324pKwd2ZB66",
+        "createdTime": 1794829130082,
+        "modifiedTime": 1794829130088,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Waterskin",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "MDhi31PLstXlle7b",
+      "img": "systems/pf2e/icons/equipment/adventuring-gear/chalk.webp",
+      "name": "Мел / Chalk",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "rules": [],
+        "slug": "chalk",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 10,
+        "baseItem": null,
+        "bulk": {
+          "value": 0
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 1
+          },
+          "per": 10
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "category": "other",
+        "uses": {
+          "value": 1,
+          "max": 1,
+          "autoDestroy": true
+        },
+        "damage": null,
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "spell": null
+      },
+      "type": "consumable",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.xShIDyydOMkGvGNb",
+        "createdTime": 1794829130082,
+        "modifiedTime": 1794829130088,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Chalk",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "Ae96XA4pbUKXXcl2",
+      "img": "icons/commodities/stone/geode-raw-tan.webp",
+      "name": "Огниво / Flint and Steel",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Огниво полезно для разведения огня, если у вас есть время на высечение искры, однако его использование обычно слишком времязатратно, чтобы быть полезным во время столкновений. Даже в идеальных условиях, использование огнива для розжига огня требует минимум 3 действия, а часто и дольше.</p>"
+        },
+        "rules": [],
+        "slug": "flint-and-steel",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 5
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.UlIxxLm71UdRgCFE",
+        "createdTime": 1794829130083,
+        "modifiedTime": 1794829130088,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Flint and Steel",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "DPVR9gs3dBsk1xFG",
+      "img": "systems/pf2e/icons/equipment/adventuring-gear/rations.webp",
+      "name": "Рационы / Rations",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "rules": [],
+        "slug": "rations",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 2,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "sp": 4
+          },
+          "per": 1
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "category": "other",
+        "uses": {
+          "value": 7,
+          "max": 7,
+          "autoDestroy": true
+        },
+        "damage": null,
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "spell": null
+      },
+      "type": "consumable",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.L9ZV076913otGtiB",
+        "createdTime": 1794829130084,
+        "modifiedTime": 1794829130089,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Rations",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "K5J3VtlYESPvjUvy",
+      "img": "icons/sundries/lights/torch-brown.webp",
+      "name": "Факел / Torch",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Факел дает яркий свет в 20-футовом радиусе (и тусклый свет в следующих 20 футах) в течение 1 часа. Он может быть использован как импровизированное оружие, которое наносит @Damage[1d4[bludgeoning],1[fire]].</p>"
+        },
+        "rules": [
+          {
+            "key": "TokenLight",
+            "predicate": [
+              "lit-torch"
+            ],
+            "value": {
+              "alpha": 0.3,
+              "animation": {
+                "intensity": 1,
+                "speed": 2,
+                "type": "flame"
+              },
+              "attenuation": 0.4,
+              "bright": 20,
+              "color": "#ffae3d",
+              "coloration": 101,
+              "dim": 40,
+              "shadows": 0.2
+            }
+          },
+          {
+            "category": "simple",
+            "damage": {
+              "base": {
+                "damageType": "bludgeoning",
+                "dice": 1,
+                "die": "d4"
+              }
+            },
+            "key": "Strike",
+            "otherTags": [
+              "improvised"
+            ],
+            "predicate": [
+              {
+                "not": "lit-torch"
+              }
+            ]
+          },
+          {
+            "category": "simple",
+            "damage": {
+              "base": {
+                "damageType": "bludgeoning",
+                "dice": 1,
+                "die": "d4"
+              }
+            },
+            "img": "icons/sundries/lights/torch-brown-lit.webp",
+            "key": "Strike",
+            "otherTags": [
+              "improvised"
+            ],
+            "predicate": [
+              "lit-torch"
+            ]
+          },
+          {
+            "damageType": "fire",
+            "key": "FlatModifier",
+            "predicate": [
+              "lit-torch"
+            ],
+            "selector": "{item|_id}-damage",
+            "value": 1
+          },
+          {
+            "key": "RollOption",
+            "label": "PF2E.SpecificRule.LitTorch",
+            "option": "lit-torch",
+            "toggleable": true
+          },
+          {
+            "key": "TokenEffectIcon",
+            "predicate": [
+              "lit-torch"
+            ],
+            "value": "icons/sundries/lights/torch-brown-lit.webp"
+          }
+        ],
+        "slug": "torch",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 5,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 1
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.8Jdw4yAzWYylGePS",
+        "createdTime": 1794829130085,
+        "modifiedTime": 1794829130089,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Torch",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "TKHXdqdkAyYAUEqp",
+      "img": "icons/containers/ammunition/quiver-simple-brown.webp",
+      "name": "Спальный мешок / Bedroll",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Свернутая кровать.</p>"
+        },
+        "rules": [],
+        "slug": "bedroll",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 2
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "other"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.fagzYdmfYyMQ6J77",
+        "createdTime": 1794829130086,
+        "modifiedTime": 1794829130089,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Bedroll",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "FMGWQF76AktLyXqj",
+      "img": "icons/sundries/survival/soap.webp",
+      "name": "Мыло / Soap",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Кусок мыла.</p>"
+        },
+        "rules": [],
+        "slug": "soap",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 2
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.81aHsD27HFGnq1Nt",
+        "createdTime": 1794829130087,
+        "modifiedTime": 1794829130090,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Soap",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "img": "icons/consumables/potions/bottle-round-corked-orante-red.webp",
+      "name": "Зелье исцеления (Слабое) / Healing Potion (Minor)",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Активация:</strong> @Glyph[Action 1] (@Trait[Manipulate]{воздействие})</p><hr><p><em>Зелье исцеления</em> это бутылёк с рубиново-красной жидкостью, которая дает пьющему его ощущение покалывания по мере быстрого заживления ран. Когда вы пьёте <em>зелье исцеления</em>, то восстанавливаете @Damage[1d8[healing]]{1d8 ОЗ}.</p>"
+        },
+        "rules": [],
+        "slug": "healing-potion-minor",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "consumable",
+            "healing",
+            "magical",
+            "potion",
+            "vitality"
+          ],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder GM Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 1
+        },
+        "quantity": 2,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "gp": 4
+          }
+        },
+        "equipped": {
+          "carryType": "stowed"
+        },
+        "containerId": "47khzX9itH0VApga",
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "category": "potion",
+        "uses": {
+          "value": 1,
+          "max": 1,
+          "autoDestroy": true
+        },
+        "damage": {
+          "formula": "1d8",
+          "kind": "healing",
+          "type": "vitality"
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "spell": null,
+        "runes": {}
+      },
+      "type": "consumable",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.2RuepCemJhrpKKao",
+        "createdTime": 1794829140435,
+        "modifiedTime": 1794829142667,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Healing Potion (Minor)",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "world": {
+          "runesBackup": {}
+        }
+      },
+      "_id": "JoXho4ooDIZWwX77"
+    },
+    {
+      "img": "systems/pf2e/icons/equipment/treasure/currency/gold-pieces.webp",
+      "name": "Золотые монеты / Gold Pieces",
+      "system": {
+        "baseItem": null,
+        "bulk": {
+          "value": 1
+        },
+        "category": "coin",
+        "containerId": null,
+        "description": {
+          "value": "",
+          "gm": ""
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 1
+          },
+          "per": 1
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "quantity": 30,
+        "rules": [],
+        "size": "med",
+        "traits": {
+          "rarity": "common",
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "gold-pieces",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": null
+        },
+        "temporary": false
+      },
+      "type": "treasure",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.B6B7tBWJSqOBz5zz",
+        "createdTime": 1794829149584,
+        "modifiedTime": 1794829161076,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 100000,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Gold Pieces",
+          "originalPayload": {},
+          "lang": "ru"
+        },
+        "world": {
+          "runesBackup": {}
+        }
+      },
+      "_id": "F2s13aLLtZYOdG0Q"
+    },
+    {
+      "img": "systems/pf2e/icons/equipment/adventuring-gear/waterskin.webp",
+      "name": "Бурдюк / Waterskin",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Когда полон, содержит примерно дневную норму воды для существа Среднего или Маленького размера.</p>"
+        },
+        "rules": [],
+        "slug": "waterskin",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "cp": 5
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": null,
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.VnPh324pKwd2ZB66",
+        "createdTime": 1795282030274,
+        "modifiedTime": 1795282030274,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Waterskin",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "xBJMfZmQe0GLqDWw"
+    },
+    {
+      "img": "icons/containers/chest/chest-simple-box-red.webp",
+      "name": "Гримерный набор / Disguise Kit",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Эта небольшая деревянная шкатулка содержит косметику, накладные бороды, театральный клей и несколько простых париков. Вам обычно нужен гримерный набор, чтобы создать маскировку и @UUID[Compendium.pf2e.actionspf2e.Item.AJstokjdG6iDjVjE]{Перевоплотиться} в кого-то, используя навык Обман. Если вы создавали большое количество маскировок, то можете пополнить запас косметики с помощью наборов замены косметики, для соответствующего гримерного набора. Если вы надели свой гримерный набор, то можете вытаскивать и убирать его как часть действия для его использования.</p>"
+        },
+        "rules": [],
+        "slug": "disguise-kit",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": null,
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.Jvp0x2Sc82WVpExT",
+        "createdTime": 1795282066339,
+        "modifiedTime": 1795282066339,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Disguise Kit",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "pXHCfyMVf3DZtC1c"
+    },
+    {
+      "img": "icons/tools/medical/toolkit-surgical-pink.webp",
+      "name": "Инструменты ремесленника / Artisan's Toolkit",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>Вам нужны эти инструменты, чтобы создавать предметы из исходных материалов с помощью навыка Ремесло. На усмотрение Мастера, различные наборы инструментов необходимы для разной работы; например, инструменты кузнеца отличаются от инструментов плотника. Если вы надели свои инструменты ремесленника, то можете доставать и убирать их как часть действия для их использования.</p>"
+        },
+        "rules": [],
+        "slug": "artisans-toolkit",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 2
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "gp": 4
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": null,
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "other"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.y34yjumCFakrbtdw",
+        "createdTime": 1795282103225,
+        "modifiedTime": 1795282103225,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Artisan's Toolkit",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "dAS5HioEjymOfQ56"
+    },
+    {
+      "img": "systems/pf2e/icons/equipment/adventuring-gear/crowbar.webp",
+      "name": "Ломик / Crowbar",
+      "system": {
+        "description": {
+          "gm": "",
+          "value": "<p>При попытке @UUID[Compendium.pf2e.actionspf2e.Item.SjmKHgI7a5Z9JzBx]{Открыть силой} объект, за который нелегко ухватиться, лом облегчает создание необходимого рычага. Вскрытие чего-либо без лома получает штраф предмета −2 для проверки Атлетики, чтобы \"Открыть силой\".</p>"
+        },
+        "rules": [
+          {
+            "key": "AdjustModifier",
+            "selector": "athletics",
+            "slug": "no-crowbar",
+            "suppress": true
+          }
+        ],
+        "slug": "crowbar",
+        "_migration": {
+          "version": 0.961,
+          "lastMigration": null,
+          "previous": null
+        },
+        "traits": {
+          "otherTags": [],
+          "value": [],
+          "rarity": "common"
+        },
+        "publication": {
+          "title": "Pathfinder Player Core",
+          "authors": "",
+          "license": "ORC",
+          "remaster": true
+        },
+        "level": {
+          "value": 0
+        },
+        "quantity": 1,
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "hp": {
+          "value": 0,
+          "max": 0
+        },
+        "hardness": 0,
+        "price": {
+          "value": {
+            "sp": 5
+          }
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "containerId": null,
+        "size": "med",
+        "material": {
+          "type": null,
+          "grade": null
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "name": "",
+            "img": "",
+            "data": {
+              "description": {
+                "value": ""
+              }
+            }
+          }
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        },
+        "subitems": []
+      },
+      "type": "equipment",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.44F1mfJei4GY8f2X",
+        "createdTime": 1795282157012,
+        "modifiedTime": 1795282157012,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Crowbar",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      },
+      "_id": "KJNmwVJOSFD5PV3Z"
+    },
+    {
+      "_id": "9m3alpkhwkVRBVAG",
+      "img": "systems/pf2e/icons/features/feats/marshals-aura.webp",
+      "name": "Эффект: Аура маршала / Effect: Marshal's Aura",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется способностью @UUID[Compendium.pf2e.feats-srd.Item.MYzRfNExDYp25rro]</p><p>Вы получаете бонус состояния +1 к спасброскам против @Trait[Fear]{страха}.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": null,
+          "sustained": false,
+          "unit": "unlimited",
+          "value": -1
+        },
+        "level": {
+          "value": 2
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "label": "PF2E.GenericLabel.ItemVs.Fear",
+            "predicate": [
+              "item:trait:fear"
+            ],
+            "selector": "saving-throw",
+            "type": "status",
+            "value": 1
+          }
+        ],
+        "start": {
+          "value": 0,
+          "initiative": null
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "effect-marshals-aura",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "spellcasting": null,
+            "item": "Actor.bS6TwOYAElK4M61B.Item.OJ2oYPCcl1malNQs",
+            "actor": "Actor.bS6TwOYAElK4M61B",
+            "token": "Scene.bMtJzGzNyFJlx9PW.Token.bOWWICxAy23e67go",
+            "rollOptions": [
+              "origin:type:character",
+              "origin:signature:d2c3c377-e124-5214-b041-2dfac18f5b22",
+              "origin:creature",
+              "origin:level:2",
+              "origin:ancestry:human",
+              "origin:trait:human",
+              "origin:trait:humanoid",
+              "origin:heritage:changeling",
+              "origin:effect:marshals-aura",
+              "origin:mode:living",
+              "origin:trait:changeling",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:item:type:feat",
+              "origin:item:id:OJ2oYPCcl1malNQs",
+              "origin:item:marshal-dedication",
+              "origin:item:slug:marshal-dedication",
+              "origin:item:marshal-skill:diplomacy-expert",
+              "origin:item:trait:archetype",
+              "origin:item:trait:dedication",
+              "origin:item:rarity:common",
+              "origin:item:level:2",
+              "origin:item:category:class"
+            ]
+          },
+          "target": null,
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feat-effects.Item.Ru4BNABCZ0hUbX7S",
+        "createdTime": 1795284741288,
+        "modifiedTime": 1795284741288,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Effect: Marshal's Aura",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "rmd0M70ve3eeBk5r",
+      "img": "systems/pf2e/icons/features/feats/marshals-aura.webp",
+      "name": "Эффект: Аура маршала / Effect: Marshal's Aura",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется способностью @UUID[Compendium.pf2e.feats-srd.Item.MYzRfNExDYp25rro]</p><p>Вы получаете бонус состояния +1 к спасброскам против @Trait[Fear]{страха}.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": null,
+          "sustained": false,
+          "unit": "unlimited",
+          "value": -1
+        },
+        "level": {
+          "value": 2
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "label": "PF2E.GenericLabel.ItemVs.Fear",
+            "predicate": [
+              "item:trait:fear"
+            ],
+            "selector": "saving-throw",
+            "type": "status",
+            "value": 1
+          }
+        ],
+        "start": {
+          "value": 0,
+          "initiative": null
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "effect-marshals-aura",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "spellcasting": null,
+            "item": "Actor.bS6TwOYAElK4M61B.Item.OJ2oYPCcl1malNQs",
+            "actor": "Actor.bS6TwOYAElK4M61B",
+            "token": "Scene.bMtJzGzNyFJlx9PW.Token.bOWWICxAy23e67go",
+            "rollOptions": [
+              "origin:type:character",
+              "origin:signature:d2c3c377-e124-5214-b041-2dfac18f5b22",
+              "origin:creature",
+              "origin:level:2",
+              "origin:ancestry:human",
+              "origin:trait:human",
+              "origin:trait:humanoid",
+              "origin:heritage:changeling",
+              "origin:effect:marshals-aura",
+              "origin:mode:living",
+              "origin:trait:changeling",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:item:type:feat",
+              "origin:item:id:OJ2oYPCcl1malNQs",
+              "origin:item:marshal-dedication",
+              "origin:item:slug:marshal-dedication",
+              "origin:item:marshal-skill:diplomacy-expert",
+              "origin:item:trait:archetype",
+              "origin:item:trait:dedication",
+              "origin:item:rarity:common",
+              "origin:item:level:2",
+              "origin:item:category:class"
+            ]
+          },
+          "target": null,
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feat-effects.Item.Ru4BNABCZ0hUbX7S",
+        "createdTime": 1795284771729,
+        "modifiedTime": 1795284771729,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Effect: Marshal's Aura",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "oX1ywvvqLAi1ztWt",
+      "img": "systems/pf2e/icons/features/feats/marshals-aura.webp",
+      "name": "Эффект: Аура маршала / Effect: Marshal's Aura",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется способностью @UUID[Compendium.pf2e.feats-srd.Item.MYzRfNExDYp25rro]</p><p>Вы получаете бонус состояния +1 к спасброскам против @Trait[Fear]{страха}.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": null,
+          "sustained": false,
+          "unit": "unlimited",
+          "value": -1
+        },
+        "level": {
+          "value": 2
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core 2",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "label": "PF2E.GenericLabel.ItemVs.Fear",
+            "predicate": [
+              "item:trait:fear"
+            ],
+            "selector": "saving-throw",
+            "type": "status",
+            "value": 1
+          }
+        ],
+        "start": {
+          "value": 0,
+          "initiative": 27
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "effect-marshals-aura",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "spellcasting": null,
+            "item": "Actor.bS6TwOYAElK4M61B.Item.OJ2oYPCcl1malNQs",
+            "actor": "Actor.bS6TwOYAElK4M61B",
+            "token": "Scene.fl4vWlkBpNLBhzPf.Token.G32nALWaVgRf4c5O",
+            "rollOptions": [
+              "origin:type:character",
+              "origin:signature:d2c3c377-e124-5214-b041-2dfac18f5b22",
+              "origin:participant:own-turn",
+              "origin:participant:initiative:roll:27",
+              "origin:participant:initiative:rank:1",
+              "origin:participant:initiative:stat:perception",
+              "origin:creature",
+              "origin:level:2",
+              "origin:ancestry:human",
+              "origin:trait:human",
+              "origin:trait:humanoid",
+              "origin:heritage:changeling",
+              "origin:effect:marshals-aura",
+              "origin:mode:living",
+              "origin:trait:changeling",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:item:type:feat",
+              "origin:item:id:OJ2oYPCcl1malNQs",
+              "origin:item:marshal-dedication",
+              "origin:item:slug:marshal-dedication",
+              "origin:item:marshal-skill:diplomacy-expert",
+              "origin:item:trait:archetype",
+              "origin:item:trait:dedication",
+              "origin:item:rarity:common",
+              "origin:item:level:2",
+              "origin:item:category:class"
+            ]
+          },
+          "target": null,
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.feat-effects.Item.Ru4BNABCZ0hUbX7S",
+        "createdTime": 1795285660651,
+        "modifiedTime": 1795285660651,
+        "lastModifiedBy": "mi0QNND9f6WvIfwX",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "mi0QNND9f6WvIfwX": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Effect: Marshal's Aura",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "n0KM0CeEKsBNrWjO",
+      "img": "systems/pf2e/icons/spells/guidance.webp",
+      "name": "Эффект заклинания: Наставление / Spell Effect: Guidance",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется заклинанием @UUID[Compendium.pf2e.spells-srd.Item.izcxFQFwf3woCnFs]</p><p>Вы получаете бонус состояния +1 к одному броску атаки, проверке Восприятия, спасброску или проверке навыка. Вы выбираете, для какого броска использовать бонус, но до совершения броска.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": "turn-start",
+          "sustained": false,
+          "unit": "rounds",
+          "value": 1
+        },
+        "level": {
+          "value": 1
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "guidance"
+            ],
+            "removeAfterRoll": "if-enabled",
+            "selector": [
+              "attack",
+              "perception",
+              "saving-throw",
+              "skill-check"
+            ],
+            "type": "status",
+            "value": 1
+          },
+          {
+            "key": "AdjustModifier",
+            "mode": "upgrade",
+            "predicate": [
+              "parent:origin:item:tag:amped",
+              {
+                "gte": [
+                  "parent:origin:item:level",
+                  6
+                ]
+              }
+            ],
+            "selector": "attack",
+            "slug": "guidance",
+            "value": 2
+          }
+        ],
+        "start": {
+          "value": 96,
+          "initiative": 7
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "spell-effect-guidance",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "actor": "Actor.JAHAl9ifRFaDZJF0",
+            "token": "Scene.PV4MknpzgFaVFnVR.Token.udtWcgRAywjm6h6j",
+            "item": "Actor.JAHAl9ifRFaDZJF0.Item.KNxuHGh9MMayMEDH",
+            "spellcasting": {
+              "attribute": {
+                "type": "cha",
+                "mod": 4
+              },
+              "tradition": "divine"
+            },
+            "rollOptions": [
+              "cantrip",
+              "concentrate",
+              "magical",
+              "origin:ancestry:orc",
+              "origin:armored",
+              "origin:caster",
+              "origin:caster:tradition:divine",
+              "origin:condition:cursebound",
+              "origin:condition:cursebound:3",
+              "origin:creature",
+              "origin:effect:battle-medicine-immunity",
+              "origin:effect:marshals-aura",
+              "origin:heritage:winter-orc",
+              "origin:item:cast:actions:1",
+              "origin:item:guidance",
+              "origin:item:id:KNxuHGh9MMayMEDH",
+              "origin:item:level:1",
+              "origin:item:magical",
+              "origin:item:ranged",
+              "origin:item:rank:1",
+              "origin:item:rarity:common",
+              "origin:item:slug:guidance",
+              "origin:item:trait:cantrip",
+              "origin:item:trait:concentrate",
+              "origin:item:trait:divine",
+              "origin:item:type:spell",
+              "origin:level:2",
+              "origin:mode:living",
+              "origin:participant:initiative:rank:10",
+              "origin:participant:initiative:roll:7",
+              "origin:participant:own-turn",
+              "origin:signature:fe4971d0-872a-57ef-9412-7087897fee34",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:trait:humanoid",
+              "origin:trait:orc",
+              "origin:type:character",
+              "spellcasting:attribute:cha",
+              "spellcasting:category:spontaneous",
+              "spellcasting:cha",
+              "spellcasting:divine",
+              "spellcasting:spontaneous",
+              "spellcasting:tradition:divine"
+            ]
+          },
+          "target": {
+            "actor": "Actor.bS6TwOYAElK4M61B",
+            "token": "Scene.PV4MknpzgFaVFnVR.Token.Ig6eTAQvtU5iFXa0"
+          },
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.spell-effects.Item.3qHKBDF7lrHw8jFK",
+        "createdTime": 1795295996884,
+        "modifiedTime": 1795295996884,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Spell Effect: Guidance",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "xlIWjWgw562WkydO",
+      "img": "systems/pf2e/icons/spells/guidance.webp",
+      "name": "Эффект заклинания: Наставление / Spell Effect: Guidance",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется заклинанием @UUID[Compendium.pf2e.spells-srd.Item.izcxFQFwf3woCnFs]</p><p>Вы получаете бонус состояния +1 к одному броску атаки, проверке Восприятия, спасброску или проверке навыка. Вы выбираете, для какого броска использовать бонус, но до совершения броска.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": "turn-start",
+          "sustained": false,
+          "unit": "rounds",
+          "value": 1
+        },
+        "level": {
+          "value": 1
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "guidance"
+            ],
+            "removeAfterRoll": "if-enabled",
+            "selector": [
+              "attack",
+              "perception",
+              "saving-throw",
+              "skill-check"
+            ],
+            "type": "status",
+            "value": 1
+          },
+          {
+            "key": "AdjustModifier",
+            "mode": "upgrade",
+            "predicate": [
+              "parent:origin:item:tag:amped",
+              {
+                "gte": [
+                  "parent:origin:item:level",
+                  6
+                ]
+              }
+            ],
+            "selector": "attack",
+            "slug": "guidance",
+            "value": 2
+          }
+        ],
+        "start": {
+          "value": 96,
+          "initiative": 7
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "spell-effect-guidance",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "spellcasting": {
+              "tradition": "divine",
+              "attribute": {
+                "type": "cha",
+                "mod": 4
+              }
+            },
+            "item": "Actor.JAHAl9ifRFaDZJF0.Item.KNxuHGh9MMayMEDH",
+            "actor": "Actor.JAHAl9ifRFaDZJF0",
+            "token": "Scene.PV4MknpzgFaVFnVR.Token.udtWcgRAywjm6h6j",
+            "rollOptions": [
+              "origin:type:character",
+              "origin:signature:fe4971d0-872a-57ef-9412-7087897fee34",
+              "origin:participant:own-turn",
+              "origin:participant:initiative:roll:7",
+              "origin:participant:initiative:rank:10",
+              "origin:creature",
+              "origin:level:2",
+              "origin:ancestry:orc",
+              "origin:trait:humanoid",
+              "origin:trait:orc",
+              "origin:heritage:winter-orc",
+              "origin:caster",
+              "origin:caster:tradition:divine",
+              "origin:condition:cursebound",
+              "origin:condition:cursebound:3",
+              "origin:effect:battle-medicine-immunity",
+              "origin:effect:marshals-aura",
+              "origin:mode:living",
+              "origin:armored",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:item:type:spell",
+              "origin:item:id:KNxuHGh9MMayMEDH",
+              "origin:item:guidance",
+              "origin:item:slug:guidance",
+              "origin:item:trait:cantrip",
+              "origin:item:trait:concentrate",
+              "origin:item:rarity:common",
+              "origin:item:magical",
+              "origin:item:level:1",
+              "magical",
+              "origin:item:rank:1",
+              "cantrip",
+              "concentrate",
+              "origin:item:trait:divine",
+              "origin:item:ranged",
+              "spellcasting:cha",
+              "spellcasting:attribute:cha",
+              "spellcasting:spontaneous",
+              "spellcasting:category:spontaneous",
+              "spellcasting:divine",
+              "spellcasting:tradition:divine",
+              "origin:item:cast:actions:1"
+            ]
+          },
+          "target": null,
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.spell-effects.Item.3qHKBDF7lrHw8jFK",
+        "createdTime": 1795295997156,
+        "modifiedTime": 1795295997156,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Spell Effect: Guidance",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "EHr0OtewasXxMduj",
+      "img": "systems/pf2e/icons/spells/guidance-immune.webp",
+      "name": "Эффект: Иммунитет наставления / Effect: Guidance Immunity",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется после использования на Вас @UUID[Compendium.pf2e.spells-srd.Item.izcxFQFwf3woCnFs]. В течение этого эффекта у Вас иммунитет к этому заклинанию.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": "turn-start",
+          "sustained": false,
+          "unit": "hours",
+          "value": 1
+        },
+        "level": {
+          "value": 1
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [],
+        "start": {
+          "value": 96,
+          "initiative": 7
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "effect-guidance-immunity",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "spellcasting": {
+              "tradition": "divine",
+              "attribute": {
+                "type": "cha",
+                "mod": 4
+              }
+            },
+            "item": "Actor.JAHAl9ifRFaDZJF0.Item.KNxuHGh9MMayMEDH",
+            "actor": "Actor.JAHAl9ifRFaDZJF0",
+            "token": "Scene.PV4MknpzgFaVFnVR.Token.udtWcgRAywjm6h6j",
+            "rollOptions": [
+              "origin:type:character",
+              "origin:signature:fe4971d0-872a-57ef-9412-7087897fee34",
+              "origin:participant:own-turn",
+              "origin:participant:initiative:roll:7",
+              "origin:participant:initiative:rank:10",
+              "origin:creature",
+              "origin:level:2",
+              "origin:ancestry:orc",
+              "origin:trait:humanoid",
+              "origin:trait:orc",
+              "origin:heritage:winter-orc",
+              "origin:caster",
+              "origin:caster:tradition:divine",
+              "origin:condition:cursebound",
+              "origin:condition:cursebound:3",
+              "origin:effect:battle-medicine-immunity",
+              "origin:effect:marshals-aura",
+              "origin:mode:living",
+              "origin:armored",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:item:type:spell",
+              "origin:item:id:KNxuHGh9MMayMEDH",
+              "origin:item:guidance",
+              "origin:item:slug:guidance",
+              "origin:item:trait:cantrip",
+              "origin:item:trait:concentrate",
+              "origin:item:rarity:common",
+              "origin:item:magical",
+              "origin:item:level:1",
+              "magical",
+              "origin:item:rank:1",
+              "cantrip",
+              "concentrate",
+              "origin:item:trait:divine",
+              "origin:item:ranged",
+              "spellcasting:cha",
+              "spellcasting:attribute:cha",
+              "spellcasting:spontaneous",
+              "spellcasting:category:spontaneous",
+              "spellcasting:divine",
+              "spellcasting:tradition:divine",
+              "origin:item:cast:actions:1"
+            ]
+          },
+          "target": null,
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.spell-effects.Item.3LyOkV25p7wA181H",
+        "createdTime": 1795295997348,
+        "modifiedTime": 1795295997348,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Effect: Guidance Immunity",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    },
+    {
+      "_id": "u1zgGREPFnqbKPiq",
+      "img": "systems/pf2e/icons/spells/guidance-immune.webp",
+      "name": "Эффект: Иммунитет наставления / Effect: Guidance Immunity",
+      "system": {
+        "description": {
+          "value": "<p>Предоставляется после использования на Вас @UUID[Compendium.pf2e.spells-srd.Item.izcxFQFwf3woCnFs]. В течение этого эффекта у Вас иммунитет к этому заклинанию.</p>",
+          "gm": ""
+        },
+        "duration": {
+          "expiry": "turn-start",
+          "sustained": false,
+          "unit": "hours",
+          "value": 1
+        },
+        "level": {
+          "value": 1
+        },
+        "publication": {
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core",
+          "authors": ""
+        },
+        "rules": [],
+        "start": {
+          "value": 96,
+          "initiative": 7
+        },
+        "tokenIcon": {
+          "show": true
+        },
+        "traits": {
+          "value": [],
+          "otherTags": []
+        },
+        "slug": "effect-guidance-immunity",
+        "_migration": {
+          "version": 0.961,
+          "previous": null
+        },
+        "unidentified": false,
+        "badge": null,
+        "fromSpell": false,
+        "context": {
+          "origin": {
+            "actor": "Actor.JAHAl9ifRFaDZJF0",
+            "token": "Scene.PV4MknpzgFaVFnVR.Token.udtWcgRAywjm6h6j",
+            "item": "Actor.JAHAl9ifRFaDZJF0.Item.KNxuHGh9MMayMEDH",
+            "spellcasting": {
+              "attribute": {
+                "type": "cha",
+                "mod": 4
+              },
+              "tradition": "divine"
+            },
+            "rollOptions": [
+              "cantrip",
+              "concentrate",
+              "magical",
+              "origin:ancestry:orc",
+              "origin:armored",
+              "origin:caster",
+              "origin:caster:tradition:divine",
+              "origin:condition:cursebound",
+              "origin:condition:cursebound:3",
+              "origin:creature",
+              "origin:effect:battle-medicine-immunity",
+              "origin:effect:marshals-aura",
+              "origin:heritage:winter-orc",
+              "origin:item:cast:actions:1",
+              "origin:item:guidance",
+              "origin:item:id:KNxuHGh9MMayMEDH",
+              "origin:item:level:1",
+              "origin:item:magical",
+              "origin:item:ranged",
+              "origin:item:rank:1",
+              "origin:item:rarity:common",
+              "origin:item:slug:guidance",
+              "origin:item:trait:cantrip",
+              "origin:item:trait:concentrate",
+              "origin:item:trait:divine",
+              "origin:item:type:spell",
+              "origin:level:2",
+              "origin:mode:living",
+              "origin:participant:initiative:rank:10",
+              "origin:participant:initiative:roll:7",
+              "origin:participant:own-turn",
+              "origin:signature:fe4971d0-872a-57ef-9412-7087897fee34",
+              "origin:size:2",
+              "origin:size:medium",
+              "origin:trait:humanoid",
+              "origin:trait:orc",
+              "origin:type:character",
+              "spellcasting:attribute:cha",
+              "spellcasting:category:spontaneous",
+              "spellcasting:cha",
+              "spellcasting:divine",
+              "spellcasting:spontaneous",
+              "spellcasting:tradition:divine"
+            ]
+          },
+          "target": {
+            "actor": "Actor.bS6TwOYAElK4M61B",
+            "token": "Scene.PV4MknpzgFaVFnVR.Token.Ig6eTAQvtU5iFXa0"
+          },
+          "roll": null
+        }
+      },
+      "type": "effect",
+      "_stats": {
+        "coreVersion": "14.367",
+        "systemId": "pf2e",
+        "systemVersion": "8.7.0",
+        "compendiumSource": "Compendium.pf2e.spell-effects.Item.3LyOkV25p7wA181H",
+        "createdTime": 1795295999409,
+        "modifiedTime": 1795295999409,
+        "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+        "duplicateSource": null,
+        "exportSource": null
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0,
+        "1QIbSagkQ4oEC0Q1": 3
+      },
+      "flags": {
+        "babele": {
+          "translated": true,
+          "hasTranslation": true,
+          "originalName": "Effect: Guidance Immunity",
+          "originalPayload": {},
+          "lang": "ru"
+        }
+      }
+    }
+  ],
+  "folder": null,
+  "flags": {
+    "campaign-codex": {
+      "linkedSheets": [
+        {
+          "name": "Малахия Вейн/Шёлковый паук",
+          "uuid": "JournalEntry.DXtiN0tbkLLXQzOq"
+        }
+      ]
+    }
+  },
+  "_stats": {
+    "coreVersion": "14.367",
+    "systemId": "pf2e",
+    "systemVersion": "8.7.0",
+    "createdTime": 1794388364864,
+    "modifiedTime": 1795429415925,
+    "lastModifiedBy": "1QIbSagkQ4oEC0Q1",
+    "compendiumSource": null,
+    "duplicateSource": null,
+    "exportSource": {
+      "worldId": "westmarches",
+      "uuid": "Actor.bS6TwOYAElK4M61B",
+      "coreVersion": "14.367",
+      "systemId": "pf2e",
+      "systemVersion": "8.7.0"
+    }
+  },
+  "_id": "bS6TwOYAElK4M61B"
+}

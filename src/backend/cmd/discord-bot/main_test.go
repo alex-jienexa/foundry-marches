@@ -1,0 +1,815 @@
+package main
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/bwmarrin/discordgo"
+)
+
+func TestCommandOptionsReadDiscordUserMention(t *testing.T) {
+	options := []*discordgo.ApplicationCommandInteractionDataOption{
+		{Name: "owner", Type: discordgo.ApplicationCommandOptionUser, Value: "123456789012345678"},
+	}
+	got := commandOptions(options)
+	if got["owner"] != "123456789012345678" {
+		t.Fatalf("owner option = %q, want Discord user ID", got["owner"])
+	}
+}
+
+func TestCommandOptionsReadStringValue(t *testing.T) {
+	options := []*discordgo.ApplicationCommandInteractionDataOption{
+		{Name: "name", Type: discordgo.ApplicationCommandOptionString, Value: "Андрей"},
+	}
+	got := commandOptions(options)
+	if got["name"] != "Андрей" {
+		t.Fatalf("name option = %q, want Андрей", got["name"])
+	}
+}
+
+func TestDirectoryEmbedUsesReadableStatusesAndCounts(t *testing.T) {
+	embed := directoryEmbed("Персонажи", "Список", []string{"Андрей · " + characterStatusLabel("draft"), "Вихорь · " + characterStatusLabel("active")}, 1)
+	if embed.Title != "Персонажи" || len(embed.Fields) != 1 {
+		t.Fatalf("unexpected directory embed: %+v", embed)
+	}
+	if !strings.Contains(embed.Fields[0].Value, "Андрей · черновик") {
+		t.Fatalf("directory field = %q, missing localized status", embed.Fields[0].Value)
+	}
+	if embed.Footer == nil || embed.Footer.Text != "Показано 1 из 2 · ещё 1 не показано" {
+		t.Fatalf("directory footer = %+v", embed.Footer)
+	}
+}
+
+func TestPageBounds(t *testing.T) {
+	tests := []struct {
+		name      string
+		total     int
+		page      int
+		wantStart int
+		wantEnd   int
+	}{
+		{name: "first page", total: 60, page: 0, wantStart: 0, wantEnd: 25},
+		{name: "middle page", total: 60, page: 1, wantStart: 25, wantEnd: 50},
+		{name: "last partial page", total: 60, page: 2, wantStart: 50, wantEnd: 60},
+		{name: "page is clamped", total: 26, page: 99, wantStart: 25, wantEnd: 26},
+		{name: "negative page is clamped", total: 26, page: -1, wantStart: 0, wantEnd: 25},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStart, gotEnd := pageBounds(tt.total, tt.page)
+			if gotStart != tt.wantStart || gotEnd != tt.wantEnd {
+				t.Fatalf("pageBounds(%d, %d) = (%d, %d), want (%d, %d)", tt.total, tt.page, gotStart, gotEnd, tt.wantStart, tt.wantEnd)
+			}
+		})
+	}
+}
+
+func TestTruncateLabel(t *testing.T) {
+	short := "Андрей"
+	if got := truncateLabel(short); got != short {
+		t.Fatalf("truncateLabel(%q) = %q", short, got)
+	}
+	long := "персонаж"
+	for range 120 {
+		long += "я"
+	}
+	if got := truncateLabel(long); len([]rune(got)) > 100 {
+		t.Fatalf("truncateLabel returned %d runes, want <= 100", len([]rune(got)))
+	}
+}
+
+func TestCharacterEmbedUsesDecodedFields(t *testing.T) {
+	level := 2
+	currentHP, maxHP := 18, 24
+	c := characterDetails{}
+	c.Identity.Name = "Тестовый герой"
+	c.Identity.UUID = "Actor.test"
+	c.Progression.Level = &level
+	c.Attributes.HP = &struct {
+		Current *int `json:"current"`
+		Temp    *int `json:"temp"`
+		Max     *int `json:"max"`
+	}{Current: &currentHP, Max: &maxHP}
+
+	embed := characterEmbed(c)
+	if embed.Title != "Тестовый герой" {
+		t.Fatalf("embed title = %q", embed.Title)
+	}
+	if len(embed.Fields) < 2 {
+		t.Fatalf("embed has %d fields, want at least level and HP", len(embed.Fields))
+	}
+	if embed.Footer == nil || embed.Footer.Text == "" {
+		t.Fatal("embed footer must identify the Foundry snapshot")
+	}
+}
+
+func TestIntegrationStatusEmbedMarksUnavailableComponents(t *testing.T) {
+	embed := integrationStatusEmbed(integrationStatus{
+		Database: healthComponent{OK: true, Detail: "db ok"},
+		Relay:    healthComponent{OK: false, Detail: "relay timeout"},
+		Foundry:  healthComponent{OK: true, Detail: "world connected"},
+	})
+	if embed.Color != 0xED4245 {
+		t.Fatalf("embed color = %#x, want error color", embed.Color)
+	}
+	if len(embed.Fields) != 3 {
+		t.Fatalf("embed fields = %d, want 3", len(embed.Fields))
+	}
+}
+
+func TestCharacterAbilitiesEmbedSeparatesAbilitiesAndActions(t *testing.T) {
+	level := 1
+	featureLevel := 1
+	futureFeatureLevel := 3
+	one, two, three, four, zero := 1, 2, 3, 4, 0
+	classCategory := "class"
+	ancestryCategory := "ancestry"
+	classFeatureCategory := "classfeature"
+	ancestryFeatureCategory := "ancestryfeature"
+	generalCategory := "general"
+	skillCategory := "skill"
+	reaction := "reaction"
+
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Identity.UUID = "Actor.andrey"
+	c.Progression.Level = &level
+	c.Build.Ancestry = &characterReference{Name: "Человек"}
+	c.Build.Heritage = &characterReference{Name: "Видящий во мраке"}
+	c.Build.Background = &characterReference{Name: "Уличный бродяга"}
+	c.Build.Class = &characterReference{Name: "Воин"}
+	keyAbility := "str"
+	c.Build.KeyAbility = &keyAbility
+	c.Build.ClassProficiencies = &classProficiencyDetails{Features: []classFeatureReference{
+		{Name: "Реагирующий удар", Level: &featureLevel},
+		{Name: "Блок щитом", Level: &featureLevel},
+		{Name: "Храбрость", Level: &futureFeatureLevel},
+	}}
+	c.Build.AncestryFeatures = []classFeatureReference{
+		{Name: "Особенность рода", Level: &featureLevel},
+		{Name: "Будущая особенность", Level: &futureFeatureLevel},
+	}
+	c.Items = []characterItem{
+		{Name: "Двойной разрез / Double Slice", Type: "feat", SystemCategory: &classCategory},
+		{Name: "Видящий во мраке / Gloomseer", Type: "feat", SystemCategory: &ancestryCategory},
+		{Name: "Особенность рода", Type: "feat", SystemCategory: &ancestryFeatureCategory},
+		{Name: "Реагирующий удар / Reactive Strike", Type: "action", ActionType: &reaction},
+		{Name: "Реагирующий удар / Reactive Strike", Type: "feat", SystemCategory: &classFeatureCategory},
+		{Name: "Блок щитом / Shield Block", Type: "feat", SystemCategory: &generalCategory},
+		{Name: "Стойкий / Diehard", Type: "feat", SystemCategory: &generalCategory},
+		{Name: "Сильный носильщик / Hefty Hauler", Type: "feat", SystemCategory: &skillCategory},
+		{Name: "Длинный меч / Longsword", Type: "weapon", Category: "equipment"},
+		{Name: "Золотые монеты / Gold Pieces", Type: "treasure", Category: "equipment"},
+	}
+	c.Items[len(c.Items)-1].Quantity = &two
+	c.Skills.Standard = map[string]characterSkill{
+		"athletics":    {Rank: &one},
+		"diplomacy":    {Rank: &zero},
+		"intimidation": {Rank: &four},
+		"thievery":     {Rank: &three},
+	}
+	c.Skills.Lore = map[string]characterSkill{
+		"lore-warfare": {Rank: &two},
+	}
+
+	embed := characterAbilitiesEmbed(c)
+	fields := make(map[string]string, len(embed.Fields))
+	fieldOrder := make([]string, 0, len(embed.Fields))
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+		fieldOrder = append(fieldOrder, field.Name)
+	}
+	wantOrder := []string{"Особенности класса", "Способности класса", "Особенности родословной", "Способности родословной", "Способности навыков", "Другие способности"}
+	for index, name := range wantOrder {
+		if index >= len(fieldOrder) || fieldOrder[index] != name {
+			t.Fatalf("ability field order = %v, want prefix %v", fieldOrder, wantOrder)
+		}
+	}
+	checks := []struct {
+		field string
+		want  string
+	}{
+		{"Особенности класса", "Реагирующий удар"},
+		{"Способности класса", "Двойной разрез"},
+		{"Особенности родословной", "Особенность рода"},
+		{"Способности родословной", "Видящий во мраке"},
+		{"Способности навыков", "Сильный носильщик"},
+	}
+	for _, check := range checks {
+		if !strings.Contains(fields[check.field], check.want) {
+			t.Errorf("field %q = %q, want it to contain %q", check.field, fields[check.field], check.want)
+		}
+	}
+	if strings.Contains(fields["Особенности класса"], "Храбрость") {
+		t.Error("class feature above the character's level must be hidden")
+	}
+	if strings.Contains(fields["Другие способности"], "Блок щитом") {
+		t.Errorf("class feature duplicate must not appear under other abilities: %q", fields["Другие способности"])
+	}
+	if strings.Contains(fields["Другие способности"], "Сильный носильщик") {
+		t.Errorf("skill feat must not be duplicated under other abilities: %q", fields["Другие способности"])
+	}
+	if strings.Count(fields["Особенности класса"], "Реагирующий удар") != 1 {
+		t.Errorf("class feature must not be duplicated: %q", fields["Особенности класса"])
+	}
+}
+
+func TestCharacterSpellsEmbedSeparatesPreparedSlotsFromPreparationList(t *testing.T) {
+	preparedType := "prepared"
+	tradition := "arcane"
+	list := "Арканная книга"
+	prepared := true
+	unprepared := false
+	c := characterDetails{}
+	c.Identity.Name = "Маг"
+	c.Items = []characterItem{
+		{Name: "Свет", Type: "spell", Level: characterTestIntPointer(0), SpellcastingType: &preparedType, Tradition: &tradition, SpellList: &list, Prepared: &prepared, PreparedRanks: []int{0}},
+		{Name: "Магическая стрела", Type: "spell", Level: characterTestIntPointer(1), SpellcastingType: &preparedType, Tradition: &tradition, SpellList: &list, Prepared: &prepared, PreparedRanks: []int{1}},
+		{Name: "Щит", Type: "spell", Level: characterTestIntPointer(1), SpellcastingType: &preparedType, Tradition: &tradition, SpellList: &list, Prepared: &unprepared},
+	}
+	embed := characterSpellsEmbed(c)
+	fields := make(map[string]string)
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+	}
+	var cantripPrepared, rankOnePrepared, rankOneBook bool
+	for name, value := range fields {
+		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "чары") && strings.Contains(value, "Свет") {
+			cantripPrepared = true
+		}
+		if strings.Contains(name, "Подготовлено") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Магическая стрела") {
+			rankOnePrepared = true
+		}
+		if strings.Contains(name, "ПОДГОТОВКА") && strings.Contains(name, "ранг 1") && strings.Contains(value, "Щит") {
+			rankOneBook = true
+		}
+	}
+	if !cantripPrepared || !rankOnePrepared || !rankOneBook {
+		t.Fatalf("prepared/book groups incorrect: %+v", fields)
+	}
+}
+
+func characterTestIntPointer(value int) *int { return &value }
+
+func TestCharacterNavigationHighlightsAndDisablesActivePage(t *testing.T) {
+	initial := characterDetailComponents("flow", "overview")
+	initialFirst := initial[0].(discordgo.ActionsRow)
+	initialCard := initialFirst.Components[0].(discordgo.Button)
+	if initialCard.Label != "Карточка" || initialCard.Style != discordgo.PrimaryButton || !initialCard.Disabled {
+		t.Fatalf("initial card button should be first, highlighted and disabled: %+v", initialCard)
+	}
+	components := characterDetailComponents("flow", "skills")
+	if len(components) != 2 {
+		t.Fatalf("navigation rows = %d, want 2", len(components))
+	}
+	first := components[0].(discordgo.ActionsRow)
+	second := components[1].(discordgo.ActionsRow)
+	buttons := append(append([]discordgo.MessageComponent{}, first.Components...), second.Components...)
+	if len(buttons) != 6 {
+		t.Fatalf("navigation buttons = %d, want 6", len(buttons))
+	}
+	labels := make([]string, 0, len(buttons))
+	activeFound := false
+	for _, component := range buttons {
+		button := component.(discordgo.Button)
+		labels = append(labels, button.Label)
+		if button.Label == "Навыки" {
+			activeFound = button.Style == discordgo.PrimaryButton && button.Disabled
+		}
+		if button.Label == "Карточка" && (button.Style != discordgo.SecondaryButton || button.Disabled) {
+			t.Fatalf("inactive card button should remain enabled and secondary: %+v", button)
+		}
+		if button.Label == "К карточке" {
+			t.Fatal("legacy return button must not be present")
+		}
+	}
+	if !activeFound {
+		t.Fatalf("active skills button was not highlighted and disabled: %v", labels)
+	}
+}
+
+func TestCharacterSkillsEmbedGroupsSkillFeatsBySkill(t *testing.T) {
+	diplomacy, athletics := "diplomacy", "athletics"
+	category := "skill"
+	trained := 1
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Skills.Standard = map[string]characterSkill{"diplomacy": {Rank: &trained}}
+	c.Items = []characterItem{
+		{Name: "Остроумная реплика / Bon Mot", Type: "feat", SystemCategory: &category, Skill: &diplomacy},
+		{Name: "Атлетическая мощь / Powerful Leap", Type: "feat", SystemCategory: &category, Skill: &athletics},
+	}
+	embed := characterSkillsEmbed(c)
+	fields := make(map[string]string)
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+	}
+	if !strings.Contains(fields["Все навыки"], "Дипломатия — Обучен") {
+		t.Fatalf("skills field = %q, missing trained Diplomacy", fields["Все навыки"])
+	}
+	grouped := fields["Способности навыков"]
+	for _, want := range []string{"Дипломатия", "- Остроумная реплика", "Атлетика", "- Атлетическая мощь"} {
+		if !strings.Contains(grouped, want) {
+			t.Errorf("grouped skill feats = %q, missing %q", grouped, want)
+		}
+	}
+	if strings.Contains(grouped, "Способности · ") {
+		t.Errorf("skill names must be lines inside one field, not separate field headings: %q", grouped)
+	}
+}
+
+func TestResolveFoundryImageURL(t *testing.T) {
+	relative := "systems/pf2e/icons/default-icons/character.svg"
+	got := resolveFoundryImageURL(&relative, "https://foundry.example.test")
+	if got == nil || *got != "https://foundry.example.test/systems/pf2e/icons/default-icons/character.svg" {
+		t.Fatalf("resolved image URL = %v", got)
+	}
+	absolute := "https://cdn.example.test/portrait.webp"
+	got = resolveFoundryImageURL(&absolute, "")
+	if got == nil || *got != absolute {
+		t.Fatalf("absolute image URL = %v", got)
+	}
+	got = resolveFoundryImageURL(&relative, "")
+	if got != nil {
+		t.Fatalf("relative image without public base should be omitted, got %v", *got)
+	}
+}
+
+func TestCharacterCardUsesFoundryPlaceholderWithoutPortrait(t *testing.T) {
+	want := "https://foundry.example.test/systems/pf2e/icons/default-icons/character.svg"
+	empty := ""
+	for _, source := range []*string{nil, &empty} {
+		portrait := characterPortraitURL(source, "https://foundry.example.test")
+		if portrait == nil || *portrait != want {
+			t.Fatalf("placeholder portrait = %v, want %q", portrait, want)
+		}
+		character := characterDetails{}
+		character.Identity.Name = "Без портрета"
+		character.Identity.Image = portrait
+		embed := characterEmbed(character)
+		if embed.Thumbnail == nil || embed.Thumbnail.URL != want {
+			t.Fatalf("thumbnail = %+v, want Foundry placeholder", embed.Thumbnail)
+		}
+		fields := make(map[string]string)
+		for _, field := range embed.Fields {
+			fields[field.Name] = field.Value
+		}
+		for _, name := range []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"} {
+			if _, exists := fields[name]; !exists {
+				t.Errorf("card without portrait is missing standard field %q: %+v", name, fields)
+			}
+		}
+		if fields["ОЗ"] != "— / —" {
+			t.Errorf("missing HP field = %q, want explicit unavailable current and maximum", fields["ОЗ"])
+		}
+	}
+}
+
+func TestCharacterSpellsGroupSpontaneousCantripsSeparately(t *testing.T) {
+	spontaneous := "spontaneous"
+	divine := "divine"
+	entry := "Гармонизация явлений / Apparition Attunement"
+	cantrip, ordinarySpell := true, false
+	rankOne := 1
+	c := characterDetails{}
+	c.Identity.Name = "Оракул"
+	c.Items = []characterItem{
+		{Name: "Престидижитация / Prestidigitation", Type: "spell", Level: &rankOne, Cantrip: cantrip, SpellcastingType: &spontaneous, Tradition: &divine, SpellList: &entry},
+		{Name: "Оплетающая лоза / Tangle Vine", Type: "spell", Level: &rankOne, Cantrip: ordinarySpell, SpellcastingType: &spontaneous, Tradition: &divine, SpellList: &entry},
+	}
+	embeds := characterSpellsEmbeds(c)
+	if len(embeds) != 1 || len(embeds[0].Fields) != 2 {
+		t.Fatalf("got %d embeds and %d fields, want separate cantrip and rank-1 groups", len(embeds), len(embeds[0].Fields))
+	}
+	joined := ""
+	for _, field := range embeds[0].Fields {
+		joined += field.Name + "\n" + field.Value + "\n"
+	}
+	for _, want := range []string{"В репертуаре", "чары", "ранг 1", "Престидижитация", "Оплетающая лоза"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("spontaneous spell output missing %q: %s", want, joined)
+		}
+	}
+}
+
+func TestCharacterCardUsesIdenticalCoreLayoutForMissingData(t *testing.T) {
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	embed := characterEmbed(c)
+	wantNames := []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"}
+	if len(embed.Fields) != len(wantNames) {
+		t.Fatalf("card fields = %d, want exactly %d: %+v", len(embed.Fields), len(wantNames), embed.Fields)
+	}
+	for i, name := range wantNames {
+		if embed.Fields[i].Name != name {
+			t.Errorf("field %d = %q, want %q", i, embed.Fields[i].Name, name)
+		}
+	}
+	if embed.Description != "" {
+		t.Errorf("card description = %q, derived-stat explanation should not be shown", embed.Description)
+	}
+	if got, want := embed.Fields[4].Value, "СИЛ: — · ЛОВ: — · ТЕЛ: — · ИНТ: — · МДР: — · ХАР: —"; got != want {
+		t.Errorf("missing abilities = %q, want %q", got, want)
+	}
+	if embed.Fields[5].Value != "— / —" {
+		t.Errorf("missing XP = %q, want current/maximum placeholders", embed.Fields[5].Value)
+	}
+}
+
+func TestCharacterSkillLinesSortByHighestProficiencyFirst(t *testing.T) {
+	trained, expert, master, legendary := 1, 2, 3, 4
+	loreMaster := 3
+	lines := characterSkillLines(map[string]characterSkill{
+		"athletics":    {Rank: &trained},
+		"crafting":     {Rank: &expert},
+		"intimidation": {Rank: &legendary},
+		"thievery":     {Rank: &master},
+	}, map[string]characterSkill{
+		"lore-warfare": {Rank: &loreMaster},
+	})
+	want := []string{"Запугивание — Легенда", "Воровство — Мастер", "Знания военного дела — Мастер", "Ремесло — Эксперт", "Атлетика — Обучен"}
+	if len(lines) != len(want) {
+		t.Fatalf("skill lines = %v, want %v", lines, want)
+	}
+	for i := range want {
+		if lines[i] != want[i] {
+			t.Errorf("skill line %d = %q, want %q", i, lines[i], want[i])
+		}
+	}
+}
+
+func TestCharacterSkillAbilityGroupsSortByCountAndUnknownLast(t *testing.T) {
+	skill := "skill"
+	athletics, diplomacy, unknown := "athletics", "diplomacy", ""
+	c := characterDetails{}
+	c.Items = []characterItem{
+		{Name: "Атлетика 1", Type: "feat", SystemCategory: &skill, Skill: &athletics},
+		{Name: "Дипломатия 1", Type: "feat", SystemCategory: &skill, Skill: &diplomacy},
+		{Name: "Дипломатия 2", Type: "feat", SystemCategory: &skill, Skill: &diplomacy},
+		{Name: "Неизвестная способность", Type: "feat", SystemCategory: &skill, Skill: &unknown},
+	}
+	embed := characterSkillsEmbed(c)
+	var grouped string
+	for _, field := range embed.Fields {
+		if field.Name == "Способности навыков" {
+			grouped = field.Value
+		}
+	}
+	diplomacyIndex := strings.Index(grouped, "Дипломатия")
+	athleticsIndex := strings.Index(grouped, "Атлетика")
+	unknownIndex := strings.Index(grouped, "Навык не определён")
+	if diplomacyIndex < 0 || athleticsIndex < 0 || unknownIndex < 0 ||
+		!(diplomacyIndex < athleticsIndex && athleticsIndex < unknownIndex) {
+		t.Fatalf("skill ability groups are not ordered by count with unknown last: %q", grouped)
+	}
+	if strings.Contains(grouped, "ещё") {
+		t.Fatalf("skill ability list must not be shortened: %q", grouped)
+	}
+}
+
+func TestCharacterSpellsOrderFocusCantripsBeforeNamedSpells(t *testing.T) {
+	focus := "focus"
+	divine := "divine"
+	list := "Фокусный источник"
+	cantrip := true
+	rankOne := 1
+	c := characterDetails{}
+	c.Identity.Name = "Оракул"
+	c.Items = []characterItem{
+		{Name: "Ярость духов", Type: "spell", Level: &rankOne, SpellcastingType: &focus, Tradition: &divine, SpellList: &list},
+		{Name: "Свет", Type: "spell", Level: &rankOne, Cantrip: cantrip, SpellcastingType: &focus, Tradition: &divine, SpellList: &list},
+	}
+	embed := characterSpellsEmbed(c)
+	if len(embed.Fields) != 2 {
+		t.Fatalf("focus spell fields = %d, want cantrip and spell groups: %+v", len(embed.Fields), embed.Fields)
+	}
+	if !strings.Contains(embed.Fields[0].Name, "ФОКУСНЫЕ ЗАКЛИНАНИЯ") ||
+		!strings.Contains(embed.Fields[0].Name, "чары") ||
+		!strings.Contains(embed.Fields[0].Value, "Свет") {
+		t.Fatalf("focus cantrip should be listed first: %+v", embed.Fields)
+	}
+	if !strings.Contains(embed.Fields[1].Value, "Ярость духов") {
+		t.Fatalf("focus spells should follow cantrips: %+v", embed.Fields)
+	}
+}
+
+func TestCharacterListFieldDoesNotShortenEntriesAfterTen(t *testing.T) {
+	entries := make([]string, 12)
+	for i := range entries {
+		entries[i] = fmt.Sprintf("Навык %d", i+1)
+	}
+	embed := &discordgo.MessageEmbed{}
+	addCharacterListField(embed, "Навыки", entries)
+	if len(embed.Fields) != 1 {
+		t.Fatalf("fields = %d, want one field for 12 short entries", len(embed.Fields))
+	}
+	for _, entry := range entries {
+		if !strings.Contains(embed.Fields[0].Value, entry) {
+			t.Errorf("field omitted %q: %q", entry, embed.Fields[0].Value)
+		}
+	}
+	if strings.Contains(embed.Fields[0].Value, "ещё") {
+		t.Fatalf("field contains shortening marker: %q", embed.Fields[0].Value)
+	}
+}
+
+func TestCharacterEmbedUsesPublicFoundryPortrait(t *testing.T) {
+	path := "assets/westmarches/pc/portrait.jpg"
+	resolved := resolveFoundryImageURL(&path, "https://foundry.jiene.ru")
+	if resolved == nil || *resolved != "https://foundry.jiene.ru/assets/westmarches/pc/portrait.jpg" {
+		t.Fatalf("resolved portrait URL = %v", resolved)
+	}
+	character := characterDetails{}
+	character.Identity.Name = "Портретный персонаж"
+	character.Identity.Image = resolved
+	embed := characterEmbed(character)
+	if embed.Thumbnail == nil || embed.Thumbnail.URL != *resolved {
+		t.Fatalf("embed thumbnail = %+v, want resolved public portrait URL", embed.Thumbnail)
+	}
+}
+
+func TestCharacterEmbedDoesNotRenderMissingHPMaximumAsDash(t *testing.T) {
+	current := 19
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Attributes.HP = &struct {
+		Current *int `json:"current"`
+		Temp    *int `json:"temp"`
+		Max     *int `json:"max"`
+	}{Current: &current}
+	embed := characterEmbed(c)
+	for _, field := range embed.Fields {
+		if field.Name == "ОЗ" {
+			if field.Value != "19 / —" {
+				t.Fatalf("HP field = %q, want current and explicitly unavailable maximum", field.Value)
+			}
+			return
+		}
+	}
+	t.Fatal("HP field missing")
+}
+
+func TestCharacterInventoryAndSpellEmbeds(t *testing.T) {
+	level := 2
+	quantity := 3
+	c := characterDetails{}
+	c.Identity.Name = "Андрей"
+	c.Items = []characterItem{
+		{Name: "Меч", Type: "weapon", Category: "equipment", Quantity: &quantity},
+		{Name: "Двойной разрез", Type: "feat", Category: "ability"},
+		{Name: "Огненный снаряд", Type: "spell", Level: &level},
+	}
+	inventory := characterInventoryEmbed(c)
+	if !strings.Contains(inventory.Fields[0].Value, "Меч × 3") ||
+		strings.Contains(inventory.Fields[0].Value, "Двойной разрез") {
+		t.Fatalf("unexpected inventory embed: %+v", inventory)
+	}
+	spells := characterSpellsEmbed(c)
+	if len(spells.Fields) != 1 || !strings.Contains(spells.Fields[0].Name, "ранг 2") || !strings.Contains(spells.Fields[0].Value, "Огненный снаряд") {
+		t.Fatalf("unexpected spell embed: %+v", spells)
+	}
+}
+
+func TestCharacterInventoryIncludesAllPhysicalItemTypesAndState(t *testing.T) {
+	one := 1
+	worn := "worn"
+	stowed := "stowed"
+	inSlot := true
+	invested := true
+	container := "pack"
+	c := characterDetails{}
+	c.Identity.Name = "Малахия"
+	c.Items = []characterItem{
+		{ID: "weapon", Name: "Кинжал", Type: "weapon", Category: "equipment", Quantity: &one, Equipped: &characterEquipped{CarryType: &worn, InSlot: &inSlot}},
+		{ID: "armor", Name: "Кожаный доспех", Type: "armor", Category: "equipment", Equipped: &characterEquipped{CarryType: &worn, InSlot: &inSlot, Invested: &invested}},
+		{ID: "gear", Name: "Верёвка", Type: "equipment", Category: "equipment", ContainerID: &container, Equipped: &characterEquipped{CarryType: &worn}},
+		{ID: "potion", Name: "Зелье", Type: "consumable", Category: "equipment", Quantity: &one, Equipped: &characterEquipped{CarryType: &stowed}},
+		{ID: "pack", Name: "Рюкзак", Type: "backpack", Category: "equipment"},
+		{ID: "coin", Name: "Монеты", Type: "treasure", Category: "equipment", Quantity: &one},
+		{ID: "custom", Name: "Талисман", Type: "customPhysical", Category: "other", Quantity: &one},
+	}
+	embeds := characterInventoryEmbeds(c)
+	if len(embeds) != 1 {
+		t.Fatalf("got %d inventory messages, want all groups in one message", len(embeds))
+	}
+	joined := ""
+	for _, embed := range embeds {
+		for _, field := range embed.Fields {
+			joined += field.Name + "\n" + field.Value + "\n"
+		}
+	}
+	for _, want := range []string{"Кинжал", "Кожаный доспех", "Верёвка", "Зелье", "Рюкзак", "Монеты", "Талисман", "НАДЕТО", "ИНВЕСТИРОВАНО", "УБРАНО", "в Рюкзак"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("inventory output missing %q: %s", want, joined)
+		}
+	}
+}
+
+func TestCharacterSpellsGroupByTraditionAndRank(t *testing.T) {
+	zero, one, two := 0, 1, 2
+	arcane, primal := "arcane", "primal"
+	arcaneList, primalList := "Арканная книга", "Природная книга"
+	prepared := true
+	c := characterDetails{}
+	c.Identity.Name = "Заклинатель"
+	c.Items = []characterItem{
+		{Name: "Щит", Type: "spell", Level: &one, Tradition: &arcane, SpellList: &arcaneList, Prepared: &prepared},
+		{Name: "Магическая стрела", Type: "spell", Level: &one, Tradition: &arcane, SpellList: &arcaneList},
+		{Name: "Зажечь огонь", Type: "spell", Level: &zero, Tradition: &arcane, SpellList: &arcaneList},
+		{Name: "Лечебное растение", Type: "spell", Level: &two, Tradition: &primal, SpellList: &primalList},
+	}
+	embeds := characterSpellsEmbeds(c)
+	if len(embeds) != 1 || len(embeds[0].Fields) != 4 {
+		t.Fatalf("got %d spell embeds with %d fields, want one message with 4 groups separating prepared spells from the preparation list", len(embeds), len(embeds[0].Fields))
+	}
+	joined := ""
+	for _, embed := range embeds {
+		for _, field := range embed.Fields {
+			joined += field.Name + "\n" + field.Value + "\n"
+		}
+	}
+	for _, want := range []string{"Арканная традиция", "Природная традиция", "чары", "ранг 1", "ранг 2", "Подготовлено", "Магическая стрела", "Зажечь огонь", "Лечебное растение"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("spell output missing %q: %s", want, joined)
+		}
+	}
+}
+
+func TestCharacterEmbedFallsBackToReconstructedAbilityWhenStoredValueEmpty(t *testing.T) {
+	emptyScore, emptyModifier := (*int)(nil), (*int)(nil)
+	score, modifier := 16, 3
+	c := characterDetails{}
+	c.Identity.Name = "Персонаж с восстановленными характеристиками"
+	c.Statistics.Abilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{"wis": {Score: emptyScore, Modifier: emptyModifier}}
+	c.Statistics.ReconstructedAbilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{"wis": {Score: &score, Modifier: &modifier, Derived: true}}
+	embed := characterEmbed(c)
+	for _, field := range embed.Fields {
+		if field.Name == "Характеристики" {
+			if !strings.Contains(field.Value, "МДР: +3") {
+				t.Fatalf("ability field = %q, want reconstructed Wisdom modifier", field.Value)
+			}
+			return
+		}
+	}
+	t.Fatal("ability field missing")
+}
+
+func TestCharacterEmbedMarksPartialGradualAbilityBoosts(t *testing.T) {
+	wisScore, wisModifier := 21, 5
+	chaScore, chaModifier := 19, 4
+	c := characterDetails{}
+	c.Identity.Name = "Персонаж с частичными повышениями"
+	c.Statistics.Abilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{
+		"wis": {Score: &wisScore, Modifier: &wisModifier},
+	}
+	c.Statistics.ReconstructedAbilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{
+		"cha": {Score: &chaScore, Modifier: &chaModifier, Derived: true},
+	}
+	embed := characterEmbed(c)
+	for _, field := range embed.Fields {
+		if field.Name != "Характеристики" {
+			continue
+		}
+		for _, want := range []string{"МДР: +5½", "ХАР: +4½"} {
+			if !strings.Contains(field.Value, want) {
+				t.Errorf("ability field = %q, want partial marker %q", field.Value, want)
+			}
+		}
+		return
+	}
+	t.Fatal("ability field missing")
+}
+
+func TestCharacterSummaryCardContainsOnlyCoreFields(t *testing.T) {
+	level, xp, hp, maxHP := 2, 400, 2, 24
+	c := characterDetails{}
+	c.Identity.Name = "Малахия"
+	c.Build.Class = &characterReference{Name: "Следователь"}
+	c.Build.Ancestry = &characterReference{Name: "Человек"}
+	c.Progression.Level = &level
+	c.Progression.Experience.Value = &xp
+	c.Attributes.HP = &struct {
+		Current *int `json:"current"`
+		Temp    *int `json:"temp"`
+		Max     *int `json:"max"`
+	}{Current: &hp, Max: &maxHP}
+	score, modifier := 12, 1
+	c.Statistics.Abilities = map[string]struct {
+		Score    *int `json:"score"`
+		Modifier *int `json:"modifier"`
+		Derived  bool `json:"derived"`
+	}{"int": {Score: &score, Modifier: &modifier}}
+	embed := characterEmbed(c)
+	fields := make(map[string]string, len(embed.Fields))
+	for _, field := range embed.Fields {
+		fields[field.Name] = field.Value
+	}
+	for _, name := range []string{"Класс", "Родословная", "Уровень", "ОЗ", "Характеристики", "Опыт"} {
+		if fields[name] == "" {
+			t.Errorf("summary card is missing %q", name)
+		}
+	}
+	if fields["ОЗ"] != "2 / 24" || !strings.Contains(fields["Характеристики"], "ИНТ: +1") || strings.Contains(fields["Характеристики"], "12") || fields["Опыт"] != "400 / —" {
+		t.Fatalf("summary card fields = %#v", fields)
+	}
+	for _, name := range []string{"Способности класса", "Действия", "Навыки", "Предметы"} {
+		if fields[name] != "" {
+			t.Errorf("detailed field %q should not be in summary card", name)
+		}
+	}
+}
+
+func TestInventoryStateDoesNotTreatEveryWornItemAsWorn(t *testing.T) {
+	worn := "worn"
+	inSlot := false
+	invested := false
+	ordinary := characterItem{Type: "equipment", Equipped: &characterEquipped{CarryType: &worn, InSlot: &inSlot, Invested: &invested}}
+	if got := inventoryStateLabel(ordinary, nil); got != "" {
+		t.Fatalf("ordinary worn carry state = %q, want no misleading worn label", got)
+	}
+	armorSlot := true
+	armor := characterItem{Type: "armor", Equipped: &characterEquipped{CarryType: &worn, InSlot: &armorSlot}}
+	if got := inventoryStateLabel(armor, nil); got != "НАДЕТО КАК ДОСПЕХ" {
+		t.Fatalf("armor state = %q", got)
+	}
+	stowed := "stowed"
+	container := "backpack-id"
+	item := characterItem{Type: "equipment", ContainerID: &container, Equipped: &characterEquipped{CarryType: &stowed}}
+	if got := inventoryStateLabel(item, map[string]string{container: "Рюкзак"}); got != "В РЮКЗАКЕ" {
+		t.Fatalf("stowed item state = %q", got)
+	}
+}
+
+func TestCharacterDetailButtonsStayOnOneMessage(t *testing.T) {
+	for _, section := range []string{"overview", "abilities", "skills", "inventory", "spells", "metrics"} {
+		rows := characterDetailComponents("abc123", section)
+		if len(rows) != 2 {
+			t.Fatalf("%s navigation rows = %d, want 2", section, len(rows))
+		}
+		total := 0
+		for _, component := range rows {
+			row, ok := component.(discordgo.ActionsRow)
+			if !ok {
+				t.Fatalf("%s navigation component has type %T, want ActionsRow", section, component)
+			}
+			total += len(row.Components)
+		}
+		if total != 6 {
+			t.Fatalf("%s navigation buttons = %d, want 6", section, total)
+		}
+	}
+}
+
+func TestCharacterEmbedMarksDyingAtMaximum(t *testing.T) {
+	current, maximum := 4, 4
+	c := characterDetails{}
+	c.Identity.Name = "Павший"
+	c.Attributes.Dying = &characterDying{Current: &current, Max: &maximum}
+	embed := characterEmbed(c)
+	if !strings.Contains(embed.Title, "МЁРТВ") {
+		t.Fatalf("title = %q, want death marker", embed.Title)
+	}
+	if embed.Color != 0xED4245 {
+		t.Fatalf("color = %#x, want death color", embed.Color)
+	}
+}
+
+func TestCharacterSkillLinesUseProficiencyNamesAndIncludeUntrained(t *testing.T) {
+	trained, expert, master, legendary, untrained := 1, 2, 3, 4, 0
+	lines := characterSkillLines(
+		map[string]characterSkill{
+			"athletics":    {Rank: &trained},
+			"crafting":     {Rank: &expert},
+			"intimidation": {Rank: &legendary},
+			"thievery":     {Rank: &master},
+			"diplomacy":    {Rank: &untrained},
+		},
+		map[string]characterSkill{},
+	)
+	joined := strings.Join(lines, "\n")
+	for _, want := range []string{"Атлетика — Обучен", "Ремесло — Эксперт", "Воровство — Мастер", "Запугивание — Легенда", "Дипломатия — Не обучен"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("skill lines %q do not contain %q", joined, want)
+		}
+	}
+	if strings.Index(joined, "Запугивание") > strings.Index(joined, "Дипломатия") {
+		t.Errorf("untrained skills should follow trained skills: %q", joined)
+	}
+}

@@ -94,7 +94,7 @@ ON CONFLICT (id) DO UPDATE SET
   level = CASE WHEN $8::smallint IS NULL THEN characters.level ELSE EXCLUDED.level END,
   xp = CASE WHEN $9::integer IS NULL THEN characters.xp ELSE EXCLUDED.xp END,
   hp_current = COALESCE($10, characters.hp_current),
-  hp_max = COALESCE($11, characters.hp_max),
+  hp_max = $11,
   attributes = EXCLUDED.attributes,
   skills = EXCLUDED.skills
 `
