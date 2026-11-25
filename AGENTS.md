@@ -8,7 +8,8 @@ Read this file before acting. The durable project instructions live in `.agent/`
 2. Follow `.agent/protocols/SESSION_START.md`.
 3. Inspect `git status --short --branch`, `git log -5 --oneline`, and relevant diffs.
 4. Read the assigned task, linked requirements, and relevant ADRs.
-5. Confirm scope and acceptance criteria before changing files.
+5. Read `.agent/protocols/COMMIT_CONVENTIONS.md` before creating or proposing commits.
+6. Confirm scope and acceptance criteria before changing files.
 
 ## Safety
 
@@ -26,6 +27,8 @@ Read this file before acting. The durable project instructions live in `.agent/`
 - Run relevant tests and report exact commands and outcomes.
 - Use isolated branches/worktrees for parallel agents.
 - Make logical checkpoints; do not commit every trivial edit.
+- **Every new commit must follow Conventional Commits 1.0.0** as specified in `.agent/protocols/COMMIT_CONVENTIONS.md`. This applies to all agents and contributors. Never create generic or unstructured commit messages. If no commit is requested, do not create one; when proposing a commit, provide a compliant subject.
+- Do not rewrite historical commit messages merely to normalize them.
 
 ## Finish
 
@@ -40,5 +43,5 @@ Update `.agent/state/HANDOFF.md` with completed work, current state, blockers, a
 - DBML/ER/catalog are derived. Regenerate with `python3 scripts/generate_database_docs.py`; verify with `--check`.
 - Preserve immutable input files under `docs/reference/originals/`; working documents are complete sections, not summaries. See `docs/reference/README.md` for precedence and future-change policy.
 - No application code, production environment, runnable Compose, goose migrations or complete OpenAPI exists yet. Do not claim otherwise or invent verified integration behavior.
-- Owner questions and absent original TЗ are tracked in `docs/development/open-questions.md` and `source-gaps.md`; unresolved assumptions are not approved decisions.
+- Owner questions and absent original ТЗ are tracked in `docs/development/open-questions.md` and `source-gaps.md`; unresolved assumptions are not approved decisions.
 - The `.pad/template-base/` tree is the unmodified upstream merge baseline: do not copy project-specific docs/state into it.
