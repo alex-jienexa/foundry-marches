@@ -1,6 +1,6 @@
 # FoundryMarches — документация
 
-Статус: **спецификация и проверенная SQL-модель; код приложения ещё не создан**. Импорт не является реализацией этапов 0–11.
+Статус: **Go backend, Discord bot, Foundry Relay integration и отдельное Production-окружение реализованы частично и работают в подтверждённом deployment**. Полные этапы 0–11 остаются roadmap; см. [актуальный статус](development/roadmap.md), [контрольные точки](development/milestones.md) и [веху Production deployment](development/milestone-production-deployment.md).
 
 ## По роли и задаче
 
