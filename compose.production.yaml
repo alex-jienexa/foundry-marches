@@ -54,7 +54,7 @@ services:
 
   discord-bot:
     image: ghcr.io/alex-jienexa/foundry-marches-bot:${FOUNDRY_MARCHES_VERSION:?Set FOUNDRY_MARCHES_VERSION in .env.prod}
-    build: null
+    build: !reset null
     pull_policy: always
     environment:
       DISCORD_ADMIN_CHANNEL_ID: ${DISCORD_ADMIN_CHANNEL_ID:?Set DISCORD_ADMIN_CHANNEL_ID in .env.prod}
