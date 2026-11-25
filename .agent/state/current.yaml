@@ -1,30 +1,31 @@
 schema_version: '1.0'
 project_status: active
 health: at_risk
-updated_at: '2026-11-25T15:30:00+03:00'
-current_focus: stabilize Production, implement Foundry item search and Discord NPC webhook messages, then prepare v0.2.0-beta release
+updated_at: '2026-11-25T18:00:00+03:00'
+current_focus: enforce Foundry as authoritative read-only source; stabilize Production; implement item search and NPC Discord webhooks
 active_task: null
 active_branch: feat/conventional-commits
-last_checkpoint: '2026-11-25: Production API, bot and isolated PostgreSQL deployed; Relay/Foundry reachable; 18 Actors discovered; 5-minute background sync enabled; livez/readyz HTTP 200; Conventional Commits policy established'
+last_checkpoint: '2026-11-25: Production deployed and smoke-checked; ADR-0003 establishes Foundry authority and read-only Relay with GM-only Item add/remove as the sole write exception'
 last_verified_commit: 8a69f78fb2a1bafe44fb8203a3a5e82656a0d5eb
 open_blockers:
 - Игровая обратная связь после Production запуска ещё не собрана
 - Регулярное резервное копирование и тестовое восстановление Production ещё не подтверждены
 - Нужно наблюдать RAM/OOM, диск и логи небольшого Production сервера
 - WebDAV ETag/If-Match, Campaign Codex exports, Relay SSE/headless session и usage/quota остаются незавершёнными частями этапа 0
-- Полный acceptance этапов 1 и 2 не закрыт; approval/ownership lifecycle и sync job/retry требуют продолжения
-- Поиск Foundry Items и Discord NPC webhook messages ещё не реализованы
+- Полный acceptance этапов 1 и 2 не закрыт; approval/ownership lifecycle, slot limits, NPC lifecycle и sync job/retry требуют продолжения
+- Read-only Foundry Item search и NPC Discord webhook flow ещё не реализованы
+- GM Item add/remove exception описан, но не реализован; Relay write credential не следует включать до отдельной security review
 - GitHub Actions Release/release notes ещё не реализованы; первый релиз запланирован как v0.2.0-beta
-- Автоматический Production CD заблокирован до отдельной проверки нового сервера, backup/restore и rollback
+- Автоматический Production CD заблокирован до TASK-014, TASK-018 и отдельного подтверждения владельца
 next_actions:
-- Собрать обратную связь игроков и зафиксировать найденные проблемы
-- Проверить backup script, расписание копий и тестовое восстановление в отдельной тестовой БД
-- Наблюдать использование RAM, OOM events, disk space и рост Docker logs
-- Спроектировать и реализовать read-only Foundry item search через Relay для Actor/Compendium Items
-- Реализовать GM-only Discord webhook flow для сообщений от имени НПС с allow-list каналов, аудитом и безопасным хранением credentials
-- Добавить GitHub Actions Release: release notes из Conventional Commits, проверка SemVer и prerelease tag v0.2.0-beta
-- Отдельно проверить новый сервер и процедуру immutable-image deployment/health-check/rollback; CD не включать до подтверждения владельца
-- Продолжить полные этапы 0-11 согласно docs/development/roadmap.md без сокращения acceptance criteria
+- Выполнить TASK-014: собрать обратную связь, проверить backup/restore в отдельной test DB и наблюдать RAM/OOM/disk/logs
+- Выполнить TASK-015: read-only поиск Actor/Compendium Items через Relay
+- Выполнить TASK-016: GM-only NPC Discord webhooks с allow-list каналов, аудитом и защищёнными credentials
+- Продолжить TASK-004: approval/ownership, slot limits, NPC lifecycle, sync retry/recovery
+- Подготовить TASK-017: GitHub Actions Release, Conventional Commit release notes и prerelease v0.2.0-beta
+- После stabilization пройти TASK-018: сервер, immutable image deployment, health checks и rollback; CD не включать до owner approval
+- После read-only Item search спроектировать/реализовать TASK-019: единственный разрешённый GM add/remove Item flow
+- Продолжить полные этапы 0-11, сохраняя acceptance criteria с учётом ADR-0003
 recent_changes:
 - Production deployed в /opt/foundry-marches как изолированный Compose project foundry-marches-prod
 - Production использует отдельные API/Bot/PostgreSQL containers, отдельную БД/volume/network; API опубликован только на 127.0.0.1:8081
@@ -33,13 +34,14 @@ recent_changes:
 - /integration-status подтвердил PostgreSQL, Foundry Relay и Foundry; найдено 18 Actor
 - Foundry background sync включена с интервалом 5 минут
 - GET /livez и GET /readyz вернули HTTP 200 ok
-- Добавлена веха docs/development/milestone-production-deployment.md; обновлены roadmap, milestones и HANDOFF
-- Conventional Commits 1.0.0 закреплён в .agent/protocols/COMMIT_CONVENTIONS.md, AGENTS.md и .agent/agents/IMPLEMENTER.md
-- CI checks и publish workflow для commit 8a69f78 завершились успешно; CD не включён
+- Conventional Commits policy обязательна; Release automation и CD не включены
+- ADR-0003 принят: Foundry — источник истины; Relay read-only, кроме узкого GM Item add/remove
+- TASK-014–TASK-019 добавлены; roadmap, milestones, task index и требования обновлены
 risks:
 - Production сервер ограничен примерно 1.9 GiB RAM и 19 GiB root disk; контролировать OOM и свободное место
 - Backup script включён в deployment bundle, но восстановление из копии ещё не проверено
 - Не трогать существующие jienexyz services/volumes, Caddy, Redis, catalog-container и rosochkinsad.ru
 - Секреты Production не копировать в Git, чат или документацию
 - Не выполнять destructive DB operations и не удалять PostgreSQL volumes
-- Foundry integration остаётся read-only; XP/level write запрещён без отдельного решения и разрешения владельца
+- Relay read credentials должны оставаться read-only; write credential не выдавать общему приложению/игрокам
+- Foundry write разрешён только для GM Item add/remove по ADR-0003 и TASK-019; все остальные Actor writes запрещены
