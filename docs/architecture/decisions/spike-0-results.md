@@ -1,5 +1,50 @@
 # Spike 0 — результаты и план интеграционной проверки
 
+> **Актуализация от 2026-11-25.** Этот документ содержит исторические записи о ходе первоначального spike. При конфликте с этим актуальным разделом приоритет имеют ADR-0003 и нижеследующая актуализация. Исторические тестовые предложения по XP/level/Actor writes, WebDAV и Campaign Codex не являются частью TASK-002 и не должны выполняться в рамках Relay spike.
+
+## Актуальная граница и архитектурное решение
+
+Foundry — единственный источник истины для Actor sheet data и PF2e mechanics. Relay интеграция приложения read-only. Приложение не записывает XP, level, coins/currency, attributes, abilities, HP, AC, skills, class, ancestry, background, Actor ownership/permissions, Actor flags или произвольные Actor fields.
+
+Единственное отдельное исключение — GM-authorized add/remove Item по ADR-0003, которое будет реализовано и проверено только в TASK-019 через изолированный least-privilege путь. Это исключение не расширяет права обычного Relay API key и не входит в TASK-002. Общий Relay write proxy запрещён.
+
+WebDAV, ETag/If-Match, Obsidian и Campaign Codex / Foundry journals перенесены в TASK-007. Там Campaign Codex и Foundry journals рассматриваются как read-only источники; запись в Foundry documents/journals запрещена.
+
+## Подтверждённые результаты на 2026-11-25
+
+| Область | Статус | Подтверждение / границы |
+|---|---|---|
+| Self-hosted Relay | **PASS** | Relay 3.4.1 развёрнут, HTTPS и Foundry pairing подтверждены владельцем |
+| Actor GET | **PASS** | Реализован read-only GET Actor; live smoke test ранее подтвердил ответ Foundry |
+| World sync | **PASS** | Реализована синхронизация; Production integration status подтверждает Foundry и 18 Actors; фоновый sync настроен на 5 минут |
+| Raw snapshot | **PASS** | Сохраняется исходный Actor snapshot, включая неизвестные поля, null и пустые структуры |
+| Actor Items | **PASS** | Экспорт docs/foundry/mxgc0DRWC8bA9ruI-20261118T073146Z-actor.json содержит 16 реальных Actor Items разных типов, включая currency Items |
+| Actor Item decoding | **PASS** | Decoder и тесты покрывают фактические Actor Items; стабильные идентификаторы сохраняются |
+| Compendium references | **PASS** | Ссылки в Class/Ancestry сохраняются; targeted ResolveCompendiumItem реализован и покрыт тестами |
+| Relay client permissions by implementation | **PASS** | Go client содержит GET/read операции; write methods отсутствуют |
+| Actor listing ceiling | **DOCUMENTED** | Лимит 500; достижение лимита приводит к ошибке, чтобы не допустить молчаливую неполную синхронизацию |
+| SSE/hooks | **NOT VERIFIED** | Нужен end-to-end тест доставки события |
+| Headless session | **NOT VERIFIED** | Наличие настройки ALLOW_HEADLESS не доказывает рабочий lifecycle; проверить необходимость для фоновой модели |
+| Usage/quota | **PARTIAL** | Конфигурация global monthly limit известна из deployment notes, но per-key limits/counters и runtime behavior требуют проверки |
+| Active API key scopes | **NOT VERIFIED** | Нужно проверить фактический ключ приложения и оставить только необходимые read scopes |
+
+Важно: факт наличия 16 Items относится к сохранённому экспорту от 2026-11-18 и не утверждает, что каждый Actor в текущем мире имеет инвентарь. Более ранний live snapshot пустого тестового Actor с items=[] был отдельным состоянием/экспортом и не опровергает более поздний/другой экспорт с реальными Items.
+
+## Оставшиеся проверки TASK-002
+
+1. Проверить scopes фактически активного Production API key. Обычный ключ приложения должен содержать только необходимые read scopes. Любые write scopes (entity:write, chat:write, roll:execute, file:write, structure:write и аналогичные) должны быть удалены из обычного ключа. Перед отзывом старого ключа безопасно заменить его и подтвердить работу Production.
+2. Проверить SSE end-to-end: подписаться на событие, вручную изменить disposable Actor через Foundry UI, получить событие и проверить восстановление подписки. Не использовать Relay write endpoints.
+3. Проверить headless session lifecycle только если headless необходим для текущей модели фоновой синхронизации. Иначе документировать, что используется постоянное подключение GM client и headless не является эксплуатационным требованием.
+4. Проверить фактические global/per-minute limits, индивидуальные лимиты ключей и usage counters без нагрузочного тестирования Production.
+5. Зафиксировать точные версии, безопасные команды и фактические результаты. Секреты, API keys, cookies и содержимое env-файлов в отчёт не включать.
+
+## Историческая часть
+
+Разделы ниже сохраняются как журнал первоначального исследования и исторический provenance. Они отражают состояние на даты выполнения и первоначальный scope, который впоследствии был пересмотрен. Любые упоминания о тестировании XP/level writes, произвольных Actor mutations, WebDAV или Campaign Codex не являются действующими инструкциями для TASK-002. Не выполнять такие тесты на основании этого исторического текста.
+
+---
+
+
 Дата начала: 2026-11-17  
 Статус: выполняется; интеграционные результаты не подтверждены.
 
