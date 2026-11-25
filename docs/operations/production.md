@@ -223,12 +223,13 @@ Validate the restored schema and representative records before considering the b
 
 1. Verify the change in the development Compose project and test guild.
 2. Merge the reviewed change into `main` through the normal PR process.
-3. On the server, fetch the approved `main` revision.
-4. Create and verify a fresh PostgreSQL backup.
-5. Review new migrations; apply them in order before starting code that depends on them.
-6. Validate Compose configuration and run `up -d --build`.
-7. Check container health, logs, `/integration-status`, character roster, and one manual sync.
-8. Keep the previous image/revision and verified backup available until the new deployment is accepted.
+3. Wait for the successful `Publish production images` workflow. Download its deployment-bundle artifact and transfer it to the server; unpack it over the existing deployment files without touching `.env.prod` or the `backups/` directory.
+4. Update `FOUNDRY_MARCHES_VERSION` in `.env.prod` to the immutable `sha-xxxxxxx` tag corresponding to that workflow run's commit.
+5. Create and verify a fresh PostgreSQL backup.
+6. Review new migrations; apply them in order before starting code that depends on them.
+7. Validate Compose configuration, pull the pinned images, then run `up -d`.
+8. Check container health, logs, `/integration-status`, character roster, and one manual sync.
+9. Keep the previous image tag and verified backup available until the new deployment is accepted.
 
 Never use `docker compose down -v`, `docker volume rm`, or database drop/recreate commands as an update or troubleshooting step.
 
