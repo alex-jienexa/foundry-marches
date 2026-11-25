@@ -129,6 +129,15 @@ jobs:
         run: |
           docker compose --env-file .env.prod.example -p foundry-marches-ci-prod \
             -f compose.yaml -f compose.production.yaml config --quiet
+      - name: Validate release Compose image configuration
+        env:
+          DISCORD_ADMIN_USER_IDS: '123456789012345678'
+          FOUNDRY_MARCHES_VERSION: sha-ci-check
+        run: |
+          docker compose --env-file .env.prod.example -p foundry-marches-ci-release \
+            -f compose.yaml -f compose.production.yaml config --format json > /tmp/release-compose.json
+          jq -e '.services.api.image == "ghcr.io/alex-jienexa/foundry-marches-api:sha-ci-check" and .services.api.build == null' /tmp/release-compose.json
+          jq -e '.services.discord-bot.image == "ghcr.io/alex-jienexa/foundry-marches-bot:sha-ci-check" and .services.discord-bot.build == null' /tmp/release-compose.json
       - name: Build development service images
         run: |
           docker compose --env-file .env.example -p foundry-marches-ci-dev \
