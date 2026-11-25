@@ -1,11 +1,11 @@
 ---
 id: TASK-003
-title: 1. Основа
+title: 1. Основа приложения и Production operations
 status: in_progress
 priority: high
 assignee: unassigned
 created_at: '2026-11-17'
-updated_at: '2026-11-18'
+updated_at: '2026-11-25'
 estimate: null
 parent: null
 depends_on:
@@ -13,49 +13,64 @@ depends_on:
 requirement_ids:
 - FM-REQ-002
 files_owned:
-- src/
+- src/backend/
+- src/frontend/
 - tests/
 - docs/
 - .github/workflows/ci.yml
 labels:
 - stage-1
-- planned
+- foundation
+- production
 ---
 
-# 1. Основа
+# 1. Основа приложения
 
 ## Objective
 
-Реализовать полный этап 1 из [дорожной карты](../../docs/development/roadmap.md), не сокращая его до каркаса.
+Завершить основу приложения: устойчивый Go API, PostgreSQL, Discord-first identity/authorization, аудит, миграции, контейнеризация, backup/restore и безопасная эксплуатация.
+
+## Context
+
+- Решение владельца: Discord bot/guild — основной пользовательский интерфейс; browser Discord OAuth и browser sessions не входят в текущую архитектуру.
+- Foundry credentials и Relay token не являются пользовательской авторизацией.
+- Foundry authority boundary: [ADR-0003](../decisions/ADR-0003-foundry-authority-and-read-only-relay.md).
+- Production уже развёрнут, но operational milestone не равен закрытию полного этапа.
 
 ## Scope
 
-Go-каркас, PostgreSQL 15+, миграции, Discord OAuth, роли и разрешения, сервисный токен бота, аудит, Docker Compose, резервные копии
+- Go backend/API, PostgreSQL schema/migrations and integration tests.
+- Discord Gateway bot, registration, owner bootstrap, RBAC and revocation.
+- Separate bot-to-API service authentication.
+- Audit coverage for privileged actions and security-sensitive workflows.
+- Docker Compose and reproducible clean installation.
+- Production backup schedule, backup verification and restore drill.
+- Resource/log monitoring and documented operational procedures.
 
-## Sources and preconditions
+## Excluded
 
-- [FM-REQ-002](../requirements/FM-REQ-002.md), [полный раздел](../../docs/architecture/overview.md), [SQL](../../docs/database/schema.sql).
-- [Нерешённые вопросы](../../docs/development/open-questions.md), [пробелы исходников](../../docs/development/source-gaps.md).
-- Внешние доступы/изменения в Foundry/WebDAV и деплой требуют отдельного разрешения. Для спайка нужны тестовые Actor/мир и заметки; текущий импорт таких разрешений не даёт.
-- Пути files_owned для будущего кода предварительные; перед параллельной работой разбить на дочерние задачи с непересекающимся владением файлами.
+- Discord OAuth/browser sessions unless separately approved.
+- Any Foundry writes except the narrow GM Item add/remove exception in ADR-0003 / TASK-019.
+- Automatic Production CD; gated by TASK-018 and explicit owner approval.
 
 ## Acceptance criteria
 
-- [ ] Состав этапа выполнен полностью, либо оставшаяся часть явно блокирует его закрытие.
-- [ ] Проверки: `curl $API/readyz`; запрос игрока к `POST /api/settings` даёт 403; CI применяет `schema.sql` и `schema_tests.sql` на PG 15 и 16 и запускает скрипт гонок \`schema\_race\_tests.sh\`; восстановление копии в пустую БД
-- [ ] Готово, когда: вход через Discord, управление пользователями, чистая установка одной командой
-- [ ] API/бот/UI, миграции, тесты и документация согласованы в порядке исходного плана, где применимо.
-- [ ] Открытые продуктовые решения не подменены предположениями; подтверждения записаны.
+- [x] API, PostgreSQL, Discord bot and separate internal service authentication are deployed.
+- [x] Production API health endpoints return HTTP 200; owner confirmed bot operation.
+- [ ] RBAC administration/revocation and all privileged routes have complete authorization tests.
+- [ ] Audit coverage is complete for privileged operations.
+- [ ] Backup schedule is active and a restore into a separate empty test database is demonstrated.
+- [ ] Clean installation and migrations are reproducible from documented commands.
+- [ ] Production resource/log monitoring and incident/rollback runbook are verified.
+- [ ] No Foundry write path exists outside the explicit Item exception.
 
 ## Verification
 
-Привести команды, версии и фактические результаты. Точные команды runtime будут определены при реализации; не копировать ещё несуществующий Compose/build как выполненный.
+- CI: backend unit/integration tests, gofmt, go vet, database schema tests.
+- Runtime: health/readiness, bot registration and permission tests.
+- Operations: create backup, validate it, restore to isolated test DB and verify application data; do not touch Production data or volumes during the drill.
 
 ## Progress log
 
-- 2026-11-17 — Создана из полного этапа v0.3.
-
-
-- 2026-11-18 — Частично реализована основа: Go backend module и bootstrap REST API, PostgreSQL 18 Compose service, API container, health check, bootstrap DB role/grants и начальная запись Foundry world. Существующий CI workflow содержит documentation, PostgreSQL 15/16 database и backend jobs. Это не закрывает TASK-003: Discord OAuth, user sessions, RBAC, audit, полноценные migrations и backup/restore ещё не завершены.
-
-- 2026-11-18 — По решению владельца Discord принят как primary UX на одном guild; bot-only auth без browser OAuth/session. Добавлены отдельный Discord Gateway process, внутренний API с отдельным service token, регистрация guild members, базовый player и конфигурируемый owner bootstrap, гибридная RBAC-проверка, grant/map команд, migration 0002 и инструкция запуска. TASK-003 остаётся in_progress: backups/restore, полноценный audit coverage, RBAC administration/revocation, hardening и runtime verification ещё не подтверждены.
+- 2026-11-18 — Go API, PostgreSQL, Discord Gateway bot, internal service token, registration and baseline RBAC implemented.
+- 2026-11-25 — Production API/Bot/PostgreSQL deployed in isolated Compose project; /livez and /readyz HTTP 200; Relay/Foundry reachable. Backup/restore and full audit acceptance remain open.
