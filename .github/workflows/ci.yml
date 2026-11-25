@@ -126,6 +126,7 @@ jobs:
       - name: Validate production Compose configuration
         env:
           DISCORD_ADMIN_USER_IDS: '123456789012345678'
+          FOUNDRY_MARCHES_VERSION: sha-ci-check
         run: |
           docker compose --env-file .env.prod.example -p foundry-marches-ci-prod \
             -f compose.yaml -f compose.production.yaml config --quiet
