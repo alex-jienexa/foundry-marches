@@ -2,9 +2,20 @@
 
 ## Состояние на 2026-11-25
 
-Рабочая ветка: `feat/conventional-commits`. После обновления документации HEAD продвигался несколькими последовательными docs-коммитами; точный актуальный SHA проверять непосредственно перед следующими изменениями. Не полагаться на SHA из этой handoff-записи.
+Рабочая ветка: `feat/conventional-commits`. Перед следующими изменениями обязательно проверить точный HEAD и повторно получить актуальные SHA файлов. Ветка создана от `main` commit `8a69f78fb2a1bafe44fb8203a3a5e82656a0d5eb`. Не создавать PR и не выполнять merge: владелец делает это самостоятельно.
 
-Ветка создана от `main` commit `8a69f78fb2a1bafe44fb8203a3a5e82656a0d5eb`. Не создавать PR и не выполнять merge: владелец делает это самостоятельно.
+## Действующее решение по Foundry
+
+[ADR-0003](../decisions/ADR-0003-foundry-authority-and-read-only-relay.md) принято владельцем 2026-11-25.
+
+- Foundry — единственный источник истины для Actor sheet data и PF2e mechanics.
+- Relay integration read-only.
+- Приложение не пишет XP, level, coins/currency, attributes, abilities, HP, AC, skills, class, ancestry, background, ownership/permissions, Actor flags или любые произвольные Actor fields.
+- Единственное исключение — GM-authorized add/remove Item на существующем Actor (equipment, abilities и другие Items). Это отдельная узкая задача TASK-019.
+- Item mutation требует server-side GM authorization, stable Item identifiers, dedicated least-privilege credential, operation ID/idempotency, audit, read-after-write verification и безопасного поведения при timeout/outage.
+- Generic Relay write proxy запрещён. Read credentials остаются read-only; не выдавать write scope до завершения TASK-019 security review и owner approval.
+- Ручные изменения в Foundry поступают в приложение через sync; приложение не перезаписывает их.
+- App-owned campaign state хранится в PostgreSQL и не даёт приложению права записи в Foundry.
 
 ## Подтверждённый Production
 
@@ -18,50 +29,42 @@
 - Фоновая Foundry sync включена с интервалом 5 минут.
 - `GET /livez` и `GET /readyz` вернули HTTP 200 `ok`.
 - Владелец подтвердил работоспособность бота; пользовательская обратная связь ещё ожидается.
-- Production deployment зафиксирован в `docs/development/milestone-production-deployment.md`.
+- Backup script включён в deployment bundle, но успешный backup/restore drill ещё не подтверждён.
 
 ### Изоляция и безопасность
 
 Не трогать существующий Compose project `jienexyz`, его PostgreSQL volume/данные, Caddy, Redis, `catalog-container` и `rosochkinsad.ru`. Не удалять volumes и не выполнять destructive DB operations. Не просить/не публиковать значения `.env.prod`, токенов и ключей. Не менять firewall или Caddy без отдельного запроса.
 
-На сервере Ubuntu 24.04, 1 vCPU, около 1.9 GiB RAM и 19 GiB root disk; свободное место после установки образов было около 4.7 GB. Наблюдать RAM/OOM и диск. Backup script поставлен в deployment bundle, но успешный backup/restore drill ещё не подтверждён.
+Сервер Ubuntu 24.04, 1 vCPU, около 1.9 GiB RAM и 19 GiB root disk; свободное место после установки образов было около 4.7 GB. Наблюдать RAM/OOM и диск.
 
-## Инженерный процесс
+## Актуальные задачи
 
-Ветка содержит обязательную политику Conventional Commits:
-- `.agent/protocols/COMMIT_CONVENTIONS.md`;
-- обновлённый `AGENTS.md`;
-- обновлённый `.agent/agents/IMPLEMENTER.md`.
+Индекс: [tasks](../tasks/README.md); дорожная карта: [roadmap](../../docs/development/roadmap.md).
 
-Генерация release notes, GitHub Actions Release и CD не реализованы.
+1. **TASK-014 — Production stabilization:** feedback, backup schedule, isolated restore drill, RAM/OOM/disk/log monitoring. Самый высокий приоритет.
+2. **TASK-015 — Foundry Item search:** read-only Actor/Compendium search, filters, pagination and outage behavior.
+3. **TASK-016 — NPC Discord webhooks:** GM-only, dynamic NPC name/avatar, channel allow-list, secure credentials and audit.
+4. **TASK-004 — Characters/Foundry:** finish approval/rejection, ownership confirmation, slots, NPC lifecycle and sync retry/recovery.
+5. **TASK-017 — Release automation:** Conventional Commit release notes, SemVer validation and `v0.2.0-beta`.
+6. **TASK-018 — Deployment gate:** validate host, immutable image update, health checks and rollback. Automatic CD stays disabled until TASK-014/TASK-018 pass and owner explicitly approves.
+7. **TASK-019 — GM Item add/remove:** sole Foundry write exception, only after security review and narrow adapter design.
+8. Continue all product stages 0–11; vertical tasks do not close the full stages.
 
-## Следующие приоритеты
+## Engineering process
 
-См. [актуальную roadmap](../../docs/development/roadmap.md).
+- Conventional Commits 1.0.0 is mandatory; see `.agent/protocols/COMMIT_CONVENTIONS.md`.
+- No PR/merge unless explicitly requested.
+- Do not claim tests/build/CI passed without actual output or confirmed CI.
+- Work only in `src/` for application code; docs and PAD remain outside `src/`.
+- Before GitHub edits, verify branch HEAD and fetch current file SHA. Use separate Conventional Commit per file update per current project workflow.
 
-1. Получить обратную связь игроков, проверить backup schedule и тестовое восстановление, наблюдать ресурсы Production.
-2. Реализовать read-only поиск предметов Foundry через Relay: Actor/Compendium Items, фильтры, пагинация и безопасная деградация при недоступности Relay.
-3. Реализовать GM-only сообщения от имени НПС в Discord через webhooks; динамические имя/аватар, разрешённые каналы, аудит и безопасное управление credentials.
-4. Реализовать GitHub Actions Release: генерация release notes из Conventional Commits, проверка версии и публикация первого prerelease **`v0.2.0-beta`** (релизная линия начинается с `v0.2.0`).
-5. Проверить новый сервер и процедуру безопасного обновления/rollback. Только после подтверждения владельца рассматривать автоматический CD на Production.
-6. Продолжать полные этапы 0–11 по roadmap. Не считать этапы 0–2 завершёнными только из-за наличия Production.
+## Known implementation constraints
 
-## Архитектурные ограничения
-
-- Foundry — авторитетный источник PF2e механик и исходных данных; текущая интеграция read-only.
-- Не изменять Foundry Actor и не реализовывать XP/level write без отдельного архитектурного решения и разрешения владельца.
-- Сохранять raw Actor snapshots, неизвестные поля, null и пустые объекты.
-- Различать реальные `Actor.items[]` и Compendium references в `system.items`.
-- Не использовать локализованные имена Item как идентификаторы; использовать IDs, slugs, UUID и compendiumSource.
-- Не исполнять произвольные PF2e Rule Elements.
-- Не создавать персонажей автоматически и не выводить ownership косвенно.
-- Не использовать Foundry sync token как пользовательскую авторизацию.
-- Не включать Relay write capabilities в приложение без отдельного дизайна авторизации, аудита, идемпотентности и разрешения.
-- Go backend находится в `src/backend/`; исходники приложения — только под `src/`. Документация и PAD — вне `src/`.
-
-## Разработка и проверка
-
-- Не утверждать, что тесты/сборка прошли, пока нет фактического результата владельца или CI.
-- Пользователь предпочитает пошаговый цикл: дать команды → дождаться вывода → следующий шаг.
-- Не создавать PR/merge.
-- Для GitHub изменений использовать GitHub connector, предварительно проверить branch HEAD и релевантные файлы. Commit messages — Conventional Commits.
+- Preserve raw Actor snapshots, unknown fields, nulls and empty objects.
+- Distinguish real `Actor.items[]` from Compendium references in `system.items`.
+- Never use localized Item names as identifiers; use IDs, slugs, UUID and compendiumSource.
+- Do not execute arbitrary PF2e Rule Elements.
+- Do not create Actors automatically or infer ownership.
+- Do not use Foundry sync token as user authentication.
+- Never enable generic Relay write scopes or expose write credential to players.
+- Never disturb unrelated host services or Production volumes.
