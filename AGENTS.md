@@ -42,6 +42,6 @@ Update `.agent/state/HANDOFF.md` with completed work, current state, blockers, a
 - Executable database source: `docs/database/schema.sql`; full invariants include PL/pgSQL, triggers, late ALTER and seed state transitions, not only CREATE TABLE.
 - DBML/ER/catalog are derived. Regenerate with `python3 scripts/generate_database_docs.py`; verify with `--check`.
 - Preserve immutable input files under `docs/reference/originals/`; working documents are complete sections, not summaries. See `docs/reference/README.md` for precedence and future-change policy.
-- No application code, production environment, runnable Compose, goose migrations or complete OpenAPI exists yet. Do not claim otherwise or invent verified integration behavior.
+- The repository now contains a Go backend, Discord bot, Foundry Relay integration, Docker Compose deployment and a verified separate Production environment. Consult `docs/development/roadmap.md`, `docs/development/milestones.md`, `docs/verification.md` and `.agent/state/HANDOFF.md` for the current verified scope. Do not infer that all roadmap stages, API contracts or operational checks are complete.
 - Owner questions and absent original ТЗ are tracked in `docs/development/open-questions.md` and `source-gaps.md`; unresolved assumptions are not approved decisions.
 - The `.pad/template-base/` tree is the unmodified upstream merge baseline: do not copy project-specific docs/state into it.
