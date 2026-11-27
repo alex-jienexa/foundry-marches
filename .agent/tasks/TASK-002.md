@@ -5,7 +5,7 @@ status: in_progress
 priority: high
 assignee: ChatGPT
 created_at: '2026-11-17'
-updated_at: '2026-11-25'
+updated_at: '2026-11-27'
 estimate: null
 parent: null
 depends_on:
@@ -105,4 +105,6 @@ labels:
 - 2026-11-25 — ADR-0003 закрепил Foundry authority и read-only Relay; исторические предложения XP/level/Actor writes исключены из критериев.
 - 2026-11-25 — Аудит кода подтвердил read-only Relay client, Actor Item decoding, targeted Compendium resolution и world sync; текущая Production status показывает 18 Actors.
 - 2026-11-25 — Scope TASK-002 уточнён: WebDAV/ETag/If-Match и Campaign Codex перенесены в TASK-007. Остались runtime-проверки scopes, SSE, headless (по необходимости) и usage/quota.
+- 2026-11-27 — На отдельном тестовом Relay 3.4.1 (контейнер foundry-relay-v14-headless-test, порт 3012, отдельная SQLite /app/data/relay-v14-test.db) проверена headless-авторизация Foundry 14.367 под Puffy с FOUNDRY_USER_ID=gkYizCRHVPCjt0Xe. Логи подтвердили распознавание формы v14, успешный POST /join, загрузку игрового интерфейса (#ui-left), обнаружение клиента fvtt_d6d10c4363c3649d и установление первой headless session. Повторный handshake также прошёл POST /join и обнаружил тот же clientId; отдельная вторая независимая сессия не заявляется. В интерфейсе Relay владелец подтвердил одну активную headless-сессию, поддерживающую мир online. Production Relay, Foundry module, production DB и production конфигурация не изменялись. Это подтверждает совместимость headless login с Foundry v14 и базовое подключение, но не закрывает полный lifecycle, SSE, scopes и usage/quota.
+- 2026-11-27 — Подготовлен runbook docs/operations/relay-replacement.md: staging-копия Relay DB, проверка сохранности client IDs/API keys/scopes/pairing, безопасный production cutover и rollback. Перенос существующих ключей пока не проверен на реальной копии production DB; переключение не выполнялось.
 - 2026-11-25 — Проверена unattended-модель постоянного Foundry-клиента без изменений Relay: на Arch Linux создан изолированный Docker-контейнер `foundry-client` с Chromium, постоянным профилем и Playwright Core 1.48.2. Автоматизация открывает Foundry и ожидает автозаполнения имени GM-пользователя Chrome перед отправкой формы Join Game; пароль в скрипте не хранится. После входа Relay подтвердил WebSocket-клиент `Chrome on Linux` для мира `westmarches` (Foundry 14.367, PF2e) с прежним `clientId`. Проверены восстановление соединения после перезапуска контейнера в графическом режиме и первоначальный запуск/подключение в Chromium headless; Production Relay и его конфигурация не изменялись. Headless-клиент оставлен с тем же постоянным профилем; удаление Xvfb/VNC/Fluxbox и повторный тест перезапуска уже в headless остаются следующими эксплуатационными шагами. Во время загрузки страницы наблюдалась ошибка браузерного JS `Sync file not found`, не помешавшая подключению; её причина отдельно не установлена.
