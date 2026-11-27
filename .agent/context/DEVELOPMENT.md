@@ -4,7 +4,7 @@
 
 ## Текущее состояние
 
-- TASK-002 (этап 0) — `in_progress`: self-hosted Relay 3.4.1 и Foundry read-only sync подтверждены; 11 Actor snapshots получены. WebDAV, Campaign Codex, SSE/headless session и quota не закрыты.
+- TASK-002 (этап 0) — `in_progress`: self-hosted Relay 3.4.1 и Foundry read-only sync подтверждены; Production обнаруживает 18 Actors. На изолированном тестовом Relay 3.4.1 подтверждены headless login Foundry 14.367 (POST /join), загрузка игрового UI и регистрация одного клиента под Puffy. Полный headless lifecycle, SSE, production scopes и usage/quota ещё не закрыты; runbook замены Relay подготовлен, production migration не выполнялась.
 - TASK-003 (этап 1) — `in_progress`: backend bootstrap, PostgreSQL/Compose, health endpoint и CI существуют; Discord OAuth, sessions, RBAC, audit, migrations, backup/restore не завершены.
 - TASK-004 (этап 2) — `in_progress`: Relay adapter, PF2e decoder/calculator, persistence и sync реализованы частично. Все 11 Actor пока `snapshot_only`; следующий bounded slice — явная привязка к существующему персонажу.
 - TASK-005…TASK-013 — backlog; этапы 3–11 не начаты.
