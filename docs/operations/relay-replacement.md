@@ -1,10 +1,10 @@
-# Замена Foundry Relay без потери существующих ключей
+# Замена Foundry Relay с выпуском новых ключей для Production и Development
 
-> Статус: подготовленный runbook, не выполненная production-операция. До отдельного одобрения владельца действующий Relay, Foundry и production-приложение не переключать.
+> Статус: согласованная стратегия и runbook; production-операция ещё не выполнялась. План — новый Relay deployment и новая чистая база, выпуск двух независимых API credentials (Production и Development), затем переключение relay.jiene.ru. Старый Relay и его данные сохраняются для rollback до приёмки.
 
 ## Цель и границы
 
-Заменить текущий self-hosted ThreeHats Foundry REST API Relay на обновлённую сборку с поддержкой headless-авторизации Foundry v14, сохранив существующие Relay API keys, client records, pairing и конфигурацию мира настолько, насколько допускает совместимость формата данных.
+Заменить текущий self-hosted ThreeHats Foundry REST API Relay на обновлённую сборку с поддержкой headless-авторизации Foundry v14. На новом Relay создать два независимых API credentials: отдельный для Production API и отдельный для Development API. Старые API keys не переносить и не использовать на новом Relay; старый Relay, его БД и конфигурацию сохранить нетронутыми на период rollback. Foundry world/module pairing переключить на новый Relay только в согласованном cutover.
 
 Проверенная тестовая конфигурация:
 - Foundry 14.367, world westmarches, system pf2e.
@@ -17,15 +17,23 @@
 
 ## Какие данные и токены различать
 
-1. **Relay API keys и client records.** Сохранность зависит от того, где и в каком виде текущая версия Relay хранит ключи, их хэши/секреты, client ID, scopes и связи с Foundry world. Сначала исследовать схему и миграции обеих версий. Не считать, что одного копирования API key из env достаточно.
-2. **Foundry module pairing / Relay connection settings.** Могут находиться в настройках модуля Foundry и/или в Relay DB. Сохранять текущие module settings, world settings, pairing records и идентификаторы; не выполнять unpair и не переустанавливать модуль во время миграции.
-3. **Ключ приложения Foundry Marches.** FOUNDRY_RELAY_API_KEY и FOUNDRY_RELAY_CLIENT_ID передаются backend из защищённого .env.prod. foundry_worlds.key_secret_ref хранит только ссылку env:FOUNDRY_RELAY_API_KEY, не сам секрет. При сохранении существующих Relay credentials эти значения не менять.
-4. **Токены приложения.** FOUNDRY_SYNC_API_TOKEN — отдельный Bearer token для административного sync endpoint, не Relay API key. Для замены Relay он не требуется и не должен ротироваться.
-5. **Headless user ID.** FOUNDRY_USER_ID — Foundry user ID (в тесте Puffy: gkYizCRHVPCjt0Xe), не Relay API key и не client ID.
+1. **Новые Relay API credentials.** Выпустить в новом Relay два разных client ID/API key pair: один для Production, другой для Development. Каждый ключ — только с необходимыми read scopes; не копировать один ключ в оба окружения.
+2. **Foundry module pairing / Relay connection settings.** Relay URL и pairing в Foundry module переключаются на новый Relay во время cutover. Сохранить старые настройки/URL для быстрого rollback; не удалять старые записи и не выполнять unpair до момента переключения.
+3. **Production приложение.** На сервере обновить только FOUNDRY_RELAY_CLIENT_ID и FOUNDRY_RELAY_API_KEY в защищённом .env.prod. FOUNDRY_RELAY_BASE_URL остаётся https://relay.jiene.ru после переключения DNS/TLS/reverse-proxy upstream.
+4. **Development приложение.** На рабочей станции обновить только FOUNDRY_RELAY_CLIENT_ID и FOUNDRY_RELAY_API_KEY в локальном .env.dev. Development запускается локально; его ключ нельзя помещать на production сервер или коммитить.
+5. **Токены приложения.** FOUNDRY_SYNC_API_TOKEN — отдельный Bearer token административного sync endpoint, не Relay API key. Для этой миграции его не менять. Аналогично не менять Discord и PostgreSQL credentials.
+6. **Headless user ID.** FOUNDRY_USER_ID — Foundry user ID Puffy (gkYizCRHVPCjt0Xe в проверенном тесте), не Relay API key и не Relay client ID. Настроить в окружении нового Relay.
 
-Не публиковать значения секретов в логах, документации, GitHub или чате.
+Секреты вводятся непосредственно в защищённые env files/secret store; не публиковать их в Git, логах или чате. Новые API keys показывать только один раз при создании и сразу сохранять в соответствующие секретные хранилища.
 
 ## Предварительные условия — ничего не переключая
+
+1. Подтвердить точные права двух ключей: минимум необходимые read scopes для Actor listing/search/get и нужных Compendium read endpoints. Не выдавать entity:write, chat:write, roll:execute, file:write или structure:write.
+2. Подтвердить, что Development и Production API могут обращаться к одному Relay URL и одному Foundry world, но используют разные credentials и отдельные API/DB. Проверить, что Relay quotas позволяют два клиента.
+3. Подготовить новый Relay параллельно на loopback-порту 3011 (или другом свободном порту), сохранив текущий Relay на 127.0.0.1:3010. Новый deployment получает отдельный Compose project, env file и data directory/SQLite. Не использовать старую или тестовую DB.
+4. Старый Relay не выключать до успешной проверки нового и согласованного cutover.
+
+## Предварительные условия — аудит и backup
 
 1. Получить согласованное окно обслуживания и подтвердить владельцу, что на время cutover headless-соединение и Relay API могут быть недоступны.
 2. Зафиксировать текущее состояние: версия и image digest старого Relay, Compose project/service/container, hostname/reverse proxy, host paths/volumes, SQLite path, config files, secrets source, Foundry module version/settings, client ID, scopes, список имён/ID ключей (без значений ключей), текущий world/client status.
@@ -45,29 +53,30 @@
 4. Проверить backup на отдельной копии: SQLite integrity check, чтение таблиц клиентов/ключей/scopes/pairing. Секреты не выводить.
 5. Зафиксировать rollback: старый image digest, старый Compose config, старый DB backup и прежний маршрут reverse proxy.
 
-### B. Проверить перенос ключей на изолированной копии
+### B. Поднять новый Relay и выпустить credentials
 
-1. Развернуть новую сборку под отдельным именем и на отдельном loopback-порту.
-2. Восстановить backup в отдельную staging DB/volume; не использовать исходный production volume.
-3. Если новая версия требует DB migrations — запускать их только на staging copy. Сохранить исходную копию без изменений.
-4. Проверить, что прежние client IDs, ключевые записи, scopes и pairing records присутствуют после миграции. Сравнивать только безопасные метаданные/количество/ID, не значения секретов.
-5. Проверить, что прежний FOUNDRY_RELAY_API_KEY (вводимый из secret store) аутентифицируется с прежним FOUNDRY_RELAY_CLIENT_ID. Убедиться, что read-only scopes остались read-only.
-6. Проверить Foundry v14 headless login на отдельной тестовой сессии с FOUNDRY_USER_ID; подтвердить POST /join, загрузку игрового интерфейса и регистрацию одного headless client.
-7. Выполнить read-only smoke test backend Foundry Marches: /integration-status и синхронизацию, убедиться, что Actor snapshots читаются. Не выполнять Relay write operations.
+1. Развернуть новую сборку под отдельным Compose project, контейнером и loopback-портом 3011; использовать отдельную чистую SQLite и отдельный data directory.
+2. Настроить admin/encryption/JWT secrets и FOUNDRY_USER_ID через отдельный защищённый env file. Не использовать test DB relay-v14-test.db и не подключать новый Relay к старой production DB.
+3. Создать два credentials в admin UI нового Relay: Foundry Marches Production и Foundry Marches Development. Ограничить scopes минимально необходимыми read-only правами. Если Relay поддерживает client/world restriction — ограничить каждый credential нужным client/world.
+4. Сохранить Production client ID + API key только в серверном secret store/.env.prod; Development client ID + API key — только в локальном .env.dev разработчика. Не пересылать ключи через чат.
+5. На новом Relay проверить оба ключа независимо: успешная аутентификация, ожидаемый client ID, нужные read endpoints, отказ write endpoints. Проверить quotas/usage для обоих ключей.
+6. Проверить headless login Foundry v14 на отдельной тестовой сессии с FOUNDRY_USER_ID; подтвердить POST /join, загрузку игрового интерфейса и регистрацию одного headless client.
+7. Запустить Foundry Marches Development локально с новым Development key и проверить /integration-status, read-only Actor sync и отсутствие 401/403. Затем на новом Relay проверить Production key без переключения production hostname, используя временный test hostname или защищённый локальный tunnel.
 
-Если старые ключи не переживают миграцию, остановиться и определить поддерживаемый экспорт/импорт или контролируемую ротацию. Не удалять старые ключи и не отзывать их до завершения production cutover и проверки rollback.
+Новые credentials должны быть проверены до изменения .env.prod, .env.dev и Foundry module URL.
 
-### C. Production cutover
+### C. Переключение relay.jiene.ru и Production/Development
 
 1. Согласовать короткое окно обслуживания. Остановить/заморозить только процессы, которые создают новые Relay sessions или делают sync, чтобы избежать одновременных изменений в Relay DB. Не останавливать Foundry world без необходимости.
 2. Сделать финальный согласованный backup непосредственно перед переключением.
-3. Остановить только старый Relay service. Не удалять контейнер/volume/DB; не выполнять down -v, prune или очистку каталогов.
-4. Развернуть новую версию с production DB, прошедшей staging migration. Сохранить прежние persistent mount paths либо использовать явно восстановленную БД. Настроить FOUNDRY_USER_ID на целевой Foundry user ID и остальные секреты через secret store.
-5. Сохранить внешний HTTPS hostname и маршрут reverse proxy (например, текущий relay.jiene.ru), чтобы Foundry module и Foundry Marches не пришлось перенастраивать. Переключать upstream только после health check новой версии.
-6. Убедиться, что прежние client IDs и API keys работают, Foundry world снова виден, headless session установлена и backend /integration-status успешен.
-7. Выполнить одну read-only синхронизацию и сравнить число обнаруженных Actors и результат с baseline. Проверить логи на 401/403/429, pairing errors и restart loop.
-8. Возобновить плановую синхронизацию. Наблюдать Relay, Foundry и API до окончания согласованного периода.
-9. Только после подтверждённой стабильности и отдельного решения владельца выводить старый image из эксплуатации. Старую БД/backup хранить в течение согласованного rollback window.
+3. В согласованное окно остановить/приостановить только задачи sync и операции, создающие Relay sessions. Foundry world не останавливать без необходимости.
+4. Обновить Production .env.prod: поставить новый Production client ID и key. Обновить Development .env.dev на рабочей станции новым Development client ID и key. FOUNDRY_SYNC_API_TOKEN, DB credentials и Discord tokens не менять.
+5. Сделать финальный backup старого Relay data/config и сохранить старый image/Compose/Caddy config. Старый контейнер пока остановить, но не удалять; его порт 3010 и data directory сохранить.
+6. Изменить только Caddy upstream для relay.jiene.ru с 127.0.0.1:3010 на 127.0.0.1:3011 и выполнить config validation/reload. Публичный hostname и TLS оставить прежними.
+7. Переключить Foundry module Relay URL/pairing на новый Relay endpoint wss://relay.jiene.ru/relay. Проверить, что Foundry world и один headless client появляются в новом Relay.
+8. Запустить Production API с новым Production key и Development API с новым Development key. Проверить /integration-status и по одной read-only синхронизации в каждом окружении; убедиться, что каждый credential отображается отдельно в usage.
+9. Сверить число Actors и sync reports с baseline, проверить логи на 401/403/429, pairing errors и restart loop.
+10. Возобновить плановую синхронизацию. Старый Relay, DB, data directory и конфигурацию сохранять до окончания согласованного rollback window; не удалять их в ходе cutover.
 
 ### D. Rollback
 
@@ -91,8 +100,10 @@
 
 ## Критерии успешной замены
 
-- [ ] Старые Relay client IDs и ключевые записи сохранены либо контролируемо импортированы.
-- [ ] Старый API key приложения работает с прежним client ID; scopes соответствуют least privilege.
+- [ ] Новый Relay доступен через прежний HTTPS hostname relay.jiene.ru.
+- [ ] Выпущены два разных API credentials: Production и Development.
+- [ ] Оба ключа имеют только необходимые read-only scopes и проходят независимую проверку.
+- [ ] Production .env.prod и Development .env.dev используют правильные, разные client IDs и API keys.
 - [ ] Foundry module остаётся paired, мир виден в Relay.
 - [ ] Headless login Foundry v14 проходит под заданным FOUNDRY_USER_ID.
 - [ ] Регистрируется один ожидаемый headless client; повторный handshake не создаёт лишний независимый клиент.
